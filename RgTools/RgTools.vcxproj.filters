@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="avisynth.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -37,6 +34,30 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vertical_cleaner.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avisynth.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\alignment.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\capi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\cpuid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\minmax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\win.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

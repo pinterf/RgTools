@@ -152,9 +152,16 @@
     <ClCompile Include="vertical_cleaner.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="avisynth.h" />
     <ClInclude Include="clense.h" />
     <ClInclude Include="common.h" />
+    <ClInclude Include="include\avisynth.h" />
+    <ClInclude Include="include\avs\alignment.h" />
+    <ClInclude Include="include\avs\capi.h" />
+    <ClInclude Include="include\avs\config.h" />
+    <ClInclude Include="include\avs\cpuid.h" />
+    <ClInclude Include="include\avs\minmax.h" />
+    <ClInclude Include="include\avs\types.h" />
+    <ClInclude Include="include\avs\win.h" />
     <ClInclude Include="removegrain.h" />
     <ClInclude Include="repair.h" />
     <ClInclude Include="repair_functions_c.h" />

@@ -182,7 +182,7 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
         modeV_ = modeU_;
     }
 
-    if (vi.IsPlanar() && !vi.IsY8() && (modeU_ != -1 || modeV_ != -1)) {
+    if (vi.IsPlanar() && !vi.IsY() && (modeU_ != -1 || modeV_ != -1)) {
         if (!vi.IsSameColorspace(refVi)) {
             env->ThrowError("Both clips should have the same colorspace!");
         }
@@ -207,7 +207,7 @@ PVideoFrame Repair::GetFrame(int n, IScriptEnvironment* env) {
       dstFrame->GetPitch(PLANAR_Y), srcFrame->GetPitch(PLANAR_Y), refFrame->GetPitch(PLANAR_Y),
       srcFrame->GetRowSize(PLANAR_Y), srcFrame->GetHeight(PLANAR_Y));
 
-  if (vi.IsPlanar() && !vi.IsY8()) {
+  if (vi.IsPlanar() && !vi.IsY()) {
       functions[modeU_+1](env, dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetReadPtr(PLANAR_U), refFrame->GetReadPtr(PLANAR_U),
           dstFrame->GetPitch(PLANAR_U), srcFrame->GetPitch(PLANAR_U), refFrame->GetPitch(PLANAR_U),
           srcFrame->GetRowSize(PLANAR_U), srcFrame->GetHeight(PLANAR_U));

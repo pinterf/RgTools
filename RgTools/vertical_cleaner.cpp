@@ -186,7 +186,7 @@ PVideoFrame VerticalCleaner::GetFrame(int n, IScriptEnvironment* env) {
     dispatch_median(mode_, dstFrame->GetWritePtr(PLANAR_Y), srcFrame->GetReadPtr(PLANAR_Y), dstFrame->GetPitch(PLANAR_Y), srcFrame->GetPitch(PLANAR_Y),
         srcFrame->GetRowSize(PLANAR_Y), srcFrame->GetHeight(PLANAR_Y), env);
 
-    if (!vi.IsY8()) {
+    if (!vi.IsY()) {
         dispatch_median(modeU_, dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetReadPtr(PLANAR_U), dstFrame->GetPitch(PLANAR_U), srcFrame->GetPitch(PLANAR_U),
             srcFrame->GetRowSize(PLANAR_U), srcFrame->GetHeight(PLANAR_U), env);
 

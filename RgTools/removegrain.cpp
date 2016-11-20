@@ -268,7 +268,7 @@ PVideoFrame RemoveGrain::GetFrame(int n, IScriptEnvironment* env) {
     functions[mode_+1](env, srcFrame->GetReadPtr(PLANAR_Y), dstFrame->GetWritePtr(PLANAR_Y), srcFrame->GetRowSize(PLANAR_Y), 
         srcFrame->GetHeight(PLANAR_Y), srcFrame->GetPitch(PLANAR_Y), dstFrame->GetPitch(PLANAR_Y));
 
-    if (vi.IsPlanar() && !vi.IsY8()) {
+    if (vi.IsPlanar() && !vi.IsY()) {
         functions[modeU_+1](env,srcFrame->GetReadPtr(PLANAR_U), dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetRowSize(PLANAR_U), 
             srcFrame->GetHeight(PLANAR_U), srcFrame->GetPitch(PLANAR_U), dstFrame->GetPitch(PLANAR_U));
 

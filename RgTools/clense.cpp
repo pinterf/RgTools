@@ -140,7 +140,7 @@ PVideoFrame Clense::GetFrame(int n, IScriptEnvironment* env) {
         dstFrame->GetPitch(PLANAR_Y), srcFrame->GetPitch(PLANAR_Y), frame1->GetPitch(PLANAR_Y), frame2->GetPitch(PLANAR_Y),
         srcFrame->GetRowSize(PLANAR_Y), srcFrame->GetHeight(PLANAR_Y), env);
         
-    if (vi.IsY8() || grey_) {
+    if (vi.IsY() || grey_) {
         return dstFrame;
     }
 

@@ -4,7 +4,7 @@
 #include "common.h"
 
 
-typedef void (RepairPlaneProcessor)(IScriptEnvironment* env, BYTE* pDst, const BYTE* pSrc, const BYTE* pRef, int dstPitch, int srcPitch, int refPitch, int width, int height);
+typedef void (RepairPlaneProcessor)(IScriptEnvironment* env, BYTE* pDst, const BYTE* pSrc, const BYTE* pRef, int dstPitch, int srcPitch, int refPitch, int rowsize, int height);
 
 
 class Repair : public GenericVideoFilter {
@@ -20,6 +20,9 @@ private:
     int modeU_;
     int modeV_;
     PClip ref_;
+
+    int pixelsize;
+    int bits_per_pixel;
 
     RepairPlaneProcessor **functions;
 };

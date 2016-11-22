@@ -4,7 +4,7 @@
 #include "common.h"
 
 
-typedef void (PlaneProcessor)(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int width, int height, int srcPitch, int dstPitch);
+typedef void (PlaneProcessor)(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch);
 
 
 class RemoveGrain : public GenericVideoFilter {
@@ -19,6 +19,9 @@ private:
     int mode_;
     int modeU_;
     int modeV_;
+
+    int pixelsize;
+    int bits_per_pixel;
 
     PlaneProcessor **functions;
 };

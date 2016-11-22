@@ -10,9 +10,18 @@ static RG_FORCEINLINE __m128i not_rounded_average(__m128i a, __m128i b) {
     auto andop = _mm_and_si128(a, b);
     auto xorop = _mm_xor_si128(a, b);
     //kinda psrlb, probably not optimal but works
-    xorop = _mm_srli_epi16(xorop, 1);
+    xorop = _mm_srli_epi16(xorop, 1); // no _mm_srli_epi8: shift + mask
     xorop = _mm_and_si128(xorop, _mm_set1_epi8(0x7F));
     return _mm_adds_epu8(xorop, andop);
+}
+
+// PF saturates to FFFF
+static RG_FORCEINLINE __m128i not_rounded_average_16(__m128i a, __m128i b) {
+  auto andop = _mm_and_si128(a, b);
+  auto xorop = _mm_xor_si128(a, b);
+  //kinda psrlb, probably not optimal but works
+  xorop = _mm_srli_epi16(xorop, 1); // /2, no tricks like at 8 bit
+  return _mm_adds_epu16(xorop, andop);
 }
 
 
@@ -30,6 +39,23 @@ RG_FORCEINLINE __m128i rg_mode1_sse(const Byte* pSrc, int srcPitch) {
         );
 
     return simd_clip(c, mi, ma);
+}
+
+// SSE4 min_epu16
+template<InstructionSet optLevel>
+RG_FORCEINLINE __m128i rg_mode1_sse_16(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_SSE_16(optLevel, pSrc, srcPitch);
+
+  __m128i mi = _mm_min_epu16 (
+    _mm_min_epu16(_mm_min_epu16(a1, a2), _mm_min_epu16(a3, a4)),
+    _mm_min_epu16(_mm_min_epu16(a5, a6), _mm_min_epu16(a7, a8))
+  );
+  __m128i ma = _mm_max_epu16 (
+    _mm_max_epu16(_mm_max_epu16(a1, a2), _mm_max_epu16(a3, a4)),
+    _mm_max_epu16(_mm_max_epu16(a5, a6), _mm_max_epu16(a7, a8))
+  );
+
+  return simd_clip(c, mi, ma);
 }
 
 template<InstructionSet optLevel>

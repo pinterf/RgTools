@@ -59,8 +59,8 @@ static void process_plane_c(Byte* pDst, const Byte *pSrc, const Byte* pRef1, con
     }
 }
 
-RG_FORCEINLINE void clense_process_line_sse2(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int width) {
-    for (int x = 0; x < width; x+=16) {
+RG_FORCEINLINE void clense_process_line_sse2(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize) {
+    for (int x = 0; x < rowsize; x+=16) {
         auto src = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc+x));
         auto ref1 = _mm_load_si128(reinterpret_cast<const __m128i*>(pRef1+x));
         auto ref2 = _mm_load_si128(reinterpret_cast<const __m128i*>(pRef2+x));
@@ -73,8 +73,36 @@ RG_FORCEINLINE void clense_process_line_sse2(Byte* pDst, const Byte *pSrc, const
     }
 }
 
-RG_FORCEINLINE void sclense_process_line_sse2(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int width) {
-    for (int x = 0; x < width; x+=16) {
+RG_FORCEINLINE void clense_process_line_sse4_16(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize) {
+  for (int x = 0; x < rowsize; x+=16) {
+    auto src = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc+x));
+    auto ref1 = _mm_load_si128(reinterpret_cast<const __m128i*>(pRef1+x));
+    auto ref2 = _mm_load_si128(reinterpret_cast<const __m128i*>(pRef2+x));
+
+    auto minref = _mm_min_epu16(ref1, ref2);
+    auto maxref = _mm_max_epu16(ref1, ref2);
+    auto dst = simd_clip_16(src, minref, maxref);
+
+    _mm_store_si128(reinterpret_cast<__m128i*>(pDst+x), dst);
+  }
+}
+
+RG_FORCEINLINE void clense_process_line_sse2_32(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize) {
+  for (int x = 0; x < rowsize; x+=16) {
+    auto src = _mm_load_ps(reinterpret_cast<const float*>(pSrc+x));
+    auto ref1 = _mm_load_ps(reinterpret_cast<const float*>(pRef1+x));
+    auto ref2 = _mm_load_ps(reinterpret_cast<const float*>(pRef2+x));
+
+    auto minref = _mm_min_ps(ref1, ref2);
+    auto maxref = _mm_max_ps(ref1, ref2);
+    auto dst = simd_clip_32(src, minref, maxref);
+
+    _mm_store_ps(reinterpret_cast<float*>(pDst+x), dst);
+  }
+}
+
+RG_FORCEINLINE void sclense_process_line_sse2(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize) {
+    for (int x = 0; x < rowsize; x+=16) {
         auto src = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc+x));
         auto ref1 = _mm_load_si128(reinterpret_cast<const __m128i*>(pRef1+x));
         auto ref2 = _mm_load_si128(reinterpret_cast<const __m128i*>(pRef2+x));
@@ -94,17 +122,71 @@ RG_FORCEINLINE void sclense_process_line_sse2(Byte* pDst, const Byte *pSrc, cons
     }
 }
 
+template<int bits_per_pixel>
+RG_FORCEINLINE void sclense_process_line_sse4_16(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize) {
+  const __m128i pixel_max = _mm_set1_epi16(bits_per_pixel < 16 ? (1 << bits_per_pixel) - 1 : 0); // anti warning 65535 (not used) vs short
+
+  for (int x = 0; x < rowsize; x+=16) {
+    auto src = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc+x));
+    auto ref1 = _mm_load_si128(reinterpret_cast<const __m128i*>(pRef1+x));
+    auto ref2 = _mm_load_si128(reinterpret_cast<const __m128i*>(pRef2+x));
+
+    auto minref = _mm_min_epu16(ref1, ref2);
+    auto maxref = _mm_max_epu16(ref1, ref2);
+
+    auto ma = _mm_subs_epu16(maxref, ref2);
+    auto mi = _mm_subs_epu16(ref2, minref);
+
+    ma = _mm_adds_epu16(ma, maxref);
+    mi = _mm_subs_epu16(minref, mi);
+
+    if (bits_per_pixel < 16)
+      ma = _mm_min_epu16(ma, pixel_max); // saturation is not enough
+
+    auto dst = simd_clip_16(src, mi, ma);
+
+    _mm_store_si128(reinterpret_cast<__m128i*>(pDst+x), dst);
+  }
+}
+
+RG_FORCEINLINE void sclense_process_line_sse2_32(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize) {
+  __m128 zero = _mm_setzero_ps();
+  __m128 one = _mm_set1_ps(1.0f);
+  for (int x = 0; x < rowsize; x+=16) {
+    auto src = _mm_load_ps(reinterpret_cast<const float*>(pSrc+x));
+    auto ref1 = _mm_load_ps(reinterpret_cast<const float*>(pRef1+x));
+    auto ref2 = _mm_load_ps(reinterpret_cast<const float*>(pRef2+x));
+
+    auto minref = _mm_min_ps(ref1, ref2);
+    auto maxref = _mm_max_ps(ref1, ref2);
+/*
+    float minref = std::min(ref1, ref2);
+    float maxref = std::max(ref1, ref2);
+
+    float mi = std::max(minref*2 - ref2, 0.0f);
+    float ma = std::min(maxref*2 - ref2, 1.0f);
+    return clip_32(src, mi, ma);
+*/
+    auto mi = _mm_max_ps(_mm_sub_ps(_mm_add_ps(minref, minref), ref2), zero);
+    auto ma = _mm_min_ps(_mm_sub_ps(_mm_add_ps(maxref, maxref), ref2), one);
+
+    auto dst = simd_clip_32(src, mi, ma);
+
+    _mm_store_ps(reinterpret_cast<float*>(pDst+x), dst);
+  }
+}
+
 template<decltype(clense_process_line_sse2) processor>
-void process_plane_sse2(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int width, int height, IScriptEnvironment *env) {
+void process_plane_sse2(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, IScriptEnvironment *env) {
     if (!is_16byte_aligned(pSrc) || !is_16byte_aligned(pRef1) || !is_16byte_aligned(pRef2)) {
         env->ThrowError("Invalid memory alignment. Used unaligned crop?"); //omg I feel so dumb
     }
-    auto mod16Width = (width / 16) * 16;
+    auto mod16Width = (rowsize / 16) * 16;
 
     for (int y = 0; y < height; ++y) {
         processor(pDst, pSrc, pRef1, pRef2, mod16Width);
 
-        if (mod16Width != width) {
+        if (mod16Width != rowsize) {
             processor(pDst + mod16Width, pSrc + mod16Width, pRef1 + mod16Width, pRef2 + mod16Width, 16);
         }
         pDst += dstPitch;
@@ -137,30 +219,31 @@ Clense::Clense(PClip child, PClip previous, PClip next, bool grey, ClenseMode mo
         : (sse2_ ? process_plane_sse2<sclense_process_line_sse2> : process_plane_c<uint8_t, sclense_process_pixel_c>);
     }
     else if (pixelsize == 2) {
+      // sse4 needed
       switch (bits_per_pixel) {
       case 10: processor_ = (mode_ == ClenseMode::BOTH)
-        ? (process_plane_c<uint16_t, clense_process_pixel_c_16>)
-        : (process_plane_c<uint16_t, sclense_process_pixel_c_16<10>>);
+        ? (sse4_ ? process_plane_sse2<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
+        : (sse4_ ? process_plane_sse2<sclense_process_line_sse4_16<10>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<10>>);
         break;
       case 12: processor_ = (mode_ == ClenseMode::BOTH)
-        ? (process_plane_c<uint16_t, clense_process_pixel_c_16>)
-        : (process_plane_c<uint16_t, sclense_process_pixel_c_16<12>>);
+        ? (sse4_ ? process_plane_sse2<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
+        : (sse4_ ? process_plane_sse2<sclense_process_line_sse4_16<12>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<12>>);
         break;
       case 14: processor_ = (mode_ == ClenseMode::BOTH)
-        ? (process_plane_c<uint16_t, clense_process_pixel_c_16>)
-        : (process_plane_c<uint16_t, sclense_process_pixel_c_16<14>>);
+        ? (sse4_ ? process_plane_sse2<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
+        : (sse4_ ? process_plane_sse2<sclense_process_line_sse4_16<14>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<14>>);
         break;
       case 16: processor_ = (mode_ == ClenseMode::BOTH)
-        ? (process_plane_c<uint16_t, clense_process_pixel_c_16>)
-        : (process_plane_c<uint16_t, sclense_process_pixel_c_16<16>>);
+        ? (sse4_ ? process_plane_sse2<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
+        : (sse4_ ? process_plane_sse2<sclense_process_line_sse4_16<16>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<16>>);
         break;
       default: env->ThrowError("Illegal bit-depth: %d!", bits_per_pixel);
       }
     }
     else { // pixelsize == 4
       processor_ = (mode_ == ClenseMode::BOTH)
-        ? (process_plane_c<float, clense_process_pixel_c_32>)
-        : (process_plane_c<float, sclense_process_pixel_c_32>);
+        ? (sse2_ ? process_plane_sse2<clense_process_line_sse2_32> : process_plane_c<float, clense_process_pixel_c_32>)
+        : (sse2_ ? process_plane_sse2<sclense_process_line_sse2_32> : process_plane_c<float, sclense_process_pixel_c_32>);
     }
 }
 

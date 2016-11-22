@@ -26,6 +26,7 @@ private:
     PClip next_;
     bool grey_;
     bool sse2_;
+    bool sse4_;
     ClenseMode mode_;
 
     int pixelsize;

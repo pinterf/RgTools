@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-typedef void (VCleanerProcessor)(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int width, int height, IScriptEnvironment *env);
+typedef void (VCleanerProcessor)(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env);
 
 class VerticalCleaner : public GenericVideoFilter {
 public:
@@ -17,6 +17,9 @@ private:
     int mode_;
     int modeU_;
     int modeV_;
+
+    int pixelsize;
+    int bits_per_pixel;
 };
 
 

@@ -14,18 +14,43 @@ RG_FORCEINLINE Byte clense_process_pixel_c(Byte src, Byte ref1, Byte ref2) {
     return std::min(std::max(src, std::min(ref1, ref2)), std::max(ref1, ref2));
 }
 
-RG_FORCEINLINE Byte sclense_process_pixel_c(Byte src, Byte ref1, Byte ref2) {
-    Byte minref = std::min(ref1, ref2);
-    Byte maxref = std::max(ref1, ref2);
-
-    return clip(src, (Byte)std::max(minref*2 - ref2, 0), (Byte)std::min(maxref*2-ref2, 255));
+RG_FORCEINLINE uint16_t clense_process_pixel_c_16(uint16_t src, uint16_t ref1, uint16_t ref2) {
+  return std::min(std::max(src, std::min(ref1, ref2)), std::max(ref1, ref2));
 }
 
-template<decltype(clense_process_pixel_c) processor>
-static void process_plane_c(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int width, int height, IScriptEnvironment *env) {
-    for (int y = 0; y < height; ++y) {
+RG_FORCEINLINE float clense_process_pixel_c_32(float src, float ref1, float ref2) {
+  return std::min(std::max(src, std::min(ref1, ref2)), std::max(ref1, ref2));
+}
+
+RG_FORCEINLINE Byte sclense_process_pixel_c(Byte src, Byte ref1, Byte ref2) {
+  Byte minref = std::min(ref1, ref2);
+  Byte maxref = std::max(ref1, ref2);
+
+  return clip(src, (Byte)std::max(minref*2 - ref2, 0), (Byte)std::min(maxref*2-ref2, 255));
+}
+
+template<int bits_per_pixel>
+RG_FORCEINLINE uint16_t sclense_process_pixel_c_16(uint16_t src, uint16_t ref1, uint16_t ref2) {
+  uint16_t minref = std::min(ref1, ref2);
+  uint16_t maxref = std::max(ref1, ref2);
+
+  const int pixel_max = (1 << bits_per_pixel) - 1;
+  return clip_16(src, (uint16_t)std::max(minref*2 - ref2, 0), (uint16_t)std::min(maxref*2-ref2, pixel_max));
+}
+
+RG_FORCEINLINE float sclense_process_pixel_c_32(float src, float ref1, float ref2) {
+  float minref = std::min(ref1, ref2);
+  float maxref = std::max(ref1, ref2);
+
+  return clip_32(src, std::max(minref*2 - ref2, 0.0f), std::min(maxref*2-ref2, 1.0f));
+}
+
+template<typename pixel_t, CModeProcessor<pixel_t>/*(clense_process_pixel_c)*/ processor>
+static void process_plane_c(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, IScriptEnvironment *env) {
+  const int width = rowsize / sizeof(pixel_t);
+  for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
-            pDst[x] = processor(pSrc[x], pRef1[x], pRef2[x]);
+            reinterpret_cast<pixel_t *>(pDst)[x] = processor(reinterpret_cast<const pixel_t *>(pSrc)[x], reinterpret_cast<const pixel_t *>(pRef1)[x], reinterpret_cast<const pixel_t *>(pRef2)[x]);
         }
         pDst += dstPitch;
         pSrc += srcPitch;
@@ -95,6 +120,9 @@ Clense::Clense(PClip child, PClip previous, PClip next, bool grey, ClenseMode mo
         env->ThrowError("Clense works only with planar colorspaces");
     }
 
+    pixelsize = vi.ComponentSize();
+    bits_per_pixel = vi.BitsPerComponent();
+
     if (previous_ != nullptr) {
         check_if_match(vi, previous_->GetVideoInfo(), env);
     }
@@ -103,9 +131,37 @@ Clense::Clense(PClip child, PClip previous, PClip next, bool grey, ClenseMode mo
     }
     sse2_ = vi.width > 16 && (env->GetCPUFlags() & CPUF_SSE2);
 
-    processor_ = mode_ == ClenseMode::BOTH
-        ? (sse2_ ? process_plane_sse2<clense_process_line_sse2> : process_plane_c<clense_process_pixel_c>) 
-        : (sse2_ ? process_plane_sse2<sclense_process_line_sse2> : process_plane_c<sclense_process_pixel_c>);
+    if (pixelsize == 1) {
+      processor_ = (mode_ == ClenseMode::BOTH)
+        ? (sse2_ ? process_plane_sse2<clense_process_line_sse2> : process_plane_c<uint8_t, clense_process_pixel_c>)
+        : (sse2_ ? process_plane_sse2<sclense_process_line_sse2> : process_plane_c<uint8_t, sclense_process_pixel_c>);
+    }
+    else if (pixelsize == 2) {
+      switch (bits_per_pixel) {
+      case 10: processor_ = (mode_ == ClenseMode::BOTH)
+        ? (process_plane_c<uint16_t, clense_process_pixel_c_16>)
+        : (process_plane_c<uint16_t, sclense_process_pixel_c_16<10>>);
+        break;
+      case 12: processor_ = (mode_ == ClenseMode::BOTH)
+        ? (process_plane_c<uint16_t, clense_process_pixel_c_16>)
+        : (process_plane_c<uint16_t, sclense_process_pixel_c_16<12>>);
+        break;
+      case 14: processor_ = (mode_ == ClenseMode::BOTH)
+        ? (process_plane_c<uint16_t, clense_process_pixel_c_16>)
+        : (process_plane_c<uint16_t, sclense_process_pixel_c_16<14>>);
+        break;
+      case 16: processor_ = (mode_ == ClenseMode::BOTH)
+        ? (process_plane_c<uint16_t, clense_process_pixel_c_16>)
+        : (process_plane_c<uint16_t, sclense_process_pixel_c_16<16>>);
+        break;
+      default: env->ThrowError("Illegal bit-depth: %d!", bits_per_pixel);
+      }
+    }
+    else { // pixelsize == 4
+      processor_ = (mode_ == ClenseMode::BOTH)
+        ? (process_plane_c<float, clense_process_pixel_c_32>)
+        : (process_plane_c<float, sclense_process_pixel_c_32>);
+    }
 }
 
 PVideoFrame Clense::GetFrame(int n, IScriptEnvironment* env) {

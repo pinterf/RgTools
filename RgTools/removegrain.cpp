@@ -511,7 +511,8 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
       }
     }
     else if (pixelsize == 2) {
-      if ((env->GetCPUFlags() & CPUF_SSE4) && vi.width >= 17 && (mode_ != 20 && modeU_ != 20 && modeV_ != 20)) {
+      // todo mode 6 and 8 bitdepth clamp specific
+      if ((env->GetCPUFlags() & CPUF_SSE4) && vi.width >= (16/sizeof(uint16_t) + 1)) {
         functions = sse4_functions_16;
       }
       else {
@@ -525,7 +526,7 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
       }
     }
     else {// if (pixelsize == 4) 
-      if ((env->GetCPUFlags() & CPUF_SSE2) && vi.width >= 17 && (mode_ != 20 && modeU_ != 20 && modeV_ != 20))
+      if ((env->GetCPUFlags() & CPUF_SSE2) && vi.width >= (16/sizeof(float) + 1))
         functions = sse2_functions_32;
       else
         functions = c_functions_32;

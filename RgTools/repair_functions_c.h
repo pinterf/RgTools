@@ -1971,5 +1971,8 @@ RG_FORCEINLINE float repair_mode24_cpp_32(const Byte* pSrc, float val, int srcPi
 }
 
 #undef LOAD_SQUARE_CPP
+#undef LOAD_SQUARE_CPP_16
+#undef LOAD_SQUARE_CPP_32
+#undef LOAD_SQUARE_CPP_T
 
 #endif

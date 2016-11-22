@@ -142,6 +142,24 @@ static RG_FORCEINLINE __m128 abs_diff_32(__m128 a, __m128 b) {
   return _mm_and_ps(_mm_sub_ps(a, b), absmask);
 }
 
+// PF until I find out better
+static RG_FORCEINLINE __m128 _mm_subs_ps(__m128 a, __m128 b) {
+const __m128 zero = _mm_setzero_ps();
+return _mm_max_ps(_mm_sub_ps(a, b), zero);
+}
+
+// PF until I find out better
+static RG_FORCEINLINE __m128 _mm_adds_ps(__m128 a, __m128 b) {
+  const __m128 one = _mm_set1_ps(1.0f);
+  return _mm_min_ps(_mm_add_ps(a, b), one);
+}
+
+// PF until I find out better
+static RG_FORCEINLINE __m128 _mm_avg_ps(__m128 a, __m128 b) {
+  const __m128 div2 = _mm_set1_ps(0.5f);
+  return _mm_mul_ps(_mm_add_ps(a, b), div2);
+}
+
 static RG_FORCEINLINE __m128i select_on_equal(const __m128i &cmp1, const __m128i &cmp2, const __m128i &current, const __m128i &desired) {
   auto eq = _mm_cmpeq_epi8(cmp1, cmp2);
   return blend(eq, desired, current);
@@ -170,9 +188,18 @@ static RG_FORCEINLINE __m128 select_on_equal_32(const __m128 &cmp1, const __m128
 
 #define LOAD_SQUARE_SSE(optLevel, ptr, pitch) LOAD_SQUARE_SSE_0(optLevel, ptr, pitch, 1)
 // PF avs+
-#define LOAD_SQUARE_SSE_16(optLevel, ptr, pitch) LOAD_SQUARE_SSE_0(optLevel, ptr, pitch, 2)
-// maybe __mm128 simd_load_ps...
-#define LOAD_SQUARE_SSE_32(optLevel, ptr, pitch) LOAD_SQUARE_SSE_0(optLevel, ptr, pitch, 4)
+#define LOAD_SQUARE_SSE_16(ptr, pitch) LOAD_SQUARE_SSE_0(SSE3, ptr, pitch, 2)
+
+#define LOAD_SQUARE_SSE_32(ptr, pitch) \
+__m128 a1 = _mm_loadu_ps((const float *)((ptr) - (pitch) - 4)); \
+__m128 a2 = _mm_loadu_ps((const float *)((ptr) - (pitch))); \
+__m128 a3 = _mm_loadu_ps((const float *)((ptr) - (pitch) + (4))); \
+__m128 a4 = _mm_loadu_ps((const float *)((ptr) - (4))); \
+__m128 c  = _mm_loadu_ps((const float *)((ptr) )); \
+__m128 a5 = _mm_loadu_ps((const float *)((ptr) + (4))); \
+__m128 a6 = _mm_loadu_ps((const float *)((ptr) + (pitch) - (4))); \
+__m128 a7 = _mm_loadu_ps((const float *)((ptr) + (pitch))); \
+__m128 a8 = _mm_loadu_ps((const float *)((ptr) + (pitch) + (4))); 
 
 // pointers and pitch are byte-based
 #define LOAD_SQUARE_CPP_T(pixel_t, ptr, pitch) \

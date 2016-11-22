@@ -222,6 +222,65 @@ PlaneProcessor* sse3_functions[] = {
     process_plane_sse<rg_mode24_sse<SSE3>>,
 };
 
+PlaneProcessor* sse4_functions_16[] = {
+  doNothing,
+  copyPlane,
+  process_plane_sse<rg_mode1_sse_16>,
+  process_plane_sse<rg_mode2_sse_16>,
+  process_plane_sse<rg_mode3_sse_16>,
+  process_plane_sse<rg_mode4_sse_16>,
+  process_plane_sse<rg_mode5_sse_16>,
+  process_plane_sse<rg_mode6_sse_16>,
+  process_plane_sse<rg_mode7_sse_16>,
+  process_plane_sse<rg_mode8_sse_16>,
+  process_plane_sse<rg_mode9_sse_16>,
+  process_plane_sse<rg_mode10_sse_16>,
+  process_plane_sse<rg_mode11_sse_16>,
+  process_plane_sse<rg_mode12_sse_16>,
+  process_even_rows_sse<rg_mode13_and14_sse_16>,
+  process_odd_rows_sse<rg_mode13_and14_sse_16>,
+  process_even_rows_sse<rg_mode15_and16_sse_16>,
+  process_odd_rows_sse<rg_mode15_and16_sse_16>,
+  process_plane_sse<rg_mode17_sse_16>,
+  process_plane_sse<rg_mode18_sse_16>,
+  process_plane_sse<rg_mode19_sse_16>,
+  doNothing, // todo
+  process_plane_sse<rg_mode21_sse_16>,
+  process_plane_sse<rg_mode22_sse_16>,
+  process_plane_sse<rg_mode23_sse_16>,
+  process_plane_sse<rg_mode24_sse_16>,
+};
+
+PlaneProcessor* sse2_functions_32[] = {
+  doNothing,
+  copyPlane,
+  process_plane_sse<rg_mode1_sse_32>,
+  process_plane_sse<rg_mode2_sse_32>,
+  process_plane_sse<rg_mode3_sse_32>,
+  process_plane_sse<rg_mode4_sse_32>,
+  process_plane_sse<rg_mode5_sse_32>,
+  process_plane_sse<rg_mode6_sse_32>,
+  process_plane_sse<rg_mode7_sse_32>,
+  process_plane_sse<rg_mode8_sse_32>,
+  process_plane_sse<rg_mode9_sse_32>,
+  process_plane_sse<rg_mode10_sse_32>,
+  process_plane_sse<rg_mode11_sse_32>,
+  process_plane_sse<rg_mode12_sse_32>,
+  process_even_rows_sse<rg_mode13_and14_sse_32>,
+  process_odd_rows_sse<rg_mode13_and14_sse_32>,
+  process_even_rows_sse<rg_mode15_and16_sse_32>,
+  process_odd_rows_sse<rg_mode15_and16_sse_32>,
+  process_plane_sse<rg_mode17_sse_32>,
+  process_plane_sse<rg_mode18_sse_32>,
+  process_plane_sse<rg_mode19_sse_32>,
+  doNothing, // todo
+  process_plane_sse<rg_mode21_sse_32>,
+  process_plane_sse<rg_mode22_sse_32>,
+  process_plane_sse<rg_mode23_sse_32>,
+  process_plane_sse<rg_mode24_sse_32>,
+};
+
+
 PlaneProcessor* c_functions[] = {
     doNothing,
     copyPlane,
@@ -434,16 +493,24 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
       }
     }
     else if (pixelsize == 2) {
-      switch (bits_per_pixel) {
-      case 10: functions = c_functions_10; break;
-      case 12: functions = c_functions_12; break;
-      case 14: functions = c_functions_14; break;
-      case 16: functions = c_functions_16; break;
-      default: env->ThrowError("Illegal bit-depth: %d!", bits_per_pixel);
+      if ((env->GetCPUFlags() & CPUF_SSE4) && vi.width >= 17 && (mode_ != 20 && modeU_ != 20 && modeV_ != 20)) {
+        functions = sse4_functions_16;
+      }
+      else {
+        switch (bits_per_pixel) {
+        case 10: functions = c_functions_10; break;
+        case 12: functions = c_functions_12; break;
+        case 14: functions = c_functions_14; break;
+        case 16: functions = c_functions_16; break;
+        default: env->ThrowError("Illegal bit-depth: %d!", bits_per_pixel);
+        }
       }
     }
     else {// if (pixelsize == 4) 
-      functions = c_functions_32;
+      if ((env->GetCPUFlags() & CPUF_SSE2) && vi.width >= 17 && (mode_ != 20 && modeU_ != 20 && modeV_ != 20))
+        functions = sse2_functions_32;
+      else
+        functions = c_functions_32;
     }
 }
 

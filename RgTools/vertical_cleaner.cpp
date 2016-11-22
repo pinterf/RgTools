@@ -329,6 +329,11 @@ VerticalCleaner::VerticalCleaner(PClip child, int mode, int modeU, int modeV, bo
         env->ThrowError("Sorry, this mode does not exist");
     }
 
+    bool isPlanarRGB = vi.IsPlanarRGB() || vi.IsPlanarRGBA();
+    if (isPlanarRGB && ((modeU_ > UNDEFINED_MODE) || (modeV_ > UNDEFINED_MODE))) {
+      env->ThrowError("VerticalCleaner: cannot specify U or V mode for planar RGB!");
+    }
+
     if (modeU_ <= UNDEFINED_MODE) {
         modeU_ = mode_;
     }
@@ -344,15 +349,29 @@ PVideoFrame VerticalCleaner::GetFrame(int n, IScriptEnvironment* env) {
     auto srcFrame = child->GetFrame(n, env);
     auto dstFrame = env->NewVideoFrame(vi);
 
-    dispatch_median(mode_, dstFrame->GetWritePtr(PLANAR_Y), srcFrame->GetReadPtr(PLANAR_Y), dstFrame->GetPitch(PLANAR_Y), srcFrame->GetPitch(PLANAR_Y),
-      srcFrame->GetRowSize(PLANAR_Y) / pixelsize, srcFrame->GetHeight(PLANAR_Y),pixelsize, bits_per_pixel, env);
+    if (vi.IsPlanarRGB() || vi.IsPlanarRGBA()) {
+      dispatch_median(mode_, dstFrame->GetWritePtr(PLANAR_G), srcFrame->GetReadPtr(PLANAR_G), dstFrame->GetPitch(PLANAR_G), srcFrame->GetPitch(PLANAR_G),
+        srcFrame->GetRowSize(PLANAR_G) / pixelsize, srcFrame->GetHeight(PLANAR_G), pixelsize, bits_per_pixel, env);
+      dispatch_median(mode_, dstFrame->GetWritePtr(PLANAR_B), srcFrame->GetReadPtr(PLANAR_B), dstFrame->GetPitch(PLANAR_B), srcFrame->GetPitch(PLANAR_B),
+        srcFrame->GetRowSize(PLANAR_B) / pixelsize, srcFrame->GetHeight(PLANAR_B), pixelsize, bits_per_pixel, env);
+      dispatch_median(mode_, dstFrame->GetWritePtr(PLANAR_R), srcFrame->GetReadPtr(PLANAR_R), dstFrame->GetPitch(PLANAR_R), srcFrame->GetPitch(PLANAR_R),
+        srcFrame->GetRowSize(PLANAR_R) / pixelsize, srcFrame->GetHeight(PLANAR_R), pixelsize, bits_per_pixel, env);
+    }
+    else {
+      dispatch_median(mode_, dstFrame->GetWritePtr(PLANAR_Y), srcFrame->GetReadPtr(PLANAR_Y), dstFrame->GetPitch(PLANAR_Y), srcFrame->GetPitch(PLANAR_Y),
+        srcFrame->GetRowSize(PLANAR_Y) / pixelsize, srcFrame->GetHeight(PLANAR_Y), pixelsize, bits_per_pixel, env);
 
-    if (!vi.IsY()) {
-      dispatch_median(modeU_, dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetReadPtr(PLANAR_U), dstFrame->GetPitch(PLANAR_U), srcFrame->GetPitch(PLANAR_U),
-        srcFrame->GetRowSize(PLANAR_U) / pixelsize, srcFrame->GetHeight(PLANAR_U), pixelsize, bits_per_pixel, env);
+      if (!vi.IsY()) {
+        dispatch_median(modeU_, dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetReadPtr(PLANAR_U), dstFrame->GetPitch(PLANAR_U), srcFrame->GetPitch(PLANAR_U),
+          srcFrame->GetRowSize(PLANAR_U) / pixelsize, srcFrame->GetHeight(PLANAR_U), pixelsize, bits_per_pixel, env);
 
-      dispatch_median(modeV_, dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetReadPtr(PLANAR_V), dstFrame->GetPitch(PLANAR_V), srcFrame->GetPitch(PLANAR_V),
-        srcFrame->GetRowSize(PLANAR_V) / pixelsize, srcFrame->GetHeight(PLANAR_V), pixelsize, bits_per_pixel, env);
+        dispatch_median(modeV_, dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetReadPtr(PLANAR_V), dstFrame->GetPitch(PLANAR_V), srcFrame->GetPitch(PLANAR_V),
+          srcFrame->GetRowSize(PLANAR_V) / pixelsize, srcFrame->GetHeight(PLANAR_V), pixelsize, bits_per_pixel, env);
+      }
+    }
+    if (vi.IsYUVA() || vi.IsPlanarRGBA())
+    { // copy alpha
+      env->BitBlt(dstFrame->GetWritePtr(PLANAR_A), dstFrame->GetPitch(PLANAR_A), srcFrame->GetReadPtr(PLANAR_A), srcFrame->GetPitch(PLANAR_A), srcFrame->GetRowSize(PLANAR_A_ALIGNED), srcFrame->GetHeight(PLANAR_A));
     }
     return dstFrame;
 }

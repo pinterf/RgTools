@@ -408,6 +408,11 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
         env->ThrowError("RemoveGrain mode should be between -1 and 24!");
     }
 
+    bool isPlanarRGB = vi.IsPlanarRGB() || vi.IsPlanarRGBA();
+    if (isPlanarRGB && ((modeU_ > UNDEFINED_MODE) || (modeV_ > UNDEFINED_MODE))) {
+      env->ThrowError("RemoveGrain: cannot specify U or V mode for planar RGB!");
+    }
+
     //now change undefined mode value and EVERYTHING WILL BREAK
     if (modeU_ <= UNDEFINED_MODE) { 
         modeU_ = mode_;
@@ -447,15 +452,28 @@ PVideoFrame RemoveGrain::GetFrame(int n, IScriptEnvironment* env) {
     auto srcFrame = child->GetFrame(n, env);
     auto dstFrame = env->NewVideoFrame(vi);
     
-    functions[mode_+1](env, srcFrame->GetReadPtr(PLANAR_Y), dstFrame->GetWritePtr(PLANAR_Y), srcFrame->GetRowSize(PLANAR_Y), 
+    if (vi.IsPlanarRGB() || vi.IsPlanarRGBA()) {
+      functions[mode_+1](env, srcFrame->GetReadPtr(PLANAR_G), dstFrame->GetWritePtr(PLANAR_G), srcFrame->GetRowSize(PLANAR_G), 
+        srcFrame->GetHeight(PLANAR_G), srcFrame->GetPitch(PLANAR_G), dstFrame->GetPitch(PLANAR_G));
+      functions[mode_+1](env, srcFrame->GetReadPtr(PLANAR_B), dstFrame->GetWritePtr(PLANAR_B), srcFrame->GetRowSize(PLANAR_B), 
+        srcFrame->GetHeight(PLANAR_B), srcFrame->GetPitch(PLANAR_B), dstFrame->GetPitch(PLANAR_B));
+      functions[mode_+1](env, srcFrame->GetReadPtr(PLANAR_R), dstFrame->GetWritePtr(PLANAR_R), srcFrame->GetRowSize(PLANAR_R), 
+        srcFrame->GetHeight(PLANAR_R), srcFrame->GetPitch(PLANAR_R), dstFrame->GetPitch(PLANAR_R));
+    } else {
+      functions[mode_+1](env, srcFrame->GetReadPtr(PLANAR_Y), dstFrame->GetWritePtr(PLANAR_Y), srcFrame->GetRowSize(PLANAR_Y), 
         srcFrame->GetHeight(PLANAR_Y), srcFrame->GetPitch(PLANAR_Y), dstFrame->GetPitch(PLANAR_Y));
 
-    if (vi.IsPlanar() && !vi.IsY()) {
-        functions[modeU_+1](env,srcFrame->GetReadPtr(PLANAR_U), dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetRowSize(PLANAR_U), 
-            srcFrame->GetHeight(PLANAR_U), srcFrame->GetPitch(PLANAR_U), dstFrame->GetPitch(PLANAR_U));
+      if (vi.IsPlanar() && !vi.IsY()) {
+        functions[modeU_ + 1](env, srcFrame->GetReadPtr(PLANAR_U), dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetRowSize(PLANAR_U),
+          srcFrame->GetHeight(PLANAR_U), srcFrame->GetPitch(PLANAR_U), dstFrame->GetPitch(PLANAR_U));
 
-        functions[modeV_+1](env, srcFrame->GetReadPtr(PLANAR_V), dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetRowSize(PLANAR_V), 
-            srcFrame->GetHeight(PLANAR_V), srcFrame->GetPitch(PLANAR_V), dstFrame->GetPitch(PLANAR_V));
+        functions[modeV_ + 1](env, srcFrame->GetReadPtr(PLANAR_V), dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetRowSize(PLANAR_V),
+          srcFrame->GetHeight(PLANAR_V), srcFrame->GetPitch(PLANAR_V), dstFrame->GetPitch(PLANAR_V));
+      }
+    }
+    if (vi.IsYUVA() || vi.IsPlanarRGBA())
+    { // copy alpha
+      env->BitBlt(dstFrame->GetWritePtr(PLANAR_A), dstFrame->GetPitch(PLANAR_A), srcFrame->GetReadPtr(PLANAR_A), srcFrame->GetPitch(PLANAR_A), srcFrame->GetRowSize(PLANAR_A_ALIGNED), srcFrame->GetHeight(PLANAR_A));
     }
     return dstFrame;
 }

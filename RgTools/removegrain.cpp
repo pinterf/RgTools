@@ -3,78 +3,96 @@
 #include "removegrain.h"
 
 
-template<SseModeProcessor processor>
-static void process_plane_sse(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch) {
-    env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
+template<typename pixel_t, SseModeProcessor processor>
+static void process_plane_sse(IScriptEnvironment* env, const BYTE* pSrc8, BYTE* pDst8, int rowsize, int height, int srcPitch, int dstPitch) {
+    env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 1);
+
+    pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
+    const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
+
+    dstPitch /= sizeof(pixel_t);
+    const int srcPitchOrig = srcPitch;
+    srcPitch /= sizeof(pixel_t);
+
+    const int width = rowsize / sizeof(pixel_t);
 
     pSrc += srcPitch;
     pDst += dstPitch;
-    int mod16_width = rowsize / 16 * 16;
+    int mod_width = width / (16/sizeof(pixel_t)) * (16/sizeof(pixel_t));
 
     for (int y = 1; y < height-1; ++y) {
-        pDst[0] = pSrc[0];
+      pDst[0] = pSrc[0];
 
-        for (int x = 1; x < mod16_width-1; x+=16) {
-            __m128i result = processor(pSrc+x, srcPitch);
+        for (int x = 1; x < mod_width-1; x+=16/sizeof(pixel_t)) {
+            __m128i result = processor((uint8_t *)(pSrc+x), srcPitchOrig);
             _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst+x), result);
         }
 
-        if (mod16_width != rowsize) {
-            __m128i result = processor(pSrc+rowsize-17, srcPitch);
-            _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst+rowsize-17), result);
+        if (mod_width != width) {
+            __m128i result = processor((uint8_t *)(pSrc+width-1-16/sizeof(pixel_t)), srcPitchOrig);
+            _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst+width-1-16/sizeof(pixel_t)), result);
         }
 
-        pDst[rowsize-1] = pSrc[rowsize-1];
+        pDst[width-1] = pSrc[width-1];
 
         pSrc += srcPitch;
         pDst += dstPitch;
     }
 
-    env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
+    env->BitBlt((uint8_t *)(pDst), dstPitch*sizeof(pixel_t), (uint8_t *)(pSrc), srcPitch*sizeof(pixel_t), rowsize, 1);
 }
 
 
-template<SseModeProcessor processor>
-static void process_halfplane_sse(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch) {
-    pSrc += srcPitch;
+template<typename pixel_t, SseModeProcessor processor>
+static void process_halfplane_sse(IScriptEnvironment* env, const BYTE* pSrc8, BYTE* pDst8, int rowsize, int height, int srcPitch, int dstPitch) {
+  pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
+  const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
+
+  dstPitch /= sizeof(pixel_t);
+  const int srcPitchOrig = srcPitch;
+  srcPitch /= sizeof(pixel_t);
+
+  const int width = rowsize / sizeof(pixel_t);
+
+  pSrc += srcPitch;
     pDst += dstPitch;
-    int mod16_width = rowsize / 16 * 16;
+    int mod_width = width / (16/sizeof(pixel_t)) * (16/sizeof(pixel_t));
 
     for (int y = 1; y < height/2; ++y) {
-        pDst[0] = (pSrc[srcPitch] + pSrc[-srcPitch] + 1) / 2;
-        for (int x = 1; x < mod16_width-1; x+=16) {
-            __m128i result = processor(pSrc+x, srcPitch);
+        pDst[0] = (pSrc[srcPitch] + pSrc[-srcPitch] + (sizeof(pixel_t) == 4 ? 0 : 1)) / 2;
+        for (int x = 1; x < mod_width-1; x+=16/sizeof(pixel_t)) {
+            __m128i result = processor((uint8_t *)(pSrc+x), srcPitchOrig);
             _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst+x), result);
         }
 
-        if (mod16_width != rowsize) {
-            __m128i result = processor(pSrc+rowsize-17, srcPitch);
-            _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst+rowsize-17), result);
+        if (mod_width != rowsize) {
+          __m128i result = processor((uint8_t *)(pSrc+width-1-16/sizeof(pixel_t)), srcPitchOrig);
+          _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst+width-1-16/sizeof(pixel_t)), result);
         }
 
-        pDst[rowsize-1] = (pSrc[rowsize-1 + srcPitch] + pSrc[rowsize-1 - srcPitch] + 1) / 2;
+        pDst[width-1] = (pSrc[width-1 + srcPitch] + pSrc[width-1 - srcPitch] + (sizeof(pixel_t) == 4 ? 0 : 1)) / 2;
         pSrc += srcPitch;
         pDst += dstPitch;
 
-        env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1); //other field
+        env->BitBlt((uint8_t *)(pDst), dstPitch*sizeof(pixel_t), (uint8_t *)(pSrc), srcPitch*sizeof(pixel_t), rowsize, 1); //other field
 
         pSrc += srcPitch;
         pDst += dstPitch;
     }
 }
 
-template<SseModeProcessor processor>
+template<typename pixel_t, SseModeProcessor processor>
 static void process_even_rows_sse(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch) {
     env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 2); //copy first two lines
 
-    process_halfplane_sse<processor>(env, pSrc+srcPitch, pDst+dstPitch, rowsize, height, srcPitch, dstPitch);
+    process_halfplane_sse<pixel_t, processor>(env, pSrc+srcPitch, pDst+dstPitch, rowsize, height, srcPitch, dstPitch);
 }
 
-template<SseModeProcessor processor>
+template<typename pixel_t, SseModeProcessor processor>
 static void process_odd_rows_sse(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch) {
     env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1); //top border
 
-    process_halfplane_sse<processor>(env, pSrc, pDst, rowsize, height, srcPitch, dstPitch);
+    process_halfplane_sse<pixel_t, processor>(env, pSrc, pDst, rowsize, height, srcPitch, dstPitch);
 
     env->BitBlt(pDst+dstPitch*(height-1), dstPitch, pSrc+srcPitch*(height-1), srcPitch, rowsize, 1); //bottom border
 }
@@ -167,117 +185,117 @@ static void copyPlane(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int
 PlaneProcessor* sse2_functions[] = {
     doNothing,
     copyPlane,
-    process_plane_sse<rg_mode1_sse<SSE2>>,
-    process_plane_sse<rg_mode2_sse<SSE2>>,
-    process_plane_sse<rg_mode3_sse<SSE2>>,
-    process_plane_sse<rg_mode4_sse<SSE2>>,
-    process_plane_sse<rg_mode5_sse<SSE2>>,
-    process_plane_sse<rg_mode6_sse<SSE2>>,
-    process_plane_sse<rg_mode7_sse<SSE2>>,
-    process_plane_sse<rg_mode8_sse<SSE2>>,
-    process_plane_sse<rg_mode9_sse<SSE2>>,
-    process_plane_sse<rg_mode10_sse<SSE2>>,
-    process_plane_sse<rg_mode11_sse<SSE2>>,
-    process_plane_sse<rg_mode12_sse<SSE2>>,
-    process_even_rows_sse<rg_mode13_and14_sse<SSE2>>,
-    process_odd_rows_sse<rg_mode13_and14_sse<SSE2>>,
-    process_even_rows_sse<rg_mode15_and16_sse<SSE2>>,
-    process_odd_rows_sse<rg_mode15_and16_sse<SSE2>>,
-    process_plane_sse<rg_mode17_sse<SSE2>>,
-    process_plane_sse<rg_mode18_sse<SSE2>>,
-    process_plane_sse<rg_mode19_sse<SSE2>>,
-    process_plane_sse<rg_mode20_sse<SSE2>>,
-    process_plane_sse<rg_mode21_sse<SSE2>>,
-    process_plane_sse<rg_mode22_sse<SSE2>>,
-    process_plane_sse<rg_mode23_sse<SSE2>>,
-    process_plane_sse<rg_mode24_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode1_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode2_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode3_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode4_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode5_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode6_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode7_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode8_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode9_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode10_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode11_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode12_sse<SSE2>>,
+    process_even_rows_sse<uint8_t, rg_mode13_and14_sse<SSE2>>,
+    process_odd_rows_sse<uint8_t, rg_mode13_and14_sse<SSE2>>,
+    process_even_rows_sse<uint8_t, rg_mode15_and16_sse<SSE2>>,
+    process_odd_rows_sse<uint8_t, rg_mode15_and16_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode17_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode18_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode19_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode20_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode21_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode22_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode23_sse<SSE2>>,
+    process_plane_sse<uint8_t, rg_mode24_sse<SSE2>>,
 };
 
 PlaneProcessor* sse3_functions[] = {
     doNothing,
     copyPlane,
-    process_plane_sse<rg_mode1_sse<SSE3>>,
-    process_plane_sse<rg_mode2_sse<SSE3>>,
-    process_plane_sse<rg_mode3_sse<SSE3>>,
-    process_plane_sse<rg_mode4_sse<SSE3>>,
-    process_plane_sse<rg_mode5_sse<SSE3>>,
-    process_plane_sse<rg_mode6_sse<SSE3>>,
-    process_plane_sse<rg_mode7_sse<SSE3>>,
-    process_plane_sse<rg_mode8_sse<SSE3>>,
-    process_plane_sse<rg_mode9_sse<SSE3>>,
-    process_plane_sse<rg_mode10_sse<SSE3>>,
-    process_plane_sse<rg_mode11_sse<SSE3>>,
-    process_plane_sse<rg_mode12_sse<SSE3>>,
-    process_even_rows_sse<rg_mode13_and14_sse<SSE3>>,
-    process_odd_rows_sse<rg_mode13_and14_sse<SSE3>>,
-    process_even_rows_sse<rg_mode15_and16_sse<SSE3>>,
-    process_odd_rows_sse<rg_mode15_and16_sse<SSE3>>,
-    process_plane_sse<rg_mode17_sse<SSE3>>,
-    process_plane_sse<rg_mode18_sse<SSE3>>,
-    process_plane_sse<rg_mode19_sse<SSE3>>,
-    process_plane_sse<rg_mode20_sse<SSE3>>,
-    process_plane_sse<rg_mode21_sse<SSE3>>,
-    process_plane_sse<rg_mode22_sse<SSE3>>,
-    process_plane_sse<rg_mode23_sse<SSE3>>,
-    process_plane_sse<rg_mode24_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode1_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode2_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode3_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode4_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode5_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode6_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode7_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode8_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode9_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode10_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode11_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode12_sse<SSE3>>,
+    process_even_rows_sse<uint8_t, rg_mode13_and14_sse<SSE3>>,
+    process_odd_rows_sse<uint8_t, rg_mode13_and14_sse<SSE3>>,
+    process_even_rows_sse<uint8_t, rg_mode15_and16_sse<SSE3>>,
+    process_odd_rows_sse<uint8_t, rg_mode15_and16_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode17_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode18_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode19_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode20_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode21_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode22_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode23_sse<SSE3>>,
+    process_plane_sse<uint8_t, rg_mode24_sse<SSE3>>,
 };
 
 PlaneProcessor* sse4_functions_16[] = {
   doNothing,
   copyPlane,
-  process_plane_sse<rg_mode1_sse_16>,
-  process_plane_sse<rg_mode2_sse_16>,
-  process_plane_sse<rg_mode3_sse_16>,
-  process_plane_sse<rg_mode4_sse_16>,
-  process_plane_sse<rg_mode5_sse_16>,
-  process_plane_sse<rg_mode6_sse_16>,
-  process_plane_sse<rg_mode7_sse_16>,
-  process_plane_sse<rg_mode8_sse_16>,
-  process_plane_sse<rg_mode9_sse_16>,
-  process_plane_sse<rg_mode10_sse_16>,
-  process_plane_sse<rg_mode11_sse_16>,
-  process_plane_sse<rg_mode12_sse_16>,
-  process_even_rows_sse<rg_mode13_and14_sse_16>,
-  process_odd_rows_sse<rg_mode13_and14_sse_16>,
-  process_even_rows_sse<rg_mode15_and16_sse_16>,
-  process_odd_rows_sse<rg_mode15_and16_sse_16>,
-  process_plane_sse<rg_mode17_sse_16>,
-  process_plane_sse<rg_mode18_sse_16>,
-  process_plane_sse<rg_mode19_sse_16>,
-  doNothing, // todo
-  process_plane_sse<rg_mode21_sse_16>,
-  process_plane_sse<rg_mode22_sse_16>,
-  process_plane_sse<rg_mode23_sse_16>,
-  process_plane_sse<rg_mode24_sse_16>,
+  process_plane_sse<uint16_t, rg_mode1_sse_16>,
+  process_plane_sse<uint16_t, rg_mode2_sse_16>,
+  process_plane_sse<uint16_t, rg_mode3_sse_16>,
+  process_plane_sse<uint16_t, rg_mode4_sse_16>,
+  process_plane_sse<uint16_t, rg_mode5_sse_16>,
+  process_plane_sse<uint16_t, rg_mode6_sse_16>,
+  process_plane_sse<uint16_t, rg_mode7_sse_16>,
+  process_plane_sse<uint16_t, rg_mode8_sse_16>,
+  process_plane_sse<uint16_t, rg_mode9_sse_16>,
+  process_plane_sse<uint16_t, rg_mode10_sse_16>,
+  process_plane_sse<uint16_t, rg_mode11_sse_16>,
+  process_plane_sse<uint16_t, rg_mode12_sse_16>,
+  process_even_rows_sse<uint16_t, rg_mode13_and14_sse_16>,
+  process_odd_rows_sse<uint16_t, rg_mode13_and14_sse_16>,
+  process_even_rows_sse<uint16_t, rg_mode15_and16_sse_16>,
+  process_odd_rows_sse<uint16_t, rg_mode15_and16_sse_16>,
+  process_plane_sse<uint16_t, rg_mode17_sse_16>,
+  process_plane_sse<uint16_t, rg_mode18_sse_16>,
+  process_plane_sse<uint16_t, rg_mode19_sse_16>,
+  process_plane_c<uint16_t, rg_mode20_cpp_16>,
+  process_plane_sse<uint16_t, rg_mode21_sse_16>,
+  process_plane_sse<uint16_t, rg_mode22_sse_16>,
+  process_plane_sse<uint16_t, rg_mode23_sse_16>,
+  process_plane_sse<uint16_t, rg_mode24_sse_16>,
 };
 
 PlaneProcessor* sse2_functions_32[] = {
   doNothing,
   copyPlane,
-  process_plane_sse<rg_mode1_sse_32>,
-  process_plane_sse<rg_mode2_sse_32>,
-  process_plane_sse<rg_mode3_sse_32>,
-  process_plane_sse<rg_mode4_sse_32>,
-  process_plane_sse<rg_mode5_sse_32>,
-  process_plane_sse<rg_mode6_sse_32>,
-  process_plane_sse<rg_mode7_sse_32>,
-  process_plane_sse<rg_mode8_sse_32>,
-  process_plane_sse<rg_mode9_sse_32>,
-  process_plane_sse<rg_mode10_sse_32>,
-  process_plane_sse<rg_mode11_sse_32>,
-  process_plane_sse<rg_mode12_sse_32>,
-  process_even_rows_sse<rg_mode13_and14_sse_32>,
-  process_odd_rows_sse<rg_mode13_and14_sse_32>,
-  process_even_rows_sse<rg_mode15_and16_sse_32>,
-  process_odd_rows_sse<rg_mode15_and16_sse_32>,
-  process_plane_sse<rg_mode17_sse_32>,
-  process_plane_sse<rg_mode18_sse_32>,
-  process_plane_sse<rg_mode19_sse_32>,
-  doNothing, // todo
-  process_plane_sse<rg_mode21_sse_32>,
-  process_plane_sse<rg_mode22_sse_32>,
-  process_plane_sse<rg_mode23_sse_32>,
-  process_plane_sse<rg_mode24_sse_32>,
+  process_plane_sse<float, rg_mode1_sse_32>,
+  process_plane_sse<float, rg_mode2_sse_32>,
+  process_plane_sse<float, rg_mode3_sse_32>,
+  process_plane_sse<float, rg_mode4_sse_32>,
+  process_plane_sse<float, rg_mode5_sse_32>,
+  process_plane_sse<float, rg_mode6_sse_32>,
+  process_plane_sse<float, rg_mode7_sse_32>,
+  process_plane_sse<float, rg_mode8_sse_32>,
+  process_plane_sse<float, rg_mode9_sse_32>,
+  process_plane_sse<float, rg_mode10_sse_32>,
+  process_plane_sse<float, rg_mode11_sse_32>,
+  process_plane_sse<float, rg_mode12_sse_32>,
+  process_even_rows_sse<float, rg_mode13_and14_sse_32>,
+  process_odd_rows_sse<float, rg_mode13_and14_sse_32>,
+  process_even_rows_sse<float, rg_mode15_and16_sse_32>,
+  process_odd_rows_sse<float, rg_mode15_and16_sse_32>,
+  process_plane_sse<float, rg_mode17_sse_32>,
+  process_plane_sse<float, rg_mode18_sse_32>,
+  process_plane_sse<float, rg_mode19_sse_32>,
+  process_plane_c<float, rg_mode20_cpp_32>,
+  process_plane_sse<float, rg_mode21_sse_32>,
+  process_plane_sse<float, rg_mode22_sse_32>,
+  process_plane_sse<float, rg_mode23_sse_32>,
+  process_plane_sse<float, rg_mode24_sse_32>,
 };
 
 

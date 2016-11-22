@@ -212,6 +212,7 @@ Clense::Clense(PClip child, PClip previous, PClip next, bool grey, ClenseMode mo
         check_if_match(vi, next_->GetVideoInfo(), env);
     }
     sse2_ = vi.width > 16 && (env->GetCPUFlags() & CPUF_SSE2);
+    sse4_ = vi.width > 16 && (env->GetCPUFlags() & CPUF_SSE4);
 
     if (pixelsize == 1) {
       processor_ = (mode_ == ClenseMode::BOTH)

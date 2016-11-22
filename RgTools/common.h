@@ -158,15 +158,15 @@ static RG_FORCEINLINE __m128 select_on_equal_32(const __m128 &cmp1, const __m128
 }
 
 #define LOAD_SQUARE_SSE_0(optLevel, ptr, pitch, pixelsize) \
-    __m128i a1 = simd_loadu_si128<optLevel>((ptr) - (pitch) - pixelsize); \
+    __m128i a1 = simd_loadu_si128<optLevel>((ptr) - (pitch) - (pixelsize)); \
     __m128i a2 = simd_loadu_si128<optLevel>((ptr) - (pitch)); \
-    __m128i a3 = simd_loadu_si128<optLevel>((ptr) - (pitch) + pixelsize); \
-    __m128i a4 = simd_loadu_si128<optLevel>((ptr) - pixelsize); \
+    __m128i a3 = simd_loadu_si128<optLevel>((ptr) - (pitch) + (pixelsize)); \
+    __m128i a4 = simd_loadu_si128<optLevel>((ptr) - (pixelsize)); \
     __m128i c  = simd_loadu_si128<optLevel>((ptr) ); \
-    __m128i a5 = simd_loadu_si128<optLevel>((ptr) + pixelsize); \
-    __m128i a6 = simd_loadu_si128<optLevel>((ptr) + (pitch) - pixelsize); \
+    __m128i a5 = simd_loadu_si128<optLevel>((ptr) + (pixelsize)); \
+    __m128i a6 = simd_loadu_si128<optLevel>((ptr) + (pitch) - (pixelsize)); \
     __m128i a7 = simd_loadu_si128<optLevel>((ptr) + (pitch)); \
-    __m128i a8 = simd_loadu_si128<optLevel>((ptr) + (pitch) + pixelsize); 
+    __m128i a8 = simd_loadu_si128<optLevel>((ptr) + (pitch) + (pixelsize)); 
 
 #define LOAD_SQUARE_SSE(optLevel, ptr, pitch) LOAD_SQUARE_SSE_0(optLevel, ptr, pitch, 1)
 // PF avs+
@@ -174,6 +174,23 @@ static RG_FORCEINLINE __m128 select_on_equal_32(const __m128 &cmp1, const __m128
 // maybe __mm128 simd_load_ps...
 #define LOAD_SQUARE_SSE_32(optLevel, ptr, pitch) LOAD_SQUARE_SSE_0(optLevel, ptr, pitch, 4)
 
+// pointers and pitch are byte-based
+#define LOAD_SQUARE_CPP_T(pixel_t, ptr, pitch) \
+    pixel_t a1 = *(pixel_t *)((ptr) - (pitch) - sizeof(pixel_t)); \
+    pixel_t a2 = *(pixel_t *)((ptr) - (pitch)); \
+    pixel_t a3 = *(pixel_t *)((ptr) - (pitch) + sizeof(pixel_t)); \
+    pixel_t a4 = *(pixel_t *)((ptr) - sizeof(pixel_t)); \
+    pixel_t c  = *(pixel_t *)((ptr) ); \
+    pixel_t a5 = *(pixel_t *)((ptr) + sizeof(pixel_t)); \
+    pixel_t a6 = *(pixel_t *)((ptr) + (pitch) - sizeof(pixel_t)); \
+    pixel_t a7 = *(pixel_t *)((ptr) + (pitch)); \
+    pixel_t a8 = *(pixel_t *)((ptr) + (pitch) + sizeof(pixel_t));
+
+#define LOAD_SQUARE_CPP(ptr, pitch) LOAD_SQUARE_CPP_T(Byte, ptr, pitch);
+#define LOAD_SQUARE_CPP_16(ptr, pitch) LOAD_SQUARE_CPP_T(uint16_t, ptr, pitch);
+#define LOAD_SQUARE_CPP_32(ptr, pitch) LOAD_SQUARE_CPP_T(float, ptr, pitch);
+
+/*
 #define LOAD_SQUARE_CPP(ptr, pitch) \
     Byte a1 = *((ptr) - (pitch) - 1); \
     Byte a2 = *((ptr) - (pitch)); \
@@ -184,40 +201,5 @@ static RG_FORCEINLINE __m128 select_on_equal_32(const __m128 &cmp1, const __m128
     Byte a6 = *((ptr) + (pitch) - 1); \
     Byte a7 = *((ptr) + (pitch)); \
     Byte a8 = *((ptr) + (pitch) + 1);
-
-#define LOAD_SQUARE_CPP(ptr, pitch) \
-    Byte a1 = *((ptr) - (pitch) - 1); \
-    Byte a2 = *((ptr) - (pitch)); \
-    Byte a3 = *((ptr) - (pitch) + 1); \
-    Byte a4 = *((ptr) - 1); \
-    Byte c  = *((ptr) ); \
-    Byte a5 = *((ptr) + 1); \
-    Byte a6 = *((ptr) + (pitch) - 1); \
-    Byte a7 = *((ptr) + (pitch)); \
-    Byte a8 = *((ptr) + (pitch) + 1);
-
-// PF avs+
-#define LOAD_SQUARE_CPP_16(ptr, pitch) \
-    uint16_t a1 = *(uint16_t *)((ptr) - (pitch) - 2); \
-    uint16_t a2 = *(uint16_t *)((ptr) - (pitch)); \
-    uint16_t a3 = *(uint16_t *)((ptr) - (pitch) + 2); \
-    uint16_t a4 = *(uint16_t *)((ptr) - 2); \
-    uint16_t c  = *(uint16_t *)((ptr) ); \
-    uint16_t a5 = *(uint16_t *)((ptr) + 2); \
-    uint16_t a6 = *(uint16_t *)((ptr) + (pitch) - 2); \
-    uint16_t a7 = *(uint16_t *)((ptr) + (pitch)); \
-    uint16_t a8 = *(uint16_t *)((ptr) + (pitch) + 2);
-
-// PF avs+
-#define LOAD_SQUARE_CPP_32(ptr, pitch) \
-    float a1 = *(float *)((ptr) - (pitch) - 4); \
-    float a2 = *(float *)((ptr) - (pitch)); \
-    float a3 = *(float *)((ptr) - (pitch) + 4); \
-    float a4 = *(float *)((ptr) - 4); \
-    float c  = *(float *)((ptr) ); \
-    float a5 = *(float *)((ptr) + 4); \
-    float a6 = *(float *)((ptr) + (pitch) - 4); \
-    float a7 = *(float *)((ptr) + (pitch)); \
-    float a8 = *(float *)((ptr) + (pitch) + 4);
-
+*/
 #endif

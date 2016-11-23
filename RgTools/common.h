@@ -94,6 +94,18 @@ static RG_FORCEINLINE __m128i simd_loadu_si128(const Byte* ptr) {
     return _mm_lddqu_si128(reinterpret_cast<const __m128i*>(ptr));
 }
 
+template<InstructionSet optLevel>
+static RG_FORCEINLINE __m128i simd_loada_si128(const Byte* ptr) {
+  if (optLevel == SSE2) {
+#ifdef USE_MOVPS
+    return _mm_castps_si128(_mm_load_ps(reinterpret_cast<const float*>(ptr)));
+#else
+    return _mm_load_si128(reinterpret_cast<const __m128i*>(ptr));
+#endif
+  }
+  return _mm_load_si128(reinterpret_cast<const __m128i*>(ptr));
+}
+
 //mask ? a : b
 static RG_FORCEINLINE __m128i blend(__m128i const &mask, __m128i const &desired, __m128i const &otherwise) {
   //return  _mm_blendv_epi8 (otherwise, desired, mask);
@@ -175,16 +187,58 @@ static RG_FORCEINLINE __m128 select_on_equal_32(const __m128 &cmp1, const __m128
   return blend_32(eq, desired, current);
 }
 
+/* Failed trial omitting the middle load for speed up
+// 'or'-able extract byte/word/ps#1: shift left 14/12/8 bytes then right 15/14/12 bytes
+__m128i a3 = simd_loadu_si128<optLevel>((ptr) - (pitch) + (pixelsize)); \
+__m128i a1 = simd_loadu_si128<optLevel>((ptr) - (pitch) - (pixelsize)); \
+__m128i a2 = _mm_or_si128(_mm_slli_si128(a1,pixelsize), \
+_mm_srli_si128(_mm_slli_si128(a3,16-2*pixelsize),16-pixelsize));  \
+__m128i a5 = simd_loadu_si128<optLevel>((ptr) + (pixelsize)); \
+__m128i a4 = simd_loadu_si128<optLevel>((ptr) - (pixelsize)); \
+__m128i c = _mm_or_si128(_mm_slli_si128(a4,pixelsize), \
+_mm_srli_si128(_mm_slli_si128(a5,16-2*pixelsize),16-pixelsize));  \
+__m128i a8 = simd_loadu_si128<optLevel>((ptr) + (pitch) + (pixelsize)); \
+__m128i a6 = simd_loadu_si128<optLevel>((ptr) + (pitch) - (pixelsize)); \
+__m128i a7 = _mm_or_si128(_mm_slli_si128(a6,pixelsize), \
+_mm_srli_si128(_mm_slli_si128(a8,16-2*pixelsize),16-pixelsize));
+*/
+/* middle pixels aligned load helps +10% speed, 
+   same VS2015 speed as ICC14 out-of-the box with full unalignde spec
+   but checking is_16byte_aligned here has too much overhead, no gain
 #define LOAD_SQUARE_SSE_0(optLevel, ptr, pitch, pixelsize) \
-    __m128i a1 = simd_loadu_si128<optLevel>((ptr) - (pitch) - (pixelsize)); \
-    __m128i a2 = simd_loadu_si128<optLevel>((ptr) - (pitch)); \
-    __m128i a3 = simd_loadu_si128<optLevel>((ptr) - (pitch) + (pixelsize)); \
-    __m128i a4 = simd_loadu_si128<optLevel>((ptr) - (pixelsize)); \
-    __m128i c  = simd_loadu_si128<optLevel>((ptr) ); \
-    __m128i a5 = simd_loadu_si128<optLevel>((ptr) + (pixelsize)); \
-    __m128i a6 = simd_loadu_si128<optLevel>((ptr) + (pitch) - (pixelsize)); \
-    __m128i a7 = simd_loadu_si128<optLevel>((ptr) + (pitch)); \
-    __m128i a8 = simd_loadu_si128<optLevel>((ptr) + (pitch) + (pixelsize)); 
+__m128i a1, a2, a3, a4, a5, a6, a7, a8, c; \
+if(is_16byte_aligned(ptr)) { \
+a1 = simd_loadu_si128<optLevel>((ptr) - (pitch) - (pixelsize)); \
+a2 = simd_loada_si128<optLevel>((ptr) - (pitch)); \
+a3 = simd_loadu_si128<optLevel>((ptr) - (pitch) + (pixelsize)); \
+a4 = simd_loadu_si128<optLevel>((ptr) - (pixelsize)); \
+c  = simd_loada_si128<optLevel>((ptr) ); \
+a5 = simd_loadu_si128<optLevel>((ptr) + (pixelsize)); \
+a6 = simd_loadu_si128<optLevel>((ptr) + (pitch) - (pixelsize)); \
+a7 = simd_loada_si128<optLevel>((ptr) + (pitch)); \
+a8 = simd_loadu_si128<optLevel>((ptr) + (pitch) + (pixelsize)); \
+} else {\
+a1 = simd_loadu_si128<optLevel>((ptr) - (pitch) - (pixelsize)); \
+a2 = simd_loadu_si128<optLevel>((ptr) - (pitch)); \
+a3 = simd_loadu_si128<optLevel>((ptr) - (pitch) + (pixelsize)); \
+a4 = simd_loadu_si128<optLevel>((ptr) - (pixelsize)); \
+c  = simd_loadu_si128<optLevel>((ptr) ); \
+a5 = simd_loadu_si128<optLevel>((ptr) + (pixelsize)); \
+a6 = simd_loadu_si128<optLevel>((ptr) + (pitch) - (pixelsize)); \
+a7 = simd_loadu_si128<optLevel>((ptr) + (pitch)); \
+a8 = simd_loadu_si128<optLevel>((ptr) + (pitch) + (pixelsize)); \
+}
+*/
+#define LOAD_SQUARE_SSE_0(optLevel, ptr, pitch, pixelsize) \
+__m128i a1 = simd_loadu_si128<optLevel>((ptr) - (pitch) - (pixelsize)); \
+__m128i a2 = simd_loadu_si128<optLevel>((ptr) - (pitch)); \
+__m128i a3 = simd_loadu_si128<optLevel>((ptr) - (pitch) + (pixelsize)); \
+__m128i a4 = simd_loadu_si128<optLevel>((ptr) - (pixelsize)); \
+__m128i c  = simd_loadu_si128<optLevel>((ptr) ); \
+__m128i a5 = simd_loadu_si128<optLevel>((ptr) + (pixelsize)); \
+__m128i a6 = simd_loadu_si128<optLevel>((ptr) + (pitch) - (pixelsize)); \
+__m128i a7 = simd_loadu_si128<optLevel>((ptr) + (pitch)); \
+__m128i a8 = simd_loadu_si128<optLevel>((ptr) + (pitch) + (pixelsize));
 
 #define LOAD_SQUARE_SSE(optLevel, ptr, pitch) LOAD_SQUARE_SSE_0(optLevel, ptr, pitch, 1)
 // PF avs+
@@ -199,7 +253,7 @@ __m128 c  = _mm_loadu_ps((const float *)((ptr) )); \
 __m128 a5 = _mm_loadu_ps((const float *)((ptr) + (4))); \
 __m128 a6 = _mm_loadu_ps((const float *)((ptr) + (pitch) - (4))); \
 __m128 a7 = _mm_loadu_ps((const float *)((ptr) + (pitch))); \
-__m128 a8 = _mm_loadu_ps((const float *)((ptr) + (pitch) + (4))); 
+__m128 a8 = _mm_loadu_ps((const float *)((ptr) + (pitch) + (4)));
 
 // pointers and pitch are byte-based
 #define LOAD_SQUARE_CPP_T(pixel_t, ptr, pitch) \

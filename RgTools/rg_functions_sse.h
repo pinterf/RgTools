@@ -26,6 +26,14 @@ static RG_FORCEINLINE __m128i not_rounded_average_16(__m128i a, __m128i b) {
 
 //-------------------
 
+// todo: 
+// - AVX/AVX2
+// - uint16_t saturates to 65535, bit we have 10, 12 and 14 bot formats
+// - todo: Float parts were blindly converted, should be optimized,
+//         check averaging simplifications, clamping
+
+//-------------------
+
 template<InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode1_sse(const Byte* pSrc, int srcPitch) {
     LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
@@ -1574,7 +1582,95 @@ RG_FORCEINLINE __m128i rg_mode20_sse(const Byte* pSrc, int srcPitch) {
     return _mm_packus_epi16(result_lo, result_hi);
 }
 
-// PF todo: 16 bit, float
+RG_FORCEINLINE __m128i rg_mode20_sse_16(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+
+  //    int sum = a1 + a2 + a3 + a4 + c + a5 + a6 + a7 + a8;
+  //    int val = (sum + 4) / 9;
+
+  // trick, but there is no _mm_mulhi_epi32
+  // x / 9 = x * 1/9 = [x * ( (1/9)<<32 )] >> 32 = Hi32_part_of_64bit_result(x * ((1 << 32)/9))
+  // instead: x less than 20 bits (9*65535), we have 15 bits to play, (1<<15)/9 < 4096 (12 bits)
+  // ((1<<14)+4) / 9) = 0x71C (1820)
+  // ((1<<15)+4) / 9) = 0xE39 (3641)
+  // worst case: 9*FFFF * 71C = 3FFBC004
+  // worst case: 9*FFFF * E39 = 8000B8E3 ( 8000B8E3 >> 15 = 10001, packus rounding to FFFF)
+  // Try with
+  // ((1<<15) / 9  + 4) = 0xE3C (3644)
+  const byte FACTOR = 15;
+  auto zero = _mm_setzero_si128();
+  auto onenineth = _mm_set1_epi32((unsigned short)(((1u << FACTOR) + 4) / 9));
+  auto bias = _mm_set1_epi32(4);
+
+  auto a1unpck_lo = _mm_unpacklo_epi16(a1, zero);
+  auto a2unpck_lo = _mm_unpacklo_epi16(a2, zero);
+  auto a3unpck_lo = _mm_unpacklo_epi16(a3, zero);
+  auto a4unpck_lo = _mm_unpacklo_epi16(a4, zero);
+  auto a5unpck_lo = _mm_unpacklo_epi16(a5, zero);
+  auto a6unpck_lo = _mm_unpacklo_epi16(a6, zero);
+  auto a7unpck_lo = _mm_unpacklo_epi16(a7, zero);
+  auto a8unpck_lo = _mm_unpacklo_epi16(a8, zero);
+  auto cunpck_lo  = _mm_unpacklo_epi16(c, zero);
+
+  // lower 4x uint16_t -> 128 bit 4x uint32_t
+  auto sum_t1 = _mm_add_epi32(a1unpck_lo, a2unpck_lo);
+  sum_t1 = _mm_add_epi32(sum_t1, a3unpck_lo);
+  sum_t1 = _mm_add_epi32(sum_t1, a4unpck_lo);
+
+  auto sum_t2 = _mm_add_epi32(a5unpck_lo, a6unpck_lo);
+  sum_t2 = _mm_add_epi32(sum_t2, a7unpck_lo);
+  sum_t2 = _mm_add_epi32(sum_t2, a8unpck_lo);
+
+  auto sum = _mm_adds_epu16(sum_t1, sum_t2);
+  sum = _mm_adds_epu16(sum, cunpck_lo);
+  sum = _mm_adds_epu16(sum, bias);
+
+  auto result_lo = _mm_srli_epi32(_mm_mullo_epi32(sum, onenineth),FACTOR);
+  // we have sum of lower 4 pixels
+
+  auto a1unpck_hi = _mm_unpackhi_epi16(a1, zero);
+  auto a2unpck_hi = _mm_unpackhi_epi16(a2, zero);
+  auto a3unpck_hi = _mm_unpackhi_epi16(a3, zero);
+  auto a4unpck_hi = _mm_unpackhi_epi16(a4, zero);
+  auto a5unpck_hi = _mm_unpackhi_epi16(a5, zero);
+  auto a6unpck_hi = _mm_unpackhi_epi16(a6, zero);
+  auto a7unpck_hi = _mm_unpackhi_epi16(a7, zero);
+  auto a8unpck_hi = _mm_unpackhi_epi16(a8, zero);
+  auto cunpck_hi  = _mm_unpackhi_epi16(c, zero);
+
+  sum_t1 = _mm_add_epi32(a1unpck_hi, a2unpck_hi);
+  sum_t1 = _mm_add_epi32(sum_t1, a3unpck_hi);
+  sum_t1 = _mm_add_epi32(sum_t1, a4unpck_hi);
+  
+  sum_t2 = _mm_add_epi32(a5unpck_hi, a6unpck_hi);
+  sum_t2 = _mm_add_epi32(sum_t2, a7unpck_hi);
+  sum_t2 = _mm_add_epi32(sum_t2, a8unpck_hi);
+
+  sum = _mm_add_epi32(sum_t1, sum_t2);
+  sum = _mm_add_epi32(sum, cunpck_hi);
+  sum = _mm_add_epi32(sum, bias);
+
+  auto result_hi = _mm_srli_epi32(_mm_mullo_epi32(sum, onenineth),FACTOR);
+
+  return _mm_packus_epi32(result_lo, result_hi);
+}
+
+RG_FORCEINLINE __m128i rg_mode20_sse_32(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+
+  auto onenineth = _mm_set1_ps(1/9.0f);
+  // float val = (a1 + a2 + a3 + a4 + c + a5 + a6 + a7 + a8) / 9.0f;
+
+  auto a12 = _mm_add_ps(a1, a2);
+  auto a34 = _mm_add_ps(a3, a4);
+  auto a1234 = _mm_add_ps(a12, a34);
+  auto a56 = _mm_add_ps(a5, a6);
+  auto a78 = _mm_add_ps(a7, a8);
+  auto a5678 = _mm_add_ps(a56, a78);
+  auto a12345678 = _mm_add_ps(a1234, a5678);
+  auto val = _mm_add_ps(a12345678, c);
+  return _mm_castps_si128(_mm_mul_ps(val, onenineth));
+}
 
 //-------------------
 

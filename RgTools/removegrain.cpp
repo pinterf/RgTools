@@ -24,7 +24,6 @@ static void process_plane_sse(IScriptEnvironment* env, const BYTE* pSrc8, BYTE* 
       pDst[0] = pSrc[0];
 
       // unaligned first 16 bytes, last pixel overlaps with the next aligned loop
-      
       __m128i result = processor((uint8_t *)(pSrc + 1), srcPitchOrig);
       _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + 1), result);
       

@@ -20,23 +20,29 @@ static void process_plane_sse(IScriptEnvironment* env, const BYTE* pSrc8, BYTE* 
     pDst += dstPitch;
     int mod_width = width / (16/sizeof(pixel_t)) * (16/sizeof(pixel_t));
 
-    for (int y = 1; y < height-1; ++y) {
+    for (int y = 1; y < height - 1; ++y) {
       pDst[0] = pSrc[0];
 
-        for (int x = 1; x < mod_width-1; x+=16/sizeof(pixel_t)) {
-            __m128i result = processor((uint8_t *)(pSrc+x), srcPitchOrig);
-            _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst+x), result);
-        }
+      // unaligned first 16 bytes, last pixel overlaps with the next aligned loop
+      
+      __m128i result = processor((uint8_t *)(pSrc + 1), srcPitchOrig);
+      _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + 1), result);
+      
+      // aligned
+      for (int x = 16 / sizeof(pixel_t); x < mod_width - 1; x += 16 / sizeof(pixel_t)) {
+        __m128i result = processor((uint8_t *)(pSrc + x), srcPitchOrig);
+        _mm_store_si128(reinterpret_cast<__m128i*>(pDst + x), result);
+      }
 
-        if (mod_width != width) {
-            __m128i result = processor((uint8_t *)(pSrc+width-1-16/sizeof(pixel_t)), srcPitchOrig);
-            _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst+width-1-16/sizeof(pixel_t)), result);
-        }
+      if (mod_width != width) {
+        __m128i result = processor((uint8_t *)(pSrc + width - 1 - 16 / sizeof(pixel_t)), srcPitchOrig);
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + width - 1 - 16 / sizeof(pixel_t)), result);
+      }
 
-        pDst[width-1] = pSrc[width-1];
+      pDst[width - 1] = pSrc[width - 1];
 
-        pSrc += srcPitch;
-        pDst += dstPitch;
+      pSrc += srcPitch;
+      pDst += dstPitch;
     }
 
     env->BitBlt((uint8_t *)(pDst), dstPitch*sizeof(pixel_t), (uint8_t *)(pSrc), srcPitch*sizeof(pixel_t), rowsize, 1);
@@ -59,7 +65,7 @@ static void process_halfplane_sse(IScriptEnvironment* env, const BYTE* pSrc8, BY
     int mod_width = width / (16/sizeof(pixel_t)) * (16/sizeof(pixel_t));
 
     for (int y = 1; y < height/2; ++y) {
-        pDst[0] = (pSrc[srcPitch] + pSrc[-srcPitch] + (sizeof(pixel_t) == 4 ? 0 : 1)) / 2;
+        pDst[0] = (pSrc[srcPitch] + pSrc[-srcPitch] + (sizeof(pixel_t) == 4 ? 0 : 1)) / 2; // float: no +1 rounding
         for (int x = 1; x < mod_width-1; x+=16/sizeof(pixel_t)) {
             __m128i result = processor((uint8_t *)(pSrc+x), srcPitchOrig);
             _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst+x), result);
@@ -70,7 +76,7 @@ static void process_halfplane_sse(IScriptEnvironment* env, const BYTE* pSrc8, BY
           _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst+width-1-16/sizeof(pixel_t)), result);
         }
 
-        pDst[width-1] = (pSrc[width-1 + srcPitch] + pSrc[width-1 - srcPitch] + (sizeof(pixel_t) == 4 ? 0 : 1)) / 2;
+        pDst[width-1] = (pSrc[width-1 + srcPitch] + pSrc[width-1 - srcPitch] + (sizeof(pixel_t) == 4 ? 0 : 1)) / 2; // float: no +1 rounding
         pSrc += srcPitch;
         pDst += dstPitch;
 
@@ -146,7 +152,7 @@ static void process_halfplane_c(IScriptEnvironment* env, const BYTE* pSrc8, BYTE
             pixel_t result = processor((uint8_t *)(pSrc + x), srcPitchOrig);
             pDst[x] = result;
         }
-        pDst[width-1] = (pSrc[width-1 + srcPitch] + pSrc[width-1 - srcPitch] + (sizeof(pixel_t)==4 ? 0 : 1)) / 2;
+        pDst[width-1] = (pSrc[width-1 + srcPitch] + pSrc[width-1 - srcPitch] + (sizeof(pixel_t)==4 ? 0 : 1)) / 2; // float: no +1 rounding
         pSrc += srcPitch;
         pDst += dstPitch;
 
@@ -262,7 +268,7 @@ PlaneProcessor* sse4_functions_16[] = {
   process_plane_sse<uint16_t, rg_mode17_sse_16>,
   process_plane_sse<uint16_t, rg_mode18_sse_16>,
   process_plane_sse<uint16_t, rg_mode19_sse_16>,
-  process_plane_c<uint16_t, rg_mode20_cpp_16>,
+  process_plane_sse<uint16_t, rg_mode20_sse_16>,
   process_plane_sse<uint16_t, rg_mode21_sse_16>,
   process_plane_sse<uint16_t, rg_mode22_sse_16>,
   process_plane_sse<uint16_t, rg_mode23_sse_16>,
@@ -291,7 +297,7 @@ PlaneProcessor* sse2_functions_32[] = {
   process_plane_sse<float, rg_mode17_sse_32>,
   process_plane_sse<float, rg_mode18_sse_32>,
   process_plane_sse<float, rg_mode19_sse_32>,
-  process_plane_c<float, rg_mode20_cpp_32>,
+  process_plane_sse<float, rg_mode20_sse_32>,
   process_plane_sse<float, rg_mode21_sse_32>,
   process_plane_sse<float, rg_mode22_sse_32>,
   process_plane_sse<float, rg_mode23_sse_32>,

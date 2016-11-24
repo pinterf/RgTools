@@ -274,7 +274,7 @@ PlaneProcessor* sse4_functions_16[] = {
   process_plane_sse<uint16_t, rg_mode24_sse_16>,
 };
 
-PlaneProcessor* sse2_functions_32[] = {
+PlaneProcessor* sse4_functions_32[] = {
   doNothing,
   copyPlane,
   process_plane_sse<float, rg_mode1_sse_32>,
@@ -531,8 +531,8 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
       }
     }
     else {// if (pixelsize == 4) 
-      if ((env->GetCPUFlags() & CPUF_SSE2) && vi.width >= (16/sizeof(float) + 1))
-        functions = sse2_functions_32;
+      if ((env->GetCPUFlags() & CPUF_SSE4) && vi.width >= (16/sizeof(float) + 1))
+        functions = sse4_functions_32;
       else
         functions = c_functions_32;
     }

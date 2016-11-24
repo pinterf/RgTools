@@ -293,24 +293,51 @@ a7 = simd_loada_si128<optLevel>((ptr) + (pitch)); \
 a8 = simd_loadu_si128<optLevel>((ptr) + (pitch) + (pixelsize)); \
 }
 
+// 8 bit loads
+// unaligned
 #define LOAD_SQUARE_SSE(optLevel, ptr, pitch) LOAD_SQUARE_SSE_0(optLevel, ptr, pitch, 1, false)
 // unaligned or aligned
 #define LOAD_SQUARE_SSE_UA(optLevel, ptr, pitch, aligned) LOAD_SQUARE_SSE_0(optLevel, ptr, pitch, 1, aligned)
+
+// 16 bit loads
+// unaligned
 #define LOAD_SQUARE_SSE_16(ptr, pitch) LOAD_SQUARE_SSE_0(SSE3, ptr, pitch, 2, false)
+// unaligned or aligned
+#define LOAD_SQUARE_SSE_16_UA(optLevel, ptr, pitch, aligned) LOAD_SQUARE_SSE_0(SSE3, ptr, pitch, 2, aligned)
 
-#define LOAD_SQUARE_SSE_32(ptr, pitch) \
-__m128 a1 = _mm_loadu_ps((const float *)((ptr) - (pitch) - 4)); \
-__m128 a2 = _mm_loadu_ps((const float *)((ptr) - (pitch))); \
-__m128 a3 = _mm_loadu_ps((const float *)((ptr) - (pitch) + (4))); \
-__m128 a4 = _mm_loadu_ps((const float *)((ptr) - (4))); \
-__m128 c  = _mm_loadu_ps((const float *)((ptr) )); \
-__m128 a5 = _mm_loadu_ps((const float *)((ptr) + (4))); \
-__m128 a6 = _mm_loadu_ps((const float *)((ptr) + (pitch) - (4))); \
-__m128 a7 = _mm_loadu_ps((const float *)((ptr) + (pitch))); \
-__m128 a8 = _mm_loadu_ps((const float *)((ptr) + (pitch) + (4)));
+// 32 bit float loads
+#define LOAD_SQUARE_SSE_0_32(ptr, pitch, aligned) \
+__m128 a1, a2, a3, a4, a5, a6, a7, a8, c; \
+if(!aligned) {\
+a1 = _mm_loadu_ps((const float *)((ptr) - (pitch) - 4)); \
+a2 = _mm_loadu_ps((const float *)((ptr) - (pitch))); \
+a3 = _mm_loadu_ps((const float *)((ptr) - (pitch) + (4))); \
+a4 = _mm_loadu_ps((const float *)((ptr) - (4))); \
+c  = _mm_loadu_ps((const float *)((ptr) )); \
+a5 = _mm_loadu_ps((const float *)((ptr) + (4))); \
+a6 = _mm_loadu_ps((const float *)((ptr) + (pitch) - (4))); \
+a7 = _mm_loadu_ps((const float *)((ptr) + (pitch))); \
+a8 = _mm_loadu_ps((const float *)((ptr) + (pitch) + (4))); \
+} else { \
+a1 = _mm_loadu_ps((const float *)((ptr) - (pitch) - 4)); \
+a2 = _mm_load_ps((const float *)((ptr) - (pitch))); \
+a3 = _mm_loadu_ps((const float *)((ptr) - (pitch) + (4))); \
+a4 = _mm_loadu_ps((const float *)((ptr) - (4))); \
+c  = _mm_load_ps((const float *)((ptr) )); \
+a5 = _mm_loadu_ps((const float *)((ptr) + (4))); \
+a6 = _mm_loadu_ps((const float *)((ptr) + (pitch) - (4))); \
+a7 = _mm_load_ps((const float *)((ptr) + (pitch))); \
+a8 = _mm_loadu_ps((const float *)((ptr) + (pitch) + (4))); \
+}
 
+// unaligned
+#define LOAD_SQUARE_SSE_32(ptr, pitch) LOAD_SQUARE_SSE_0_32(ptr, pitch, false) 
+// unaligned or aligned
+#define LOAD_SQUARE_SSE_32_UA(ptr, pitch, aligned) LOAD_SQUARE_SSE_0_32(ptr, pitch, aligned)
+
+// loaders for C routines
 // pointers and pitch are byte-based
-#define LOAD_SQUARE_CPP_T(pixel_t, ptr, pitch) \
+#define LOAD_SQUARE_CPP_0(pixel_t, ptr, pitch) \
     pixel_t a1 = *(pixel_t *)((ptr) - (pitch) - sizeof(pixel_t)); \
     pixel_t a2 = *(pixel_t *)((ptr) - (pitch)); \
     pixel_t a3 = *(pixel_t *)((ptr) - (pitch) + sizeof(pixel_t)); \
@@ -321,9 +348,9 @@ __m128 a8 = _mm_loadu_ps((const float *)((ptr) + (pitch) + (4)));
     pixel_t a7 = *(pixel_t *)((ptr) + (pitch)); \
     pixel_t a8 = *(pixel_t *)((ptr) + (pitch) + sizeof(pixel_t));
 
-#define LOAD_SQUARE_CPP(ptr, pitch) LOAD_SQUARE_CPP_T(Byte, ptr, pitch);
-#define LOAD_SQUARE_CPP_16(ptr, pitch) LOAD_SQUARE_CPP_T(uint16_t, ptr, pitch);
-#define LOAD_SQUARE_CPP_32(ptr, pitch) LOAD_SQUARE_CPP_T(float, ptr, pitch);
+#define LOAD_SQUARE_CPP(ptr, pitch) LOAD_SQUARE_CPP_0(Byte, ptr, pitch);
+#define LOAD_SQUARE_CPP_16(ptr, pitch) LOAD_SQUARE_CPP_0(uint16_t, ptr, pitch);
+#define LOAD_SQUARE_CPP_32(ptr, pitch) LOAD_SQUARE_CPP_0(float, ptr, pitch);
 
 /*
 #define LOAD_SQUARE_CPP(ptr, pitch) \

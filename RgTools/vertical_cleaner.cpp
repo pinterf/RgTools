@@ -2,42 +2,62 @@
 #include <xutility>
 
 
-static void vcleaner_median_sse2(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int width, int height, IScriptEnvironment *env) {
-    env->BitBlt(pDst, dstPitch, pSrc, srcPitch, width, 1);
+template<typename pixel_t>
+static void vcleaner_median_sse(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {
+    env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
+
+    const int width = rowsize / sizeof(pixel_t);
 
     pSrc += srcPitch;
     pDst += dstPitch;
 
     for (int y = 1; y < height-1; ++y) {
-        for (int x = 0; x < width; x+=16) {
-            __m128i up     = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x - srcPitch));
-            __m128i center = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x));
-            __m128i down   = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x + srcPitch));
+        for (int x = 0; x < width; x+=16/sizeof(pixel_t)) {
+            __m128i up     = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x*sizeof(pixel_t) - srcPitch));
+            __m128i center = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x*sizeof(pixel_t)));
+            __m128i down   = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x*sizeof(pixel_t) + srcPitch));
 
-            __m128i mi = _mm_min_epu8(up, down);
-            __m128i ma = _mm_max_epu8(up, down);
+            __m128i dst;
+            if (sizeof(pixel_t) == 1) {
+              __m128i mi = _mm_min_epu8(up, down);
+              __m128i ma = _mm_max_epu8(up, down);
 
-            __m128i cma = _mm_max_epu8(mi, center);
-            __m128i dst = _mm_min_epu8(cma, ma);
+              __m128i cma = _mm_max_epu8(mi, center);
+              dst = _mm_min_epu8(cma, ma);
+            }
+            else if (sizeof(pixel_t) == 2) {
+              __m128i mi = _mm_min_epu16(up, down);
+              __m128i ma = _mm_max_epu16(up, down);
 
-            _mm_store_si128(reinterpret_cast<__m128i*>(pDst+x), dst);
+              __m128i cma = _mm_max_epu16(mi, center);
+              dst = _mm_min_epu16(cma, ma);
+            }
+            else {  // sizeof(pixel_t) == 4: float
+              __m128 mi = _mm_min_ps(_mm_castsi128_ps(up), _mm_castsi128_ps(down));
+              __m128 ma = _mm_max_ps(_mm_castsi128_ps(up), _mm_castsi128_ps(down));
+
+              __m128 cma = _mm_max_ps(mi, _mm_castsi128_ps(center));
+              dst = _mm_castps_si128(_mm_min_ps(cma, ma));
+            }
+
+            _mm_store_si128(reinterpret_cast<__m128i*>(pDst+x*sizeof(pixel_t)), dst);
         }
 
         pSrc += srcPitch;
         pDst += dstPitch;
     }
 
-    env->BitBlt(pDst, dstPitch, pSrc, srcPitch, width, 1);
+    env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
 }
 
-static void vcleaner_relaxed_median_sse2(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int width, int height, IScriptEnvironment *env) {
-    env->BitBlt(pDst, dstPitch, pSrc, srcPitch, width, 2);
+static void vcleaner_relaxed_median_sse2(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {
+    env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 2);
 
     pSrc += srcPitch*2;
     pDst += dstPitch*2;
 
     for (int y = 2; y < height-2; ++y) {
-        for (int x = 0; x < width; x+=16) {
+        for (int x = 0; x < rowsize; x+=16) {
             __m128i p2 = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x-srcPitch*2));
             __m128i p1 = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x-srcPitch));
             __m128i c  = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x));
@@ -74,8 +94,127 @@ static void vcleaner_relaxed_median_sse2(Byte* pDst, const Byte *pSrc, int dstPi
         pDst += dstPitch;
     }
 
-    env->BitBlt(pDst, dstPitch, pSrc, srcPitch, width, 2);
+    env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 2);
 }
+
+template<int bits_per_pixel>
+static void vcleaner_relaxed_median_sse4_16(Byte* pDst8, const Byte *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {
+  env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 2);
+
+  uint16_t *pDst = reinterpret_cast<uint16_t *>(pDst8);
+  const uint16_t *pSrc = reinterpret_cast<const uint16_t *>(pSrc8);
+
+  dstPitch /= sizeof(uint16_t);
+  srcPitch /= sizeof(uint16_t);
+
+  const int max_pixel_value = (1 << bits_per_pixel) - 1;
+  const int width = rowsize / sizeof(uint16_t);
+
+  pSrc += srcPitch*2;
+  pDst += dstPitch*2;
+
+  for (int y = 2; y < height-2; ++y) {
+    for (int x = 0; x < width; x+=16/sizeof(uint16_t)) {
+      __m128i p2 = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x-srcPitch*2));
+      __m128i p1 = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x-srcPitch));
+      __m128i c  = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x));
+      __m128i n1 = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x+srcPitch));
+      __m128i n2 = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x+srcPitch*2));
+
+      __m128i pdiff = _mm_subs_epu16(p1, p2);
+      __m128i ndiff = _mm_subs_epu16(n1, n2);
+
+      __m128i pt = _mm_adds_epu16(pdiff, p1);
+      __m128i nt = _mm_adds_epu16(ndiff, n1);
+      if (bits_per_pixel < 16) // for 16 bit _mm_adds limits to FFFF
+      {
+        __m128i pixel_max = _mm_set1_epi16((short)((1u << bits_per_pixel) - 1));
+        pt = _mm_min_epu16(pt, pixel_max);
+        nt = _mm_min_epu16(nt, pixel_max);
+      }
+
+      __m128i upper = _mm_min_epu16(pt, nt);
+      upper = _mm_max_epu16(upper, p1);
+      upper = _mm_max_epu16(upper, n1);
+
+      pdiff = _mm_subs_epu16(p2, p1);
+      ndiff = _mm_subs_epu16(n2, n1);
+
+      pt = _mm_subs_epu16(p1, pdiff);
+      nt = _mm_subs_epu16(n1, ndiff);
+
+      __m128i minpn1 = _mm_min_epu16(p1, n1);
+
+      __m128i lower = _mm_max_epu16(pt, nt);
+      lower = _mm_min_epu16(lower, minpn1);
+
+      __m128i dst = simd_clip_16(c, lower, upper);
+
+      _mm_store_si128(reinterpret_cast<__m128i*>(pDst+x), dst);
+    }
+
+    pSrc += srcPitch;
+    pDst += dstPitch;
+  }
+
+  env->BitBlt((uint8_t *)pDst, dstPitch*sizeof(uint16_t), (uint8_t *)pSrc, srcPitch*sizeof(uint16_t), rowsize, 2);
+}
+
+static void vcleaner_relaxed_median_sse_32(Byte* pDst8, const Byte *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {
+  env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 2);
+
+  float *pDst = reinterpret_cast<float *>(pDst8);
+  const float *pSrc = reinterpret_cast<const float *>(pSrc8);
+
+  dstPitch /= sizeof(float);
+  srcPitch /= sizeof(float);
+
+  const int width = rowsize / sizeof(float);
+
+  pSrc += srcPitch*2;
+  pDst += dstPitch*2;
+
+  for (int y = 2; y < height-2; ++y) {
+    for (int x = 0; x < width; x+=16/sizeof(float)) {
+      __m128 p2 = _mm_load_ps(reinterpret_cast<const float*>(pSrc + x-srcPitch*2));
+      __m128 p1 = _mm_load_ps(reinterpret_cast<const float*>(pSrc + x-srcPitch));
+      __m128 c  = _mm_load_ps(reinterpret_cast<const float*>(pSrc + x));
+      __m128 n1 = _mm_load_ps(reinterpret_cast<const float*>(pSrc + x+srcPitch));
+      __m128 n2 = _mm_load_ps(reinterpret_cast<const float*>(pSrc + x+srcPitch*2));
+
+      __m128 pdiff = _mm_subs_ps(p1, p2);
+      __m128 ndiff = _mm_subs_ps(n1, n2);
+
+      __m128 pt = _mm_adds_ps(pdiff, p1);
+      __m128 nt = _mm_adds_ps(ndiff, n1);
+
+      __m128 upper = _mm_min_ps(pt, nt);
+      upper = _mm_max_ps(upper, p1);
+      upper = _mm_max_ps(upper, n1);
+
+      pdiff = _mm_subs_ps(p2, p1);
+      ndiff = _mm_subs_ps(n2, n1);
+
+      pt = _mm_subs_ps(p1, pdiff);
+      nt = _mm_subs_ps(n1, ndiff);
+
+      __m128 minpn1 = _mm_min_ps(p1, n1);
+
+      __m128 lower = _mm_max_ps(pt, nt);
+      lower = _mm_min_ps(lower, minpn1);
+
+      __m128 dst = simd_clip_32(c, lower, upper);
+
+      _mm_store_ps(reinterpret_cast<float*>(pDst+x), dst);
+    }
+
+    pSrc += srcPitch;
+    pDst += dstPitch;
+  }
+
+  env->BitBlt((uint8_t *)pDst, dstPitch*sizeof(float), (uint8_t *)pSrc, srcPitch*sizeof(float), rowsize, 2);
+}
+
 
 
 template<typename pixel_t>
@@ -160,11 +299,10 @@ static void vcleaner_relaxed_median_c_16(Byte* pDst8, const Byte *pSrc8, int dst
     srcPitch /= sizeof(uint16_t);
 
     const int max_pixel_value = (1 << bits_per_pixel) - 1;
+    const int width = rowsize / sizeof(uint16_t);
 
     pSrc += srcPitch*2;
     pDst += dstPitch*2;
-
-    const int width = rowsize / sizeof(uint16_t);
 
     for (int y = 2; y < height-2; ++y) {
         for (int x = 0; x < width; x+=1) {
@@ -231,19 +369,45 @@ static void do_nothing(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch,
 
 }
 
-/*
-VCleanerProcessor* sse4_functions_uint16[] = {
+VCleanerProcessor* sse4_functions_uint16_10[] = {
   do_nothing,
-  copy_plane<uint16_t>,
-  vcleaner_median_sse4<uint16_t>,
-  vcleaner_relaxed_median_sse4<uint16_t>
+  copy_plane,
+  vcleaner_median_sse<uint16_t>,
+  vcleaner_relaxed_median_sse4_16<10>
 };
-*/
+
+VCleanerProcessor* sse4_functions_uint16_12[] = {
+  do_nothing,
+  copy_plane,
+  vcleaner_median_sse<uint16_t>,
+  vcleaner_relaxed_median_sse4_16<12>
+};
+
+VCleanerProcessor* sse4_functions_uint16_14[] = {
+  do_nothing,
+  copy_plane,
+  vcleaner_median_sse<uint16_t>,
+  vcleaner_relaxed_median_sse4_16<14>
+};
+
+VCleanerProcessor* sse4_functions_uint16_16[] = {
+  do_nothing,
+  copy_plane,
+  vcleaner_median_sse<uint16_t>,
+  vcleaner_relaxed_median_sse4_16<16>
+};
+
+VCleanerProcessor* sse2_functions_32[] = {
+  do_nothing,
+  copy_plane,
+  vcleaner_median_sse<float>,
+  vcleaner_relaxed_median_sse_32
+};
 
 VCleanerProcessor* sse2_functions[] = {
     do_nothing,
     copy_plane,
-    vcleaner_median_sse2,
+    vcleaner_median_sse<uint8_t>,
     vcleaner_relaxed_median_sse2
 };
 
@@ -300,11 +464,15 @@ static void dispatch_median(int mode, Byte* pDst, const Byte *pSrc, int dstPitch
     }
   }
   else if (pixelsize == 2) {
-    /*
-    if ((env->GetCPUFlags() & CPUF_SSE4) && width*pixelsize >= 16 && is_16byte_aligned(pSrc)) {
-      sse4_functions_uint16[mode + 1](pDst, pSrc, dstPitch, srcPitch, width, height, bits_per_pixel, env);
+    if ((env->GetCPUFlags() & CPUF_SSE4) && rowsize >= 16 && is_16byte_aligned(pSrc)) {
+      switch (bits_per_pixel) {
+      case 10: sse4_functions_uint16_10[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env); break;
+      case 12: sse4_functions_uint16_12[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env); break;
+      case 14: sse4_functions_uint16_14[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env); break;
+      case 16: sse4_functions_uint16_16[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env); break;
+      }
     }
-    else*/ {
+    else {
       switch (bits_per_pixel) {
       case 10: c_functions_10[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env); break;
       case 12: c_functions_12[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env); break;
@@ -314,7 +482,10 @@ static void dispatch_median(int mode, Byte* pDst, const Byte *pSrc, int dstPitch
     }
   }
   else { // if (pixelsize == 4
-    c_functions_32[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env);
+    if ((env->GetCPUFlags() & CPUF_SSE2) && rowsize >= 16 && is_16byte_aligned(pSrc))
+      sse2_functions_32[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env);
+    else
+      c_functions_32[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env);
   }
 
 }
@@ -351,22 +522,22 @@ PVideoFrame VerticalCleaner::GetFrame(int n, IScriptEnvironment* env) {
 
     if (vi.IsPlanarRGB() || vi.IsPlanarRGBA()) {
       dispatch_median(mode_, dstFrame->GetWritePtr(PLANAR_G), srcFrame->GetReadPtr(PLANAR_G), dstFrame->GetPitch(PLANAR_G), srcFrame->GetPitch(PLANAR_G),
-        srcFrame->GetRowSize(PLANAR_G) / pixelsize, srcFrame->GetHeight(PLANAR_G), pixelsize, bits_per_pixel, env);
+        srcFrame->GetRowSize(PLANAR_G), srcFrame->GetHeight(PLANAR_G), pixelsize, bits_per_pixel, env);
       dispatch_median(mode_, dstFrame->GetWritePtr(PLANAR_B), srcFrame->GetReadPtr(PLANAR_B), dstFrame->GetPitch(PLANAR_B), srcFrame->GetPitch(PLANAR_B),
-        srcFrame->GetRowSize(PLANAR_B) / pixelsize, srcFrame->GetHeight(PLANAR_B), pixelsize, bits_per_pixel, env);
+        srcFrame->GetRowSize(PLANAR_B), srcFrame->GetHeight(PLANAR_B), pixelsize, bits_per_pixel, env);
       dispatch_median(mode_, dstFrame->GetWritePtr(PLANAR_R), srcFrame->GetReadPtr(PLANAR_R), dstFrame->GetPitch(PLANAR_R), srcFrame->GetPitch(PLANAR_R),
-        srcFrame->GetRowSize(PLANAR_R) / pixelsize, srcFrame->GetHeight(PLANAR_R), pixelsize, bits_per_pixel, env);
+        srcFrame->GetRowSize(PLANAR_R), srcFrame->GetHeight(PLANAR_R), pixelsize, bits_per_pixel, env);
     }
     else {
       dispatch_median(mode_, dstFrame->GetWritePtr(PLANAR_Y), srcFrame->GetReadPtr(PLANAR_Y), dstFrame->GetPitch(PLANAR_Y), srcFrame->GetPitch(PLANAR_Y),
-        srcFrame->GetRowSize(PLANAR_Y) / pixelsize, srcFrame->GetHeight(PLANAR_Y), pixelsize, bits_per_pixel, env);
+        srcFrame->GetRowSize(PLANAR_Y), srcFrame->GetHeight(PLANAR_Y), pixelsize, bits_per_pixel, env);
 
       if (!vi.IsY()) {
         dispatch_median(modeU_, dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetReadPtr(PLANAR_U), dstFrame->GetPitch(PLANAR_U), srcFrame->GetPitch(PLANAR_U),
-          srcFrame->GetRowSize(PLANAR_U) / pixelsize, srcFrame->GetHeight(PLANAR_U), pixelsize, bits_per_pixel, env);
+          srcFrame->GetRowSize(PLANAR_U), srcFrame->GetHeight(PLANAR_U), pixelsize, bits_per_pixel, env);
 
         dispatch_median(modeV_, dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetReadPtr(PLANAR_V), dstFrame->GetPitch(PLANAR_V), srcFrame->GetPitch(PLANAR_V),
-          srcFrame->GetRowSize(PLANAR_V) / pixelsize, srcFrame->GetHeight(PLANAR_V), pixelsize, bits_per_pixel, env);
+          srcFrame->GetRowSize(PLANAR_V), srcFrame->GetHeight(PLANAR_V), pixelsize, bits_per_pixel, env);
       }
     }
     if (vi.IsYUVA() || vi.IsPlanarRGBA())

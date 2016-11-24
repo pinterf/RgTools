@@ -245,7 +245,7 @@ PlaneProcessor* sse3_functions[] = {
     process_plane_sse<uint8_t, rg_mode24_sse<SSE3>>,
 };
 
-PlaneProcessor* sse4_functions_16[] = {
+PlaneProcessor* sse4_functions_16_10[] = {
   doNothing,
   copyPlane,
   process_plane_sse<uint16_t, rg_mode1_sse_16>,
@@ -253,9 +253,9 @@ PlaneProcessor* sse4_functions_16[] = {
   process_plane_sse<uint16_t, rg_mode3_sse_16>,
   process_plane_sse<uint16_t, rg_mode4_sse_16>,
   process_plane_sse<uint16_t, rg_mode5_sse_16>,
-  process_plane_sse<uint16_t, rg_mode6_sse_16>,
+  process_plane_sse<uint16_t, rg_mode6_sse_16<10>>,
   process_plane_sse<uint16_t, rg_mode7_sse_16>,
-  process_plane_sse<uint16_t, rg_mode8_sse_16>,
+  process_plane_sse<uint16_t, rg_mode8_sse_16<10>>,
   process_plane_sse<uint16_t, rg_mode9_sse_16>,
   process_plane_sse<uint16_t, rg_mode10_sse_16>,
   process_plane_sse<uint16_t, rg_mode11_sse_16>,
@@ -273,6 +273,95 @@ PlaneProcessor* sse4_functions_16[] = {
   process_plane_sse<uint16_t, rg_mode23_sse_16>,
   process_plane_sse<uint16_t, rg_mode24_sse_16>,
 };
+
+PlaneProcessor* sse4_functions_16_12[] = {
+  doNothing,
+  copyPlane,
+  process_plane_sse<uint16_t, rg_mode1_sse_16>,
+  process_plane_sse<uint16_t, rg_mode2_sse_16>,
+  process_plane_sse<uint16_t, rg_mode3_sse_16>,
+  process_plane_sse<uint16_t, rg_mode4_sse_16>,
+  process_plane_sse<uint16_t, rg_mode5_sse_16>,
+  process_plane_sse<uint16_t, rg_mode6_sse_16<12>>,
+  process_plane_sse<uint16_t, rg_mode7_sse_16>,
+  process_plane_sse<uint16_t, rg_mode8_sse_16<12>>,
+  process_plane_sse<uint16_t, rg_mode9_sse_16>,
+  process_plane_sse<uint16_t, rg_mode10_sse_16>,
+  process_plane_sse<uint16_t, rg_mode11_sse_16>,
+  process_plane_sse<uint16_t, rg_mode12_sse_16>,
+  process_even_rows_sse<uint16_t, rg_mode13_and14_sse_16>,
+  process_odd_rows_sse<uint16_t, rg_mode13_and14_sse_16>,
+  process_even_rows_sse<uint16_t, rg_mode15_and16_sse_16>,
+  process_odd_rows_sse<uint16_t, rg_mode15_and16_sse_16>,
+  process_plane_sse<uint16_t, rg_mode17_sse_16>,
+  process_plane_sse<uint16_t, rg_mode18_sse_16>,
+  process_plane_sse<uint16_t, rg_mode19_sse_16>,
+  process_plane_sse<uint16_t, rg_mode20_sse_16>,
+  process_plane_sse<uint16_t, rg_mode21_sse_16>,
+  process_plane_sse<uint16_t, rg_mode22_sse_16>,
+  process_plane_sse<uint16_t, rg_mode23_sse_16>,
+  process_plane_sse<uint16_t, rg_mode24_sse_16>,
+};
+
+PlaneProcessor* sse4_functions_16_14[] = {
+  doNothing,
+  copyPlane,
+  process_plane_sse<uint16_t, rg_mode1_sse_16>,
+  process_plane_sse<uint16_t, rg_mode2_sse_16>,
+  process_plane_sse<uint16_t, rg_mode3_sse_16>,
+  process_plane_sse<uint16_t, rg_mode4_sse_16>,
+  process_plane_sse<uint16_t, rg_mode5_sse_16>,
+  process_plane_sse<uint16_t, rg_mode6_sse_16<14>>,
+  process_plane_sse<uint16_t, rg_mode7_sse_16>,
+  process_plane_sse<uint16_t, rg_mode8_sse_16<14>>,
+  process_plane_sse<uint16_t, rg_mode9_sse_16>,
+  process_plane_sse<uint16_t, rg_mode10_sse_16>,
+  process_plane_sse<uint16_t, rg_mode11_sse_16>,
+  process_plane_sse<uint16_t, rg_mode12_sse_16>,
+  process_even_rows_sse<uint16_t, rg_mode13_and14_sse_16>,
+  process_odd_rows_sse<uint16_t, rg_mode13_and14_sse_16>,
+  process_even_rows_sse<uint16_t, rg_mode15_and16_sse_16>,
+  process_odd_rows_sse<uint16_t, rg_mode15_and16_sse_16>,
+  process_plane_sse<uint16_t, rg_mode17_sse_16>,
+  process_plane_sse<uint16_t, rg_mode18_sse_16>,
+  process_plane_sse<uint16_t, rg_mode19_sse_16>,
+  process_plane_sse<uint16_t, rg_mode20_sse_16>,
+  process_plane_sse<uint16_t, rg_mode21_sse_16>,
+  process_plane_sse<uint16_t, rg_mode22_sse_16>,
+  process_plane_sse<uint16_t, rg_mode23_sse_16>,
+  process_plane_sse<uint16_t, rg_mode24_sse_16>,
+};
+
+PlaneProcessor* sse4_functions_16_16[] = {
+  doNothing,
+  copyPlane,
+  process_plane_sse<uint16_t, rg_mode1_sse_16>,
+  process_plane_sse<uint16_t, rg_mode2_sse_16>,
+  process_plane_sse<uint16_t, rg_mode3_sse_16>,
+  process_plane_sse<uint16_t, rg_mode4_sse_16>,
+  process_plane_sse<uint16_t, rg_mode5_sse_16>,
+  process_plane_sse<uint16_t, rg_mode6_sse_16<16>>,
+  process_plane_sse<uint16_t, rg_mode7_sse_16>,
+  process_plane_sse<uint16_t, rg_mode8_sse_16<16>>,
+  process_plane_sse<uint16_t, rg_mode9_sse_16>,
+  process_plane_sse<uint16_t, rg_mode10_sse_16>,
+  process_plane_sse<uint16_t, rg_mode11_sse_16>,
+  process_plane_sse<uint16_t, rg_mode12_sse_16>,
+  process_even_rows_sse<uint16_t, rg_mode13_and14_sse_16>,
+  process_odd_rows_sse<uint16_t, rg_mode13_and14_sse_16>,
+  process_even_rows_sse<uint16_t, rg_mode15_and16_sse_16>,
+  process_odd_rows_sse<uint16_t, rg_mode15_and16_sse_16>,
+  process_plane_sse<uint16_t, rg_mode17_sse_16>,
+  process_plane_sse<uint16_t, rg_mode18_sse_16>,
+  process_plane_sse<uint16_t, rg_mode19_sse_16>,
+  process_plane_sse<uint16_t, rg_mode20_sse_16>,
+  process_plane_sse<uint16_t, rg_mode21_sse_16>,
+  process_plane_sse<uint16_t, rg_mode22_sse_16>,
+  process_plane_sse<uint16_t, rg_mode23_sse_16>,
+  process_plane_sse<uint16_t, rg_mode24_sse_16>,
+};
+
+
 
 PlaneProcessor* sse4_functions_32[] = {
   doNothing,
@@ -516,9 +605,15 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
       }
     }
     else if (pixelsize == 2) {
-      // todo mode 6 and 8 bitdepth clamp specific
       if ((env->GetCPUFlags() & CPUF_SSE4) && vi.width >= (16/sizeof(uint16_t) + 1)) {
-        functions = sse4_functions_16;
+        // mode 6 and 8 bitdepth clamp specific
+        switch (bits_per_pixel) {
+        case 10: functions = sse4_functions_16_10; break;
+        case 12: functions = sse4_functions_16_12; break;
+        case 14: functions = sse4_functions_16_14; break;
+        case 16: functions = sse4_functions_16_16; break;
+        default: env->ThrowError("Illegal bit-depth: %d!", bits_per_pixel);
+        }
       }
       else {
         switch (bits_per_pixel) {

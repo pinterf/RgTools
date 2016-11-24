@@ -569,6 +569,7 @@ RG_FORCEINLINE __m128i repair_mode6_sse(const Byte* pSrc, const __m128i &val, in
     return select_on_equal(mindiff, c4, result, clipped4);
 }
 
+template<int bits_per_pixel>
 RG_FORCEINLINE __m128i repair_mode6_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16(pSrc, srcPitch);
 
@@ -603,6 +604,14 @@ RG_FORCEINLINE __m128i repair_mode6_sse_16(const Byte* pSrc, const __m128i &val,
   auto c2 = _mm_adds_epu16(_mm_adds_epu16(absdiff2, absdiff2), d2);
   auto c3 = _mm_adds_epu16(_mm_adds_epu16(absdiff3, absdiff3), d3);
   auto c4 = _mm_adds_epu16(_mm_adds_epu16(absdiff4, absdiff4), d4);
+
+  if (bits_per_pixel < 16) { // adds saturates to FFFF
+    const __m128i pixel_max = _mm_set1_epi16((short)((1 << bits_per_pixel) - 1));
+    c1 = _mm_min_epu16(c1, pixel_max);
+    c2 = _mm_min_epu16(c2, pixel_max);
+    c3 = _mm_min_epu16(c3, pixel_max);
+    c4 = _mm_min_epu16(c4, pixel_max);
+  }
 
   auto mindiff = _mm_min_epu16(c1, c2);
   mindiff = _mm_min_epu16(mindiff, c3);
@@ -826,6 +835,7 @@ RG_FORCEINLINE __m128i repair_mode8_sse(const Byte* pSrc, const __m128i &val, in
     return select_on_equal(mindiff, c4, result, clipped4);
 }
 
+template<int bits_per_pixel>
 RG_FORCEINLINE __m128i repair_mode8_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16(pSrc, srcPitch);
 
@@ -855,6 +865,14 @@ RG_FORCEINLINE __m128i repair_mode8_sse_16(const Byte* pSrc, const __m128i &val,
   auto c2 = _mm_adds_epu16(abs_diff_16(val, clipped2), _mm_adds_epu16(d2, d2));
   auto c3 = _mm_adds_epu16(abs_diff_16(val, clipped3), _mm_adds_epu16(d3, d3));
   auto c4 = _mm_adds_epu16(abs_diff_16(val, clipped4), _mm_adds_epu16(d4, d4));
+
+  if (bits_per_pixel < 16) { // adds saturates to FFFF
+    const __m128i pixel_max = _mm_set1_epi16((short)((1 << bits_per_pixel) - 1));
+    c1 = _mm_min_epu16(c1, pixel_max);
+    c2 = _mm_min_epu16(c2, pixel_max);
+    c3 = _mm_min_epu16(c3, pixel_max);
+    c4 = _mm_min_epu16(c4, pixel_max);
+  }
 
   auto mindiff = _mm_min_epu16(c1, c2);
   mindiff = _mm_min_epu16(mindiff, c3);
@@ -1605,6 +1623,7 @@ RG_FORCEINLINE __m128i repair_mode16_sse(const Byte* pSrc, const __m128i &val, i
     return        select_on_equal(mindiff, c4, result, simd_clip(val, cmi4, cma4));
 }
 
+template<int bits_per_pixel>
 RG_FORCEINLINE __m128i repair_mode16_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16(pSrc, srcPitch);
 
@@ -1649,6 +1668,14 @@ RG_FORCEINLINE __m128i repair_mode16_sse_16(const Byte* pSrc, const __m128i &val
   auto c2 = _mm_adds_epu16(_mm_adds_epu16(absdiff2, absdiff2), d2);
   auto c3 = _mm_adds_epu16(_mm_adds_epu16(absdiff3, absdiff3), d3);
   auto c4 = _mm_adds_epu16(_mm_adds_epu16(absdiff4, absdiff4), d4);
+
+  if (bits_per_pixel < 16) { // adds saturates to FFFF
+    const __m128i pixel_max = _mm_set1_epi16((short)((1 << bits_per_pixel) - 1));
+    c1 = _mm_min_epu16(c1, pixel_max);
+    c2 = _mm_min_epu16(c2, pixel_max);
+    c3 = _mm_min_epu16(c3, pixel_max);
+    c4 = _mm_min_epu16(c4, pixel_max);
+  }
 
   auto mindiff = _mm_min_epu16(c1, c2);
   mindiff = _mm_min_epu16(mindiff, c3);
@@ -1964,6 +1991,7 @@ RG_FORCEINLINE __m128i repair_mode19_sse(const Byte* pSrc, const __m128i &val, i
     return simd_clip(val, mi, ma);
 }
 
+template<int bits_per_pixel>
 RG_FORCEINLINE __m128i repair_mode19_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16(pSrc, srcPitch);
 
@@ -1986,6 +2014,10 @@ RG_FORCEINLINE __m128i repair_mode19_sse_16(const Byte* pSrc, const __m128i &val
 
   auto mi = _mm_subs_epu16(c, mindiff);
   auto ma = _mm_adds_epu16(c, mindiff);
+  if (bits_per_pixel < 16) { // adds saturates to FFFF
+    const __m128i pixel_max = _mm_set1_epi16((short)((1 << bits_per_pixel) - 1));
+    ma = _mm_min_epu16(ma, pixel_max);
+  }
 
   return simd_clip_16(val, mi, ma);
 }
@@ -2058,6 +2090,7 @@ RG_FORCEINLINE __m128i repair_mode20_sse(const Byte* pSrc, const __m128i &val, i
     return simd_clip(val, mi, ma);
 }
 
+template<int bits_per_pixel>
 RG_FORCEINLINE __m128i repair_mode20_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16(pSrc, srcPitch);
 
@@ -2092,6 +2125,10 @@ RG_FORCEINLINE __m128i repair_mode20_sse_16(const Byte* pSrc, const __m128i &val
 
   auto mi = _mm_subs_epu16(c, maxdiff);
   auto ma = _mm_adds_epu16(c, maxdiff);
+  if (bits_per_pixel < 16) { // adds saturates to FFFF
+    const __m128i pixel_max = _mm_set1_epi16((short)((1 << bits_per_pixel) - 1));
+    ma = _mm_min_epu16(ma, pixel_max);
+  }
 
   return simd_clip_16(val, mi, ma);
 }
@@ -2178,6 +2215,7 @@ RG_FORCEINLINE __m128i repair_mode21_sse(const Byte* pSrc, const __m128i &val, i
     return simd_clip(val, mi, ma);
 }
 
+template<int bits_per_pixel>
 RG_FORCEINLINE __m128i repair_mode21_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16(pSrc, srcPitch);
 
@@ -2214,6 +2252,10 @@ RG_FORCEINLINE __m128i repair_mode21_sse_16(const Byte* pSrc, const __m128i &val
 
   auto mi = _mm_subs_epu16(c, u);
   auto ma = _mm_adds_epu16(c, u);
+  if (bits_per_pixel < 16) { // adds saturates to FFFF
+    const __m128i pixel_max = _mm_set1_epi16((short)((1 << bits_per_pixel) - 1));
+    ma = _mm_min_epu16(ma, pixel_max);
+  }
 
   return simd_clip_16(val, mi, ma);
 }
@@ -2287,6 +2329,7 @@ RG_FORCEINLINE __m128i repair_mode22_sse(const Byte* pSrc, const __m128i &val, i
     return simd_clip(c, mi, ma);
 }
 
+template<int bits_per_pixel>
 RG_FORCEINLINE __m128i repair_mode22_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16(pSrc, srcPitch);
 
@@ -2309,6 +2352,10 @@ RG_FORCEINLINE __m128i repair_mode22_sse_16(const Byte* pSrc, const __m128i &val
 
   auto mi = _mm_subs_epu16(val, mindiff);
   auto ma = _mm_adds_epu16(val, mindiff);
+  if (bits_per_pixel < 16) { // adds saturates to FFFF
+    const __m128i pixel_max = _mm_set1_epi16((short)((1 << bits_per_pixel) - 1));
+    ma = _mm_min_epu16(ma, pixel_max);
+  }
 
   return simd_clip_16(c, mi, ma);
 }
@@ -2381,6 +2428,7 @@ RG_FORCEINLINE __m128i repair_mode23_sse(const Byte* pSrc, const __m128i &val, i
     return simd_clip(c, mi, ma);
 }
 
+template<int bits_per_pixel>
 RG_FORCEINLINE __m128i repair_mode23_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16(pSrc, srcPitch);
 
@@ -2415,6 +2463,10 @@ RG_FORCEINLINE __m128i repair_mode23_sse_16(const Byte* pSrc, const __m128i &val
 
   auto mi = _mm_subs_epu16(val, maxdiff);
   auto ma = _mm_adds_epu16(val, maxdiff);
+  if (bits_per_pixel < 16) { // adds saturates to FFFF
+    const __m128i pixel_max = _mm_set1_epi16((short)((1 << bits_per_pixel) - 1));
+    ma = _mm_min_epu16(ma, pixel_max);
+  }
 
   return simd_clip_16(c, mi, ma);
 }
@@ -2501,6 +2553,7 @@ RG_FORCEINLINE __m128i repair_mode24_sse(const Byte* pSrc, const __m128i &val, i
     return simd_clip(c, mi, ma);
 }
 
+template<int bits_per_pixel>
 RG_FORCEINLINE __m128i repair_mode24_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16(pSrc, srcPitch);
 
@@ -2537,6 +2590,10 @@ RG_FORCEINLINE __m128i repair_mode24_sse_16(const Byte* pSrc, const __m128i &val
 
   auto mi = _mm_subs_epu16(val, u);
   auto ma = _mm_adds_epu16(val, u);
+  if (bits_per_pixel < 16) { // adds saturates to FFFF
+    const __m128i pixel_max = _mm_set1_epi16((short)((1 << bits_per_pixel) - 1));
+    ma = _mm_min_epu16(ma, pixel_max);
+  }
 
   return simd_clip_16(c, mi, ma);
 }

@@ -148,7 +148,7 @@ RepairPlaneProcessor* sse2_functions[] = {
     process_plane_sse<uint8_t, repair_mode24_sse<SSE2>, SSE2> 
 };
 
-RepairPlaneProcessor* sse4_functions_16[] = {
+RepairPlaneProcessor* sse4_functions_16_10[] = {
   doNothing,
   copyPlane,
   process_plane_sse<uint16_t, repair_mode1_sse_16, SSE3>,
@@ -156,9 +156,9 @@ RepairPlaneProcessor* sse4_functions_16[] = {
   process_plane_sse<uint16_t, repair_mode3_sse_16, SSE3>,
   process_plane_sse<uint16_t, repair_mode4_sse_16, SSE3>,
   process_plane_sse<uint16_t, repair_mode5_sse_16, SSE3>, 
-  process_plane_sse<uint16_t, repair_mode6_sse_16, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode6_sse_16<10>, SSE3>, 
   process_plane_sse<uint16_t, repair_mode7_sse_16, SSE3>, 
-  process_plane_sse<uint16_t, repair_mode8_sse_16, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode8_sse_16<10>, SSE3>, 
   process_plane_sse<uint16_t, repair_mode9_sse_16, SSE3>, 
   process_plane_sse<uint16_t, repair_mode10_sse_16, SSE3>,
   process_plane_sse<uint16_t, repair_mode1_sse_16, SSE3>,
@@ -166,16 +166,104 @@ RepairPlaneProcessor* sse4_functions_16[] = {
   process_plane_sse<uint16_t, repair_mode13_sse_16, SSE3>,
   process_plane_sse<uint16_t, repair_mode14_sse_16, SSE3>,
   process_plane_sse<uint16_t, repair_mode15_sse_16, SSE3>,
-  process_plane_sse<uint16_t, repair_mode16_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode16_sse_16<10>, SSE3>,
   process_plane_sse<uint16_t, repair_mode17_sse_16, SSE3>,
   process_plane_sse<uint16_t, repair_mode18_sse_16, SSE3>,
-  process_plane_sse<uint16_t, repair_mode19_sse_16, SSE3>, 
-  process_plane_sse<uint16_t, repair_mode20_sse_16, SSE3>, 
-  process_plane_sse<uint16_t, repair_mode21_sse_16, SSE3>, 
-  process_plane_sse<uint16_t, repair_mode22_sse_16, SSE3>, 
-  process_plane_sse<uint16_t, repair_mode23_sse_16, SSE3>, 
-  process_plane_sse<uint16_t, repair_mode24_sse_16, SSE3> 
+  process_plane_sse<uint16_t, repair_mode19_sse_16<10>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode20_sse_16<10>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode21_sse_16<10>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode22_sse_16<10>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode23_sse_16<10>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode24_sse_16<10>, SSE3> 
 };
+
+RepairPlaneProcessor* sse4_functions_16_12[] = {
+  doNothing,
+  copyPlane,
+  process_plane_sse<uint16_t, repair_mode1_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode2_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode3_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode4_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode5_sse_16, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode6_sse_16<12>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode7_sse_16, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode8_sse_16<12>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode9_sse_16, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode10_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode1_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode12_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode13_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode14_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode15_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode16_sse_16<12>, SSE3>,
+  process_plane_sse<uint16_t, repair_mode17_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode18_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode19_sse_16<12>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode20_sse_16<12>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode21_sse_16<12>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode22_sse_16<12>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode23_sse_16<12>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode24_sse_16<12>, SSE3> 
+};
+
+RepairPlaneProcessor* sse4_functions_16_14[] = {
+  doNothing,
+  copyPlane,
+  process_plane_sse<uint16_t, repair_mode1_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode2_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode3_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode4_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode5_sse_16, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode6_sse_16<14>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode7_sse_16, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode8_sse_16<14>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode9_sse_16, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode10_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode1_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode12_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode13_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode14_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode15_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode16_sse_16<14>, SSE3>,
+  process_plane_sse<uint16_t, repair_mode17_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode18_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode19_sse_16<14>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode20_sse_16<14>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode21_sse_16<14>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode22_sse_16<14>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode23_sse_16<14>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode24_sse_16<14>, SSE3> 
+};
+
+RepairPlaneProcessor* sse4_functions_16_16[] = {
+  doNothing,
+  copyPlane,
+  process_plane_sse<uint16_t, repair_mode1_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode2_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode3_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode4_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode5_sse_16, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode6_sse_16<16>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode7_sse_16, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode8_sse_16<16>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode9_sse_16, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode10_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode1_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode12_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode13_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode14_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode15_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode16_sse_16<16>, SSE3>,
+  process_plane_sse<uint16_t, repair_mode17_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode18_sse_16, SSE3>,
+  process_plane_sse<uint16_t, repair_mode19_sse_16<16>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode20_sse_16<16>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode21_sse_16<16>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode22_sse_16<16>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode23_sse_16<16>, SSE3>, 
+  process_plane_sse<uint16_t, repair_mode24_sse_16<16>, SSE3> 
+};
+
 
 RepairPlaneProcessor* sse4_functions_32[] = {
   doNothing,
@@ -431,9 +519,14 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
     }
   }
   else if (pixelsize == 2) {
-    // todo mode 6 and 8 bitdepth clamp specific
     if ((env->GetCPUFlags() & CPUF_SSE4) && vi.width >= (16/sizeof(uint16_t) + 1)) {
-      functions = sse4_functions_16;
+      switch (bits_per_pixel) {
+      case 10: functions = sse4_functions_16_10; break;
+      case 12: functions = sse4_functions_16_12; break;
+      case 14: functions = sse4_functions_16_14; break;
+      case 16: functions = sse4_functions_16_16; break;
+      default: env->ThrowError("Illegal bit-depth: %d!", bits_per_pixel);
+      }
     }
     else {
       switch (bits_per_pixel) {

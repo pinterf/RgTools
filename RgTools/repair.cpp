@@ -177,6 +177,35 @@ RepairPlaneProcessor* sse4_functions_16[] = {
   process_plane_sse<uint16_t, repair_mode24_sse_16, SSE3> 
 };
 
+RepairPlaneProcessor* sse4_functions_32[] = {
+  doNothing,
+  copyPlane,
+  process_plane_sse<float, repair_mode1_sse_32, SSE3>,
+  process_plane_sse<float, repair_mode2_sse_32, SSE3>,
+  process_plane_sse<float, repair_mode3_sse_32, SSE3>,
+  process_plane_sse<float, repair_mode4_sse_32, SSE3>,
+  process_plane_sse<float, repair_mode5_sse_32, SSE3>, 
+  process_plane_sse<float, repair_mode6_sse_32, SSE3>, 
+  process_plane_sse<float, repair_mode7_sse_32, SSE3>, 
+  process_plane_sse<float, repair_mode8_sse_32, SSE3>, 
+  process_plane_sse<float, repair_mode9_sse_32, SSE3>, 
+  process_plane_sse<float, repair_mode10_sse_32, SSE3>,
+  process_plane_sse<float, repair_mode1_sse_32, SSE3>,
+  process_plane_sse<float, repair_mode12_sse_32, SSE3>,
+  process_plane_sse<float, repair_mode13_sse_32, SSE3>,
+  process_plane_sse<float, repair_mode14_sse_32, SSE3>,
+  process_plane_sse<float, repair_mode15_sse_32, SSE3>,
+  process_plane_sse<float, repair_mode16_sse_32, SSE3>,
+  process_plane_sse<float, repair_mode17_sse_32, SSE3>,
+  process_plane_sse<float, repair_mode18_sse_32, SSE3>,
+  process_plane_sse<float, repair_mode19_sse_32, SSE3>, 
+  process_plane_sse<float, repair_mode20_sse_32, SSE3>, 
+  process_plane_sse<float, repair_mode21_sse_32, SSE3>, 
+  process_plane_sse<float, repair_mode22_sse_32, SSE3>, 
+  process_plane_sse<float, repair_mode23_sse_32, SSE3>, 
+  process_plane_sse<float, repair_mode24_sse_32, SSE3> 
+};
+
 
 RepairPlaneProcessor* c_functions[] = {
   doNothing,
@@ -417,10 +446,10 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
     }
   }
   else {// if (pixelsize == 4) 
-    /*
-    if ((env->GetCPUFlags() & CPUF_SSE2) && vi.width >= (16/sizeof(float) + 1))
-      functions = sse2_functions_32;
-    else*/
+    
+    if ((env->GetCPUFlags() & CPUF_SSE4) && vi.width >= (16/sizeof(float) + 1))
+      functions = sse4_functions_32;
+    else
       functions = c_functions_32;
   }
 }

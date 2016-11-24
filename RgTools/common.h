@@ -269,20 +269,34 @@ a8 = simd_loadu_si128<optLevel>((ptr) + (pitch) + (pixelsize));
 
 }
 */
-#define LOAD_SQUARE_SSE_0(optLevel, ptr, pitch, pixelsize) \
-__m128i a1 = simd_loadu_si128<optLevel>((ptr) - (pitch) - (pixelsize)); \
-__m128i a2 = simd_loadu_si128<optLevel>((ptr) - (pitch)); \
-__m128i a3 = simd_loadu_si128<optLevel>((ptr) - (pitch) + (pixelsize)); \
-__m128i a4 = simd_loadu_si128<optLevel>((ptr) - (pixelsize)); \
-__m128i c  = simd_loadu_si128<optLevel>((ptr) ); \
-__m128i a5 = simd_loadu_si128<optLevel>((ptr) + (pixelsize)); \
-__m128i a6 = simd_loadu_si128<optLevel>((ptr) + (pitch) - (pixelsize)); \
-__m128i a7 = simd_loadu_si128<optLevel>((ptr) + (pitch)); \
-__m128i a8 = simd_loadu_si128<optLevel>((ptr) + (pitch) + (pixelsize));
+#define LOAD_SQUARE_SSE_0(optLevel, ptr, pitch, pixelsize, aligned) \
+__m128i a1, a2, a3, a4, a5, a6, a7, a8, c; \
+if(!aligned) {\
+a1 = simd_loadu_si128<optLevel>((ptr) - (pitch) - (pixelsize)); \
+a2 = simd_loadu_si128<optLevel>((ptr) - (pitch)); \
+a3 = simd_loadu_si128<optLevel>((ptr) - (pitch) + (pixelsize)); \
+a4 = simd_loadu_si128<optLevel>((ptr) - (pixelsize)); \
+c  = simd_loadu_si128<optLevel>((ptr) ); \
+a5 = simd_loadu_si128<optLevel>((ptr) + (pixelsize)); \
+a6 = simd_loadu_si128<optLevel>((ptr) + (pitch) - (pixelsize)); \
+a7 = simd_loadu_si128<optLevel>((ptr) + (pitch)); \
+a8 = simd_loadu_si128<optLevel>((ptr) + (pitch) + (pixelsize)); \
+} else {\
+a1 = simd_loadu_si128<optLevel>((ptr) - (pitch) - (pixelsize)); \
+a2 = simd_loada_si128<optLevel>((ptr) - (pitch)); \
+a3 = simd_loadu_si128<optLevel>((ptr) - (pitch) + (pixelsize)); \
+a4 = simd_loadu_si128<optLevel>((ptr) - (pixelsize)); \
+c  = simd_loada_si128<optLevel>((ptr) ); \
+a5 = simd_loadu_si128<optLevel>((ptr) + (pixelsize)); \
+a6 = simd_loadu_si128<optLevel>((ptr) + (pitch) - (pixelsize)); \
+a7 = simd_loada_si128<optLevel>((ptr) + (pitch)); \
+a8 = simd_loadu_si128<optLevel>((ptr) + (pitch) + (pixelsize)); \
+}
 
-#define LOAD_SQUARE_SSE(optLevel, ptr, pitch) LOAD_SQUARE_SSE_0(optLevel, ptr, pitch, 1)
-// PF avs+
-#define LOAD_SQUARE_SSE_16(ptr, pitch) LOAD_SQUARE_SSE_0(SSE3, ptr, pitch, 2)
+#define LOAD_SQUARE_SSE(optLevel, ptr, pitch) LOAD_SQUARE_SSE_0(optLevel, ptr, pitch, 1, false)
+// unaligned or aligned
+#define LOAD_SQUARE_SSE_UA(optLevel, ptr, pitch, aligned) LOAD_SQUARE_SSE_0(optLevel, ptr, pitch, 1, aligned)
+#define LOAD_SQUARE_SSE_16(ptr, pitch) LOAD_SQUARE_SSE_0(SSE3, ptr, pitch, 2, false)
 
 #define LOAD_SQUARE_SSE_32(ptr, pitch) \
 __m128 a1 = _mm_loadu_ps((const float *)((ptr) - (pitch) - 4)); \

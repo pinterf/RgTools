@@ -34,9 +34,9 @@ static RG_FORCEINLINE __m128i not_rounded_average_16(__m128i a, __m128i b) {
 
 //-------------------
 
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode1_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     __m128i mi = _mm_min_epu8 (
         _mm_min_epu8(_mm_min_epu8(a1, a2), _mm_min_epu8(a3, a4)),
@@ -83,9 +83,9 @@ RG_FORCEINLINE __m128i rg_mode1_sse_32(const Byte* pSrc, int srcPitch) {
 
 //-------------------
 
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode2_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     sort_pair(a1, a2);
     sort_pair(a3, a4);
@@ -177,9 +177,9 @@ RG_FORCEINLINE __m128i rg_mode2_sse_32(const Byte* pSrc, int srcPitch) {
 
 //-------------------
 
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode3_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     sort_pair(a1, a2);
     sort_pair(a3, a4);
@@ -270,9 +270,9 @@ RG_FORCEINLINE __m128i rg_mode3_sse_32(const Byte* pSrc, int srcPitch) {
 
 //-------------------
 
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode4_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     sort_pair (a1, a2);
     sort_pair (a3, a4);
@@ -366,9 +366,9 @@ RG_FORCEINLINE __m128i rg_mode4_sse_32(const Byte* pSrc, int srcPitch) {
 
 //-------------------
 
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode5_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     auto mal1 = _mm_max_epu8(a1, a8);
     auto mil1 = _mm_min_epu8(a1, a8);
@@ -474,9 +474,9 @@ RG_FORCEINLINE __m128i rg_mode5_sse_32(const Byte* pSrc, int srcPitch) {
 
 //-------------------
 
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode6_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     auto mal1 = _mm_max_epu8(a1, a8);
     auto mil1 = _mm_min_epu8(a1, a8);
@@ -624,9 +624,9 @@ RG_FORCEINLINE __m128i rg_mode6_sse_32(const Byte* pSrc, int srcPitch) {
 
 //-------------------
 
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode7_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     auto mal1 = _mm_max_epu8(a1, a8);
     auto mil1 = _mm_min_epu8(a1, a8);
@@ -747,9 +747,9 @@ RG_FORCEINLINE __m128i rg_mode7_sse_32(const Byte* pSrc, int srcPitch) {
 
 //-------------------
 
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode8_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     auto mal1 = _mm_max_epu8(a1, a8);
     auto mil1 = _mm_min_epu8(a1, a8);
@@ -879,9 +879,9 @@ RG_FORCEINLINE __m128i rg_mode8_sse_32(const Byte* pSrc, int srcPitch) {
 
 //-------------------
 
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode9_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     auto mal1 = _mm_max_epu8(a1, a8);
     auto mil1 = _mm_min_epu8(a1, a8);
@@ -973,9 +973,9 @@ RG_FORCEINLINE __m128i rg_mode9_sse_32(const Byte* pSrc, int srcPitch) {
 
 //-------------------
 
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode10_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     auto d1 = abs_diff(c, a1);
     auto d2 = abs_diff(c, a2);
@@ -1071,9 +1071,9 @@ RG_FORCEINLINE __m128i rg_mode12_sse_16(const Byte* pSrc, int srcPitch);
 RG_FORCEINLINE __m128i rg_mode12_sse_32(const Byte* pSrc, int srcPitch);
 
 //todo: actually implement is as mode 11
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode11_sse(const Byte* pSrc, int srcPitch) {
-    return rg_mode12_sse<optLevel>(pSrc, srcPitch);
+    return rg_mode12_sse<aligned, optLevel>(pSrc, srcPitch);
 }
 RG_FORCEINLINE __m128i rg_mode11_sse_16(const Byte* pSrc, int srcPitch) {
   return rg_mode12_sse_16(pSrc, srcPitch);
@@ -1084,9 +1084,9 @@ RG_FORCEINLINE __m128i rg_mode11_sse_32(const Byte* pSrc, int srcPitch) {
 
 //-------------------
 
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode12_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     auto a13  = _mm_avg_epu8 (a1, a3);
     auto a123 = _mm_avg_epu8 (a2, a13);
@@ -1141,9 +1141,9 @@ RG_FORCEINLINE __m128i rg_mode12_sse_32(const Byte* pSrc, int srcPitch) {
 
 //-------------------
 
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode13_and14_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     auto d1 = abs_diff(a1, a8);
     auto d2 = abs_diff(a2, a7);
@@ -1190,9 +1190,9 @@ RG_FORCEINLINE __m128i rg_mode13_and14_sse_32(const Byte* pSrc, int srcPitch) {
 //-------------------
 
 //rounding does not match
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode15_and16_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     auto max18 = _mm_max_epu8(a1, a8);
     auto min18 = _mm_min_epu8(a1, a8);
@@ -1301,9 +1301,9 @@ RG_FORCEINLINE __m128i rg_mode15_and16_sse_32(const Byte* pSrc, int srcPitch) {
 
 //-------------------
 
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode17_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     auto mal1 = _mm_max_epu8(a1, a8);
     auto mil1 = _mm_min_epu8(a1, a8);
@@ -1391,9 +1391,9 @@ RG_FORCEINLINE __m128i rg_mode17_sse_32(const Byte* pSrc, int srcPitch) {
 
 //-------------------
 
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode18_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     auto absdiff1 = abs_diff(c, a1);
     auto absdiff2 = abs_diff(c, a2);
@@ -1491,9 +1491,9 @@ RG_FORCEINLINE __m128i rg_mode18_sse_32(const Byte* pSrc, int srcPitch) {
 
 //-------------------
 
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode19_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     auto a13    = _mm_avg_epu8 (a1, a3);
     auto a68    = _mm_avg_epu8 (a6, a8);
@@ -1540,9 +1540,9 @@ RG_FORCEINLINE __m128i rg_mode19_sse_32(const Byte* pSrc, int srcPitch) {
 //-------------------
 
 //todo: probably extract a function with 12 arguments?
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode20_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     auto zero = _mm_setzero_si128();
     auto onenineth = _mm_set1_epi16((unsigned short)(((1u << 16) + 4) / 9));
@@ -1692,9 +1692,9 @@ RG_FORCEINLINE __m128i rg_mode20_sse_32(const Byte* pSrc, int srcPitch) {
 
 //-------------------
 
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode21_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     auto l1a = not_rounded_average(a1, a8);
     auto l2a = not_rounded_average(a2, a7);
@@ -1749,9 +1749,9 @@ RG_FORCEINLINE __m128i rg_mode21_sse_32(const Byte* pSrc, int srcPitch) {
 
 //-------------------
 
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode22_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     auto l1 = _mm_avg_epu8(a1, a8);
     auto l2 = _mm_avg_epu8(a2, a7);
@@ -1814,9 +1814,9 @@ RG_FORCEINLINE __m128i rg_mode22_sse_32(const Byte* pSrc, int srcPitch) {
 //-------------------
 
 //optimized. 
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode23_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     auto mal1 = _mm_max_epu8(a1, a8);
     auto mil1 = _mm_min_epu8(a1, a8);
@@ -1942,9 +1942,9 @@ RG_FORCEINLINE __m128i rg_mode23_sse_32(const Byte* pSrc, int srcPitch) {
 //-------------------
 
 //optimized, todo: decide how to name the function and extract this stuff. Order is important.
-template<InstructionSet optLevel>
+template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode24_sse(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_SSE(optLevel, pSrc, srcPitch);
+    LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     auto mal  = _mm_max_epu8(a1, a8);
     auto mil  = _mm_min_epu8(a1, a8);

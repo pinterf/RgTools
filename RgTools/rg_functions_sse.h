@@ -50,9 +50,9 @@ RG_FORCEINLINE __m128i rg_mode1_sse(const Byte* pSrc, int srcPitch) {
     return simd_clip(c, mi, ma);
 }
 
-// SSE4 min_epu16
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode1_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   __m128i mi = _mm_min_epu16 (
     _mm_min_epu16(_mm_min_epu16(a1, a2), _mm_min_epu16(a3, a4)),
@@ -66,8 +66,9 @@ RG_FORCEINLINE __m128i rg_mode1_sse_16(const Byte* pSrc, int srcPitch) {
   return simd_clip_16(c, mi, ma);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode1_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   __m128 mi = _mm_min_ps (
     _mm_min_ps(_mm_min_ps(a1, a2), _mm_min_ps(a3, a4)),
@@ -114,8 +115,9 @@ RG_FORCEINLINE __m128i rg_mode2_sse(const Byte* pSrc, int srcPitch) {
     return simd_clip(c, a2, a7);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode2_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   sort_pair_16(a1, a2);
   sort_pair_16(a3, a4);
@@ -144,8 +146,9 @@ RG_FORCEINLINE __m128i rg_mode2_sse_16(const Byte* pSrc, int srcPitch) {
   return simd_clip_16(c, a2, a7);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode2_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   sort_pair_32(a1, a2);
   sort_pair_32(a3, a4);
@@ -208,8 +211,9 @@ RG_FORCEINLINE __m128i rg_mode3_sse(const Byte* pSrc, int srcPitch) {
     return simd_clip(c, a3, a6);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode3_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   sort_pair_16(a1, a2);
   sort_pair_16(a3, a4);
@@ -238,8 +242,9 @@ RG_FORCEINLINE __m128i rg_mode3_sse_16(const Byte* pSrc, int srcPitch) {
   return simd_clip_16(c, a3, a6);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode3_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   sort_pair_32(a1, a2);
   sort_pair_32(a3, a4);
@@ -302,8 +307,9 @@ RG_FORCEINLINE __m128i rg_mode4_sse(const Byte* pSrc, int srcPitch) {
     return simd_clip(c, a4, a5);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode4_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   sort_pair_16 (a1, a2);
   sort_pair_16 (a3, a4);
@@ -333,8 +339,9 @@ RG_FORCEINLINE __m128i rg_mode4_sse_16(const Byte* pSrc, int srcPitch) {
   return simd_clip_16(c, a4, a5);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode4_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   sort_pair_32 (a1, a2);
   sort_pair_32 (a3, a4);
@@ -402,8 +409,9 @@ RG_FORCEINLINE __m128i rg_mode5_sse(const Byte* pSrc, int srcPitch) {
     return select_on_equal(mindiff, c4, result, clipped4);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode5_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu16(a1, a8);
   auto mil1 = _mm_min_epu16(a1, a8);
@@ -437,8 +445,9 @@ RG_FORCEINLINE __m128i rg_mode5_sse_16(const Byte* pSrc, int srcPitch) {
   return select_on_equal_16(mindiff, c4, result, clipped4);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode5_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_ps(a1, a8);
   auto mil1 = _mm_min_ps(a1, a8);
@@ -520,9 +529,9 @@ RG_FORCEINLINE __m128i rg_mode6_sse(const Byte* pSrc, int srcPitch) {
     return select_on_equal(mindiff, c4, result, clipped4);
 }
 
-template<int bits_per_pixel>
+template<int bits_per_pixel, bool aligned>
 RG_FORCEINLINE __m128i rg_mode6_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu16(a1, a8);
   auto mil1 = _mm_min_epu16(a1, a8);
@@ -574,8 +583,9 @@ RG_FORCEINLINE __m128i rg_mode6_sse_16(const Byte* pSrc, int srcPitch) {
   return select_on_equal_16(mindiff, c4, result, clipped4);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode6_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto zero = _mm_setzero_ps();
 
@@ -665,8 +675,9 @@ RG_FORCEINLINE __m128i rg_mode7_sse(const Byte* pSrc, int srcPitch) {
     return select_on_equal(mindiff, c4, result, clipped4);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode7_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu16(a1, a8);
   auto mil1 = _mm_min_epu16(a1, a8);
@@ -705,8 +716,9 @@ RG_FORCEINLINE __m128i rg_mode7_sse_16(const Byte* pSrc, int srcPitch) {
   return select_on_equal_16(mindiff, c4, result, clipped4);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode7_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_ps(a1, a8);
   auto mil1 = _mm_min_ps(a1, a8);
@@ -788,9 +800,9 @@ RG_FORCEINLINE __m128i rg_mode8_sse(const Byte* pSrc, int srcPitch) {
     return select_on_equal(mindiff, c4, result, clipped4);
 }
 
-template<int bits_per_pixel>
+template<int bits_per_pixel, bool aligned>
 RG_FORCEINLINE __m128i rg_mode8_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu16(a1, a8);
   auto mil1 = _mm_min_epu16(a1, a8);
@@ -837,8 +849,9 @@ RG_FORCEINLINE __m128i rg_mode8_sse_16(const Byte* pSrc, int srcPitch) {
   return select_on_equal_16(mindiff, c4, result, clipped4);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode8_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_ps(a1, a8);
   auto mil1 = _mm_min_ps(a1, a8);
@@ -910,8 +923,9 @@ RG_FORCEINLINE __m128i rg_mode9_sse(const Byte* pSrc, int srcPitch) {
     return select_on_equal(mindiff, d4, result, simd_clip(c, mil4, mal4));
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode9_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu16(a1, a8);
   auto mil1 = _mm_min_epu16(a1, a8);
@@ -940,8 +954,9 @@ RG_FORCEINLINE __m128i rg_mode9_sse_16(const Byte* pSrc, int srcPitch) {
   return select_on_equal_16(mindiff, d4, result, simd_clip_16(c, mil4, mal4));
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode9_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_ps(a1, a8);
   auto mil1 = _mm_min_ps(a1, a8);
@@ -1004,8 +1019,9 @@ RG_FORCEINLINE __m128i rg_mode10_sse(const Byte* pSrc, int srcPitch) {
     return select_on_equal(mindiff, d7, result, a7);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode10_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff_16(c, a1);
   auto d2 = abs_diff_16(c, a2);
@@ -1034,8 +1050,9 @@ RG_FORCEINLINE __m128i rg_mode10_sse_16(const Byte* pSrc, int srcPitch) {
   return select_on_equal_16(mindiff, d7, result, a7);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode10_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff_32(c, a1);
   auto d2 = abs_diff_32(c, a2);
@@ -1066,8 +1083,11 @@ RG_FORCEINLINE __m128i rg_mode10_sse_32(const Byte* pSrc, int srcPitch) {
 
 //-------------------
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode12_sse(const Byte* pSrc, int srcPitch);
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode12_sse_16(const Byte* pSrc, int srcPitch);
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode12_sse_32(const Byte* pSrc, int srcPitch);
 
 //todo: actually implement is as mode 11
@@ -1075,11 +1095,13 @@ template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode11_sse(const Byte* pSrc, int srcPitch) {
     return rg_mode12_sse<aligned, optLevel>(pSrc, srcPitch);
 }
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode11_sse_16(const Byte* pSrc, int srcPitch) {
-  return rg_mode12_sse_16(pSrc, srcPitch);
+  return rg_mode12_sse_16<aligned>(pSrc, srcPitch);
 }
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode11_sse_32(const Byte* pSrc, int srcPitch) {
-  return rg_mode12_sse_32(pSrc, srcPitch);
+  return rg_mode12_sse_32<aligned>(pSrc, srcPitch);
 }
 
 //-------------------
@@ -1103,8 +1125,9 @@ RG_FORCEINLINE __m128i rg_mode12_sse(const Byte* pSrc, int srcPitch) {
     return _mm_avg_epu8 (a4c5, a123678b);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode12_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto a13  = _mm_avg_epu16 (a1, a3);
   auto a123 = _mm_avg_epu16 (a2, a13);
@@ -1121,8 +1144,9 @@ RG_FORCEINLINE __m128i rg_mode12_sse_16(const Byte* pSrc, int srcPitch) {
   return _mm_avg_epu16 (a4c5, a123678b);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode12_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto a13  = _mm_avg_ps (a1, a3);
   auto a123 = _mm_avg_ps (a2, a13);
@@ -1157,8 +1181,9 @@ RG_FORCEINLINE __m128i rg_mode13_and14_sse(const Byte* pSrc, int srcPitch) {
     return select_on_equal(mindiff, d2, result,  _mm_avg_epu8(a2, a7));
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode13_and14_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff_16(a1, a8);
   auto d2 = abs_diff_16(a2, a7);
@@ -1172,8 +1197,9 @@ RG_FORCEINLINE __m128i rg_mode13_and14_sse_16(const Byte* pSrc, int srcPitch) {
   return select_on_equal_16(mindiff, d2, result,  _mm_avg_epu16(a2, a7));
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode13_and14_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff_32(a1, a8);
   auto d2 = abs_diff_32(a2, a7);
@@ -1227,8 +1253,9 @@ RG_FORCEINLINE __m128i rg_mode15_and16_sse(const Byte* pSrc, int srcPitch) {
     return select_on_equal(mindiff, d2, result, simd_clip(avg, min27, max27));
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode15_and16_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto max18 = _mm_max_epu16(a1, a8);
   auto min18 = _mm_min_epu16(a1, a8);
@@ -1263,8 +1290,9 @@ RG_FORCEINLINE __m128i rg_mode15_and16_sse_16(const Byte* pSrc, int srcPitch) {
   return select_on_equal_16(mindiff, d2, result, simd_clip_16(avg, min27, max27));
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode15_and16_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto max18 = _mm_max_ps(a1, a8);
   auto min18 = _mm_min_ps(a1, a8);
@@ -1331,8 +1359,9 @@ RG_FORCEINLINE __m128i rg_mode17_sse(const Byte* pSrc, int srcPitch) {
     return simd_clip(c, real_lower, real_upper);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode17_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu16(a1, a8);
   auto mil1 = _mm_min_epu16(a1, a8);
@@ -1360,8 +1389,9 @@ RG_FORCEINLINE __m128i rg_mode17_sse_16(const Byte* pSrc, int srcPitch) {
   return simd_clip_16(c, real_lower, real_upper);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode17_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_ps(a1, a8);
   auto mil1 = _mm_min_ps(a1, a8);
@@ -1424,8 +1454,9 @@ RG_FORCEINLINE __m128i rg_mode18_sse(const Byte* pSrc, int srcPitch) {
     return select_on_equal(mindiff, d4, result, c4);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode18_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto absdiff1 = abs_diff_16(c, a1);
   auto absdiff2 = abs_diff_16(c, a2);
@@ -1456,8 +1487,9 @@ RG_FORCEINLINE __m128i rg_mode18_sse_16(const Byte* pSrc, int srcPitch) {
   return select_on_equal_16(mindiff, d4, result, c4);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode18_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto absdiff1 = abs_diff_32(c, a1);
   auto absdiff2 = abs_diff_32(c, a2);
@@ -1507,8 +1539,9 @@ RG_FORCEINLINE __m128i rg_mode19_sse(const Byte* pSrc, int srcPitch) {
     return val;
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode19_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto a13    = _mm_avg_epu16 (a1, a3);
   auto a68    = _mm_avg_epu16 (a6, a8);
@@ -1522,8 +1555,9 @@ RG_FORCEINLINE __m128i rg_mode19_sse_16(const Byte* pSrc, int srcPitch) {
   return val;
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode19_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto a13    = _mm_avg_ps (a1, a3);
   auto a68    = _mm_avg_ps (a6, a8);
@@ -1600,8 +1634,9 @@ RG_FORCEINLINE __m128i rg_mode20_sse(const Byte* pSrc, int srcPitch) {
     return _mm_packus_epi16(result_lo, result_hi);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode20_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   //    int sum = a1 + a2 + a3 + a4 + c + a5 + a6 + a7 + a8;
   //    int val = (sum + 4) / 9;
@@ -1673,8 +1708,9 @@ RG_FORCEINLINE __m128i rg_mode20_sse_16(const Byte* pSrc, int srcPitch) {
   return _mm_packus_epi32(result_lo, result_hi);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode20_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto onenineth = _mm_set1_ps(1/9.0f);
   // float val = (a1 + a2 + a3 + a4 + c + a5 + a6 + a7 + a8) / 9.0f;
@@ -1717,8 +1753,9 @@ RG_FORCEINLINE __m128i rg_mode21_sse(const Byte* pSrc, int srcPitch) {
     return simd_clip(c, mi, ma);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode21_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto l1a = not_rounded_average_16(a1, a8);
   auto l2a = not_rounded_average_16(a2, a7);
@@ -1741,10 +1778,12 @@ RG_FORCEINLINE __m128i rg_mode21_sse_16(const Byte* pSrc, int srcPitch) {
   return simd_clip_16(c, mi, ma);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode22_sse_32(const Byte* pSrc, int srcPitch);
   // float: no integer tricks, same like 22
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode21_sse_32(const Byte* pSrc, int srcPitch) {
-  return rg_mode22_sse_32(pSrc, srcPitch);
+  return rg_mode22_sse_32<aligned>(pSrc, srcPitch);
 }
 
 //-------------------
@@ -1770,8 +1809,9 @@ RG_FORCEINLINE __m128i rg_mode22_sse(const Byte* pSrc, int srcPitch) {
     return simd_clip(c, mi, ma);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode22_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto l1 = _mm_avg_epu16(a1, a8);
   auto l2 = _mm_avg_epu16(a2, a7);
@@ -1790,8 +1830,9 @@ RG_FORCEINLINE __m128i rg_mode22_sse_16(const Byte* pSrc, int srcPitch) {
   return simd_clip_16(c, mi, ma);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode22_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto l1 = _mm_avg_ps(a1, a8);
   auto l2 = _mm_avg_ps(a2, a7);
@@ -1856,8 +1897,9 @@ RG_FORCEINLINE __m128i rg_mode23_sse(const Byte* pSrc, int srcPitch) {
     return _mm_adds_epu8(_mm_subs_epu8(c, u), d);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode23_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu16(a1, a8);
   auto mil1 = _mm_min_epu16(a1, a8);
@@ -1897,8 +1939,9 @@ RG_FORCEINLINE __m128i rg_mode23_sse_16(const Byte* pSrc, int srcPitch) {
   return _mm_adds_epu16(_mm_subs_epu16(c, u), d);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode23_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_ps(a1, a8);
   auto mil1 = _mm_min_ps(a1, a8);
@@ -1990,8 +2033,9 @@ RG_FORCEINLINE __m128i rg_mode24_sse(const Byte* pSrc, int srcPitch) {
     return _mm_adds_epu8(_mm_subs_epu8(c, u), d);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode24_sse_16(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_16(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mal  = _mm_max_epu16(a1, a8);
   auto mil  = _mm_min_epu16(a1, a8);
@@ -2037,8 +2081,9 @@ RG_FORCEINLINE __m128i rg_mode24_sse_16(const Byte* pSrc, int srcPitch) {
   return _mm_adds_epu16(_mm_subs_epu16(c, u), d);
 }
 
+template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode24_sse_32(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_SSE_32(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mal  = _mm_max_ps(a1, a8);
   auto mil  = _mm_min_ps(a1, a8);

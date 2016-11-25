@@ -177,7 +177,7 @@ RG_FORCEINLINE void sclense_process_line_sse2_32(Byte* pDst, const Byte *pSrc, c
 }
 
 template<decltype(clense_process_line_sse2) processor>
-void process_plane_sse2(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, IScriptEnvironment *env) {
+void process_plane_sse(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, IScriptEnvironment *env) {
     if (!is_16byte_aligned(pSrc) || !is_16byte_aligned(pRef1) || !is_16byte_aligned(pRef2)) {
         env->ThrowError("Invalid memory alignment. Used unaligned crop?"); //omg I feel so dumb
     }
@@ -216,35 +216,35 @@ Clense::Clense(PClip child, PClip previous, PClip next, bool grey, ClenseMode mo
 
     if (pixelsize == 1) {
       processor_ = (mode_ == ClenseMode::BOTH)
-        ? (sse2_ ? process_plane_sse2<clense_process_line_sse2> : process_plane_c<uint8_t, clense_process_pixel_c>)
-        : (sse2_ ? process_plane_sse2<sclense_process_line_sse2> : process_plane_c<uint8_t, sclense_process_pixel_c>);
+        ? (sse2_ ? process_plane_sse<clense_process_line_sse2> : process_plane_c<uint8_t, clense_process_pixel_c>)
+        : (sse2_ ? process_plane_sse<sclense_process_line_sse2> : process_plane_c<uint8_t, sclense_process_pixel_c>);
     }
     else if (pixelsize == 2) {
       // sse4 needed
       switch (bits_per_pixel) {
       case 10: processor_ = (mode_ == ClenseMode::BOTH)
-        ? (sse4_ ? process_plane_sse2<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
-        : (sse4_ ? process_plane_sse2<sclense_process_line_sse4_16<10>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<10>>);
+        ? (sse4_ ? process_plane_sse<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
+        : (sse4_ ? process_plane_sse<sclense_process_line_sse4_16<10>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<10>>);
         break;
       case 12: processor_ = (mode_ == ClenseMode::BOTH)
-        ? (sse4_ ? process_plane_sse2<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
-        : (sse4_ ? process_plane_sse2<sclense_process_line_sse4_16<12>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<12>>);
+        ? (sse4_ ? process_plane_sse<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
+        : (sse4_ ? process_plane_sse<sclense_process_line_sse4_16<12>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<12>>);
         break;
       case 14: processor_ = (mode_ == ClenseMode::BOTH)
-        ? (sse4_ ? process_plane_sse2<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
-        : (sse4_ ? process_plane_sse2<sclense_process_line_sse4_16<14>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<14>>);
+        ? (sse4_ ? process_plane_sse<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
+        : (sse4_ ? process_plane_sse<sclense_process_line_sse4_16<14>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<14>>);
         break;
       case 16: processor_ = (mode_ == ClenseMode::BOTH)
-        ? (sse4_ ? process_plane_sse2<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
-        : (sse4_ ? process_plane_sse2<sclense_process_line_sse4_16<16>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<16>>);
+        ? (sse4_ ? process_plane_sse<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
+        : (sse4_ ? process_plane_sse<sclense_process_line_sse4_16<16>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<16>>);
         break;
       default: env->ThrowError("Illegal bit-depth: %d!", bits_per_pixel);
       }
     }
     else { // pixelsize == 4
       processor_ = (mode_ == ClenseMode::BOTH)
-        ? (sse2_ ? process_plane_sse2<clense_process_line_sse2_32> : process_plane_c<float, clense_process_pixel_c_32>)
-        : (sse2_ ? process_plane_sse2<sclense_process_line_sse2_32> : process_plane_c<float, sclense_process_pixel_c_32>);
+        ? (sse2_ ? process_plane_sse<clense_process_line_sse2_32> : process_plane_c<float, clense_process_pixel_c_32>)
+        : (sse2_ ? process_plane_sse<sclense_process_line_sse2_32> : process_plane_c<float, sclense_process_pixel_c_32>);
     }
 }
 

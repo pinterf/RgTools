@@ -303,7 +303,7 @@ a8 = simd_loadu_si128<optLevel>((ptr) + (pitch) + (pixelsize)); \
 // unaligned
 #define LOAD_SQUARE_SSE_16(ptr, pitch) LOAD_SQUARE_SSE_0(SSE3, ptr, pitch, 2, false)
 // unaligned or aligned
-#define LOAD_SQUARE_SSE_16_UA(optLevel, ptr, pitch, aligned) LOAD_SQUARE_SSE_0(SSE3, ptr, pitch, 2, aligned)
+#define LOAD_SQUARE_SSE_16_UA(ptr, pitch, aligned) LOAD_SQUARE_SSE_0(SSE3, ptr, pitch, 2, aligned)
 
 // 32 bit float loads
 #define LOAD_SQUARE_SSE_0_32(ptr, pitch, aligned) \

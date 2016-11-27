@@ -6,6 +6,10 @@ Some routines might be slightly less efficient than original, some are faster. O
 
 This plugin is written from scratch and licensed under the [MIT license][1]. Some modes of RemoveGrain and Repair were taken from the Firesledge's Dither package.
 
+From v0.93 new pixel formats are supported
+- 10, 12, 14, 16 bit and float 
+- Planar RGB, RGBA and YUVA (alpha plane is copied)
+
 
 ### Functions
 ```

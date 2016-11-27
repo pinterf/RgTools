@@ -159,14 +159,7 @@ RG_FORCEINLINE void sclense_process_line_sse2_32(Byte* pDst, const Byte *pSrc, c
 
     auto minref = _mm_min_ps(ref1, ref2);
     auto maxref = _mm_max_ps(ref1, ref2);
-/*
-    float minref = std::min(ref1, ref2);
-    float maxref = std::max(ref1, ref2);
 
-    float mi = std::max(minref*2 - ref2, 0.0f);
-    float ma = std::min(maxref*2 - ref2, 1.0f);
-    return clip_32(src, mi, ma);
-*/
     auto mi = _mm_max_ps(_mm_sub_ps(_mm_add_ps(minref, minref), ref2), zero);
     auto ma = _mm_min_ps(_mm_sub_ps(_mm_add_ps(maxref, maxref), ref2), one);
 

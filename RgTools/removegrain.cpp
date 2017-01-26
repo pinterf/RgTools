@@ -27,18 +27,18 @@ static void process_plane_sse(IScriptEnvironment* env, const BYTE* pSrc8, BYTE* 
       // unaligned first 16 bytes, last pixel overlaps with the next aligned loop
       __m128i result = processor((uint8_t *)(pSrc + 1), srcPitchOrig);
       _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + 1), result);
-      
+
       // aligned
       for (int x = pixels_at_at_time; x < mod_width - 1; x += pixels_at_at_time) {
         __m128i result = processor_a((uint8_t *)(pSrc + x), srcPitchOrig);
         _mm_store_si128(reinterpret_cast<__m128i*>(pDst + x), result);
       }
-
+      
       if (mod_width != width) {
         __m128i result = processor((uint8_t *)(pSrc + width - 1 - pixels_at_at_time), srcPitchOrig);
         _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + width - 1 - pixels_at_at_time), result);
       }
-
+      
       pDst[width - 1] = pSrc[width - 1];
 
       pSrc += srcPitch;
@@ -194,6 +194,124 @@ static void copyPlane(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int
     env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, height);
 }
 
+/*
+#ifdef	SHARPEN
+static void	(*cleaning_methods[MAXMODE + 1])(BYTE *dp, int dpitch, const BYTE *sp, int spitch, int hblocks, int remainder, int incpitch, int height, int strength)
+= { copy_plane, SSE_RemoveGrain1, SSE_RemoveGrain2, SSE_RemoveGrain3, SSE_RemoveGrain4, SSE_Repair15, SSE_Repair16, SSE_Repair17, SSE_Repair18a, diag9, copy_plane
+, copy_plane, copy_plane, copy_plane, copy_plane, copy_plane, SmartRG, SSE_Repair18, copy_plane, copy_plane, copy_plane
+, SmartAvgRGs, SmartAvgRGf
+};
+#else
+static void	(*cleaning_methods[MAXMODE + 1])(BYTE *dp, int dpitch, const BYTE *sp, int spitch, int hblocks, int remainder, int incpitch, int height)
+#ifdef	MODIFYPLUGIN (Repair)
+= { do_nothing, SSE_RemoveGrain1, SSE_RemoveGrain2, SSE_RemoveGrain3, SSE_RemoveGrain4, diag5, diag6, diag7, diag8, diag9
+, SSE_RemoveGrain10, SSE_RemoveGrain1, SSE_Repair12, SSE_Repair13, SSE_Repair14, SSE_Repair15, SSE_Repair16, SmartRG, SSE_Repair18
+, New_Repair1, New_Repair2, New_Repair3, New_Repair1b, New_Repair2b, New_Repair3b};
+#elif	defined(BLUR)
+= { copy_plane, SSE_RemoveGrain1, SSE_RemoveGrain2, SSE_RemoveGrain3, SSE_RemoveGrain4, copy_plane, copy_plane, copy_plane, copy_plane, diag9, copy_plane
+, copy_plane, copy_plane, copy_plane, copy_plane, copy_plane, copy_plane, copy_plane, copy_plane, copy_plane, copy_plane
+, SmartAvgRGs, SmartAvgRGf
+};
+#else (RemoveGrain)
+= { copy_plane, SSE_RemoveGrain1, SSE_RemoveGrain2, SSE_RemoveGrain3, SSE_RemoveGrain4, diag5, diag6, diag7, diag8, diag9
+, SSE_RemoveGrain10, SSE_RemoveGrain11, SSE_RemoveGrain12, bob_top, bob_bottom, smartbob_top, smartbob_bottom, SmartRG, SSE_Repair18, SSE_RemoveGrain19, SSE_RemoveGrain20
+, SmartAvgRGs, SmartAvgRGf, SSE_RemoveGrain23, SSE_RemoveGrain24, nondestructivesharpen, SmartRGC, SmartRGCL, SmartRGCL2, SmartRG18, SoftRG18};
+#endif
+
+PF extract:
+seem to be new 
+25 - nondestructivesharpen
+26 - SmartRGC
+27 - SmartRGCL
+28 - SmartRGCL2
+29 - SmartRG18
+30 - SoftRG18
+#endif	// SHARPEN
+
+from 
+http://web.archive.org/web/20130615165406/http://doom10.org/index.php?topic=2185.0
+
+removegrain modes:
+
+-1= bypass (output=0) faster than mode=0 (copy)
+
+0 = copy
+
+1 = medianblur. Same as Undot, but faster. (single dots)
+2 = medianblur. Round up to the second closest minimum luma value in a 3x3 window matrix, if this second lowest value is lower than X pixel value, then leave unchanged. (1x2 spots)
+3 = medianblur. Sames as mode 2 but rounded up to third  minimum value (but artifact risky). (3pixel-clusters)
+4 = medianblur. Sames as mode 2 but rounded up to fourth minimum value (but artifact risky). (up to 2x2-pixel-clusters)
+
+5 = medianblur. Edge sensitive. Only line pairs are used. Strong  edge protection.
+6 = medianblur. Edge sensitive. Only line pairs are used. Fairly  edge protection.
+7 = medianblur. Edge sensitive. Only line pairs are used. Mild    edge protection.
+8 = medianblur. Edge sensitive. Only line pairs are used. Faint   edge protection.
+9 = medianblur. Edge sensitive. Only line pairs are used. Barely  edge protection. Practically a spatial variant of trbarry's ST Median filter.
+
+10 = Minimal sharpening. Replaces center pixel by its nearest neighbour. "Very poor denoise sharpener"
+
+11 = Blur. 3x3 kernel convolution blur. Better than its counterpart internal Blur(1) (and faster)
+12 = Blur. Same as 11 but fastest and only <= 1% less precise (still better than Blur(1))
+
+13 = Smart bob (for interlaced content). Interpolates the top field.    Similar to Trbarry's weird bob (Tomsmocomp).
+14 = Smart bob (for interlaced content). Interpolates the bottom field. Similar to Trbarry's weird bob (Tomsmocomp).
+15 = Smart bob (for interlaced content). Same as mode 13 but more quality and slightly slower.
+16 = Smart bob (for interlaced content). Same as mode 14 but more quality and slightly slower.
+
+17 = medianblur. Same as mode 4 but better edge protection (similar to near artifact free mode 2). Probably best mode of all.
+18 = medianblur. Same as mode 9 but better edge protection (Same as what mode 17 was to mode 4, but in this case to mode 9, and far less denoising than mode 17)
+
+19 = Blur.         Average of its 8 neighbours.
+20 = Blur. Uniform average of its 8 neighbours. Better than 19 but slower. Very similar to blur(1.58) but faster.
+
+21 = medianblur. Clipping is done with respect to averages of neighbours. Best for cartoons.
+22 = medianblur. Same as mode 21 but much faster (fastest mode of all)
+
+23 = Dehalo. Fixes small (as one pixel wide) haloes.
+24 = Dehalo. Same as 23 but considerably more conservative and slightly slower. Preferred.
+
+25 = Minimal sharpening.
+
+26 = medianblur. Based off mode 17, but preserves corners, but not thin lines.
+27 = medianblur. Same as mode 26 but preserves thin lines.
+
+
+Recommended modes: 12,20(Gaussian Blur) 17,22 (Median Blur)
+
+Ranking:
+Denoising/Compression: 4,17,9,8,3,7,6,2,5,1
+Artifact free:         1,5,2,18,6,7,8,17,3,4,9
+
+"As far as compression (Denoising) is concerned, my benchmarks so far give the following mode ranking: 4,17,9,8,3,7,6,2,5,1, but modes 4 and 17 really stand out.
+As far as artifacts are concerned, we have unfortunately almost the reverse mode ranking: 1,5,2,18,6,7,8,17,3,4,9. Modes= 1,5,2 are the risk free modes,
+the modes 18,6,7,8,17 show low to moderate artifact risk (usually some softness) and modes 3,4,9 have severe problems with thin lines. Mode 9 has
+less artifacts than mode 4, but when they occur  they look a lot more ugly. Mode 17 is my clear personal favorite.
+As far as compression is concerned it is fairly close to the leader, mode 4, and I have only seen some softness but hardly any visable artifacts."
+
+
+mode 	sharp edges 	corners   thin lines  line ends  thin curves  compression
+1   	10 	          10 	      10 	        10 	        10 	        1
+2   	10 	          10 	      10 	        4 	        10 	        2
+3   	10 	          9 	      3 	        1 	        3 	        5
+4   	10 	          3 	      1           0 	        1 	        8
+5   	10 	          10 	      10 	        9 	        9 	        2
+6   	10 	          6 	      9 	        4         	3 	        3
+7   	10   	        6 	      9 	        4 	        3 	        3
+8   	10 	          5     	  8 	        3 	        3 	        4
+9   	10 	          3     	  4 	        1        	  2 	        5
+10 	  10 	          10    	  10          10   	      10 	        1
+11   	1 	          1     	  2 	        1 	        2 	        9
+12 	  1 	          1     	  2 	        1 	        2 	        9
+17   	10 	          2     	  8 	        2 	        4 	        7
+18   	10 	          6     	  9 	        6 	        5 	        2
+19   	1 	          1     	  1 	        0 	        1 	        10
+20   	1 	          1     	  1 	        0 	        1 	        8
+21   	6 	          2     	  8 	        4 	        4 	        5
+22   	6 	          2     	  8 	        4 	        4 	        5
+23   	6 	          5     	  6 	        4 	        6 	        4
+24   	7 	          6     	  7 	        5 	        7 	        3
+25   	10 	          10    	  10 	        10 	        10 	        -1
+*/
 
 PlaneProcessor* sse2_functions[] = {
     doNothing,
@@ -646,18 +764,31 @@ PVideoFrame RemoveGrain::GetFrame(int n, IScriptEnvironment* env) {
     auto srcFrame = child->GetFrame(n, env);
     auto dstFrame = env->NewVideoFrame(vi);
     
+    int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
+    int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
+    int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
+
     if (vi.IsPlanarRGB() || vi.IsPlanarRGBA()) {
-      functions[mode_+1](env, srcFrame->GetReadPtr(PLANAR_G), dstFrame->GetWritePtr(PLANAR_G), srcFrame->GetRowSize(PLANAR_G), 
-        srcFrame->GetHeight(PLANAR_G), srcFrame->GetPitch(PLANAR_G), dstFrame->GetPitch(PLANAR_G));
-      functions[mode_+1](env, srcFrame->GetReadPtr(PLANAR_B), dstFrame->GetWritePtr(PLANAR_B), srcFrame->GetRowSize(PLANAR_B), 
-        srcFrame->GetHeight(PLANAR_B), srcFrame->GetPitch(PLANAR_B), dstFrame->GetPitch(PLANAR_B));
-      functions[mode_+1](env, srcFrame->GetReadPtr(PLANAR_R), dstFrame->GetWritePtr(PLANAR_R), srcFrame->GetRowSize(PLANAR_R), 
-        srcFrame->GetHeight(PLANAR_R), srcFrame->GetPitch(PLANAR_R), dstFrame->GetPitch(PLANAR_R));
+      for (int p = 0; p < 3; ++p) {
+        const int plane = planes[p];
+
+        if (!is_16byte_aligned(srcFrame->GetReadPtr(plane)))
+          env->ThrowError("RemoveGrain: Unaligned frame!");
+
+        functions[mode_ + 1](env, srcFrame->GetReadPtr(plane), dstFrame->GetWritePtr(plane), srcFrame->GetRowSize(plane),
+          srcFrame->GetHeight(plane), srcFrame->GetPitch(plane), dstFrame->GetPitch(plane));
+      }
     } else {
+      if(!is_16byte_aligned(srcFrame->GetReadPtr(PLANAR_Y)))
+        env->ThrowError("RemoveGrain: Unaligned frame!");
+
       functions[mode_+1](env, srcFrame->GetReadPtr(PLANAR_Y), dstFrame->GetWritePtr(PLANAR_Y), srcFrame->GetRowSize(PLANAR_Y), 
         srcFrame->GetHeight(PLANAR_Y), srcFrame->GetPitch(PLANAR_Y), dstFrame->GetPitch(PLANAR_Y));
 
       if (vi.IsPlanar() && !vi.IsY()) {
+        if(!is_16byte_aligned(srcFrame->GetReadPtr(PLANAR_U)))
+          env->ThrowError("RemoveGrain: Unaligned frame!");
+
         functions[modeU_ + 1](env, srcFrame->GetReadPtr(PLANAR_U), dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetRowSize(PLANAR_U),
           srcFrame->GetHeight(PLANAR_U), srcFrame->GetPitch(PLANAR_U), dstFrame->GetPitch(PLANAR_U));
 

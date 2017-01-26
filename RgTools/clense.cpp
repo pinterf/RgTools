@@ -189,8 +189,8 @@ void process_plane_sse(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const By
     }
 }
 
-Clense::Clense(PClip child, PClip previous, PClip next, bool grey, ClenseMode mode, IScriptEnvironment* env)
-    : GenericVideoFilter(child), previous_(previous), next_(next), grey_(grey), mode_(mode) {
+Clense::Clense(PClip child, PClip previous, PClip next, bool grey, bool reduceflicker, ClenseMode mode, IScriptEnvironment* env)
+    : GenericVideoFilter(child), previous_(previous), next_(next), grey_(grey), mode_(mode), reduceflicker_(reduceflicker) {
     if(!vi.IsPlanar()) {
         env->ThrowError("Clense works only with planar colorspaces");
     }
@@ -200,6 +200,9 @@ Clense::Clense(PClip child, PClip previous, PClip next, bool grey, ClenseMode mo
 
     pixelsize = vi.ComponentSize();
     bits_per_pixel = vi.BitsPerComponent();
+
+    lastDstFrame = nullptr;
+    lastRequestedFrameNo = -1;
 
     if (previous_ != nullptr) {
         check_if_match(vi, previous_->GetVideoInfo(), env);
@@ -266,11 +269,22 @@ PVideoFrame Clense::GetFrame(int n, IScriptEnvironment* env) {
         frame1 = child->GetFrame(n+1, env);
         frame2 = child->GetFrame(n+2, env);
     } else {
+      // reduceflicker works when frames are requested sequentally
+      // maybe multi_instance works
+      if (reduceflicker_ && lastRequestedFrameNo == n - 1) // from v0.9
+        frame1 = lastDstFrame;
+      else
         frame1 = previous_ == nullptr ? child->GetFrame(n-1, env) : previous_->GetFrame(n-1, env);
-        frame2 = next_ == nullptr ? child->GetFrame(n+1, env) : next_->GetFrame(n+1, env);
+
+      frame2 = next_ == nullptr ? child->GetFrame(n+1, env) : next_->GetFrame(n+1, env);
     }
 
     auto dstFrame = env->NewVideoFrame(vi);
+
+    if (reduceflicker_) {
+      lastDstFrame = dstFrame;
+      lastRequestedFrameNo = n;
+    }
 
     if (vi.IsPlanarRGB() || vi.IsPlanarRGBA()) {
       processor_(dstFrame->GetWritePtr(PLANAR_G), srcFrame->GetReadPtr(PLANAR_G), frame1->GetReadPtr(PLANAR_G), frame2->GetReadPtr(PLANAR_G),
@@ -305,16 +319,19 @@ PVideoFrame Clense::GetFrame(int n, IScriptEnvironment* env) {
 }
 
 AVSValue __cdecl Create_Clense(AVSValue args, void*, IScriptEnvironment* env) {
-    enum { CLIP, PREVIOUS, NEXT, GREY };
-    return new Clense(args[CLIP].AsClip(), args[PREVIOUS].Defined() ? args[PREVIOUS].AsClip() : nullptr, args[NEXT].Defined() ? args[NEXT].AsClip() : nullptr, args[GREY].AsBool(false), ClenseMode::BOTH, env);
+    enum { CLIP, PREVIOUS, NEXT, GREY, FLICKER, PLANAR, CACHE };
+    return new Clense(args[CLIP].AsClip(),
+      args[PREVIOUS].Defined() ? args[PREVIOUS].AsClip() : nullptr,
+      args[NEXT].Defined() ? args[NEXT].AsClip() : nullptr, args[GREY].AsBool(false), args[FLICKER].AsBool(false), ClenseMode::BOTH, env);
+    // planar and cache are dummy parameters for compatibility reasons
 }
 
 AVSValue __cdecl Create_ForwardClense(AVSValue args, void*, IScriptEnvironment* env) {
     enum { CLIP, GREY };
-    return new Clense(args[CLIP].AsClip(), nullptr, nullptr, args[GREY].AsBool(false), ClenseMode::FORWARD, env);
+    return new Clense(args[CLIP].AsClip(), nullptr, nullptr, args[GREY].AsBool(false), false, ClenseMode::FORWARD, env);
 }
 
 AVSValue __cdecl Create_BackwardClense(AVSValue args, void*, IScriptEnvironment* env) {
     enum { CLIP, GREY };
-    return new Clense(args[CLIP].AsClip(), nullptr, nullptr, args[GREY].AsBool(false), ClenseMode::BACKWARD, env);
+    return new Clense(args[CLIP].AsClip(), nullptr, nullptr, args[GREY].AsBool(false), false, ClenseMode::BACKWARD, env);
 }

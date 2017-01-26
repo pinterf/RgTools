@@ -17,9 +17,14 @@ class Clense : public GenericVideoFilter {
 
 
 public:
-    Clense(PClip child, PClip previous, PClip next, bool grey, ClenseMode mode, IScriptEnvironment* env);
+    Clense(PClip child, PClip previous, PClip next, bool grey, bool reduceflicker, ClenseMode mode, IScriptEnvironment* env);
 
     PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
+
+    int __stdcall SetCacheHints(int cachehints, int frame_range) override {
+      // depends on working mode
+      return cachehints == CACHE_GET_MTMODE ? (reduceflicker_ ? MT_MULTI_INSTANCE : MT_NICE_FILTER) : 0;
+    }
 
 private:
     PClip previous_;
@@ -28,9 +33,14 @@ private:
     bool sse2_;
     bool sse4_;
     ClenseMode mode_;
+    bool reduceflicker_;
 
     int pixelsize;
     int bits_per_pixel;
+
+    // for reduceflicker
+    PVideoFrame lastDstFrame;
+    int lastRequestedFrameNo;
 
     typedef void (ClenseProcessor)(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int width, int height, IScriptEnvironment *env);
 

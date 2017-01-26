@@ -1730,6 +1730,36 @@ RG_FORCEINLINE __m128i rg_mode20_sse_32(const Byte* pSrc, int srcPitch) {
 
 template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode21_sse(const Byte* pSrc, int srcPitch) {
+  /*
+  LOAD_SQUARE_SSE_UA_18(optLevel, pSrc, srcPitch, aligned);
+
+  auto l1a = not_rounded_average(a1, a8);
+  auto l1b = _mm_avg_epu8(a1, a8);
+
+  LOAD_SQUARE_SSE_UA_27(optLevel, pSrc, srcPitch, aligned);
+  auto l2a = not_rounded_average(a2, a7);
+  auto l2b = _mm_avg_epu8(a2, a7);
+
+  LOAD_SQUARE_SSE_UA_36(optLevel, pSrc, srcPitch, aligned);
+  auto l3a = not_rounded_average(a3, a6);
+  auto l3b = _mm_avg_epu8(a3, a6);
+
+  LOAD_SQUARE_SSE_UA_45(optLevel, pSrc, srcPitch, aligned);
+  auto l4a = not_rounded_average(a4, a5);
+  auto l4b = _mm_avg_epu8(a4, a5);
+
+  auto ma = _mm_max_epu8(l1b, l2b);
+  ma = _mm_max_epu8(ma, l3b);
+  ma = _mm_max_epu8(ma, l4b);
+
+  auto mi = _mm_min_epu8(l1a, l2a);
+  mi = _mm_min_epu8(mi, l3a);
+  mi = _mm_min_epu8(mi, l4a);
+
+  LOAD_SQUARE_SSE_UA_Cent(optLevel, pSrc, srcPitch, aligned);
+  return simd_clip(c, mi, ma);
+*/
+  
     LOAD_SQUARE_SSE_UA(optLevel, pSrc, srcPitch, aligned);
 
     auto l1a = not_rounded_average(a1, a8);

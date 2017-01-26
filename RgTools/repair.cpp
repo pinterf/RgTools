@@ -554,24 +554,35 @@ PVideoFrame Repair::GetFrame(int n, IScriptEnvironment* env) {
   auto refFrame = ref_->GetFrame(n, env);
   auto dstFrame = env->NewVideoFrame(vi);
 
+  int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
+  int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
+  int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
+
   if (vi.IsPlanarRGB() || vi.IsPlanarRGBA()) {
-    functions[mode_+1](env, dstFrame->GetWritePtr(PLANAR_G), srcFrame->GetReadPtr(PLANAR_G), refFrame->GetReadPtr(PLANAR_G),
-      dstFrame->GetPitch(PLANAR_G), srcFrame->GetPitch(PLANAR_G), refFrame->GetPitch(PLANAR_G),
-      srcFrame->GetRowSize(PLANAR_G), srcFrame->GetHeight(PLANAR_G));
-    functions[mode_+1](env, dstFrame->GetWritePtr(PLANAR_B), srcFrame->GetReadPtr(PLANAR_B), refFrame->GetReadPtr(PLANAR_B),
-      dstFrame->GetPitch(PLANAR_B), srcFrame->GetPitch(PLANAR_B), refFrame->GetPitch(PLANAR_B),
-      srcFrame->GetRowSize(PLANAR_B), srcFrame->GetHeight(PLANAR_B));
-    functions[mode_+1](env, dstFrame->GetWritePtr(PLANAR_R), srcFrame->GetReadPtr(PLANAR_R), refFrame->GetReadPtr(PLANAR_R),
-      dstFrame->GetPitch(PLANAR_R), srcFrame->GetPitch(PLANAR_R), refFrame->GetPitch(PLANAR_R),
-      srcFrame->GetRowSize(PLANAR_R), srcFrame->GetHeight(PLANAR_R));
+
+    for (int p = 0; p < 3; ++p) {
+      const int plane = planes[p];
+
+      if (!is_16byte_aligned(srcFrame->GetReadPtr(plane)))
+        env->ThrowError("Repair: Unaligned frame!");
+
+      functions[mode_ + 1](env, dstFrame->GetWritePtr(plane), srcFrame->GetReadPtr(plane), refFrame->GetReadPtr(plane),
+        dstFrame->GetPitch(plane), srcFrame->GetPitch(plane), refFrame->GetPitch(plane),
+        srcFrame->GetRowSize(plane), srcFrame->GetHeight(plane));
+    }
   }
   else {
+    if(!is_16byte_aligned(srcFrame->GetReadPtr(PLANAR_Y)))
+      env->ThrowError("Repair: Unaligned frame!");
 
     functions[mode_ + 1](env, dstFrame->GetWritePtr(PLANAR_Y), srcFrame->GetReadPtr(PLANAR_Y), refFrame->GetReadPtr(PLANAR_Y),
       dstFrame->GetPitch(PLANAR_Y), srcFrame->GetPitch(PLANAR_Y), refFrame->GetPitch(PLANAR_Y),
       srcFrame->GetRowSize(PLANAR_Y), srcFrame->GetHeight(PLANAR_Y));
 
     if (vi.IsPlanar() && !vi.IsY()) {
+      if (!is_16byte_aligned(srcFrame->GetReadPtr(PLANAR_U)))
+        env->ThrowError("Repair: Unaligned frame!");
+
       functions[modeU_ + 1](env, dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetReadPtr(PLANAR_U), refFrame->GetReadPtr(PLANAR_U),
         dstFrame->GetPitch(PLANAR_U), srcFrame->GetPitch(PLANAR_U), refFrame->GetPitch(PLANAR_U),
         srcFrame->GetRowSize(PLANAR_U), srcFrame->GetHeight(PLANAR_U));

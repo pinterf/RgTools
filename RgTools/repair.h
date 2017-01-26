@@ -13,6 +13,10 @@ public:
 
     PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 
+    int __stdcall SetCacheHints(int cachehints, int frame_range) override {
+      return cachehints == CACHE_GET_MTMODE ? MT_NICE_FILTER : 0;
+    }
+
     const static int UNDEFINED_MODE = -2;
 
 private:
@@ -25,6 +29,7 @@ private:
     int bits_per_pixel;
 
     RepairPlaneProcessor **functions;
+    RepairPlaneProcessor **functions_unaligned;
 };
 
 

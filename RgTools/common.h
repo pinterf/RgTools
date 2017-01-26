@@ -82,9 +82,10 @@ static RG_FORCEINLINE void sort_pair_32(__m128 &a1, __m128 &a2)
   a1 = tmp;
 }
 
+// _mm_lddqu_si128: still faster on i7-3770 vs _mm_loadu_si128
 template<InstructionSet optLevel>
 static RG_FORCEINLINE __m128i simd_loadu_si128(const Byte* ptr) {
-    if (optLevel == SSE2) {
+  if (optLevel == SSE2) {
 #ifdef USE_MOVPS
         return _mm_castps_si128(_mm_loadu_ps(reinterpret_cast<const float*>(ptr)));
 #else
@@ -187,6 +188,54 @@ static RG_FORCEINLINE __m128 select_on_equal_32(const __m128 &cmp1, const __m128
   return blend_32(eq, desired, current);
 }
 
+#define LOAD_SQUARE_SSE_0_18(optLevel, ptr, pitch, pixelsize, aligned) \
+__m128i a1, a8; \
+if(!aligned) {\
+a1 = simd_loadu_si128<optLevel>((ptr) - (pitch) - (pixelsize)); \
+a8 = simd_loadu_si128<optLevel>((ptr) + (pitch) + (pixelsize)); \
+} else {\
+a1 = simd_loadu_si128<optLevel>((ptr) - (pitch) - (pixelsize)); \
+a8 = simd_loadu_si128<optLevel>((ptr) + (pitch) + (pixelsize)); \
+}
+
+#define LOAD_SQUARE_SSE_0_27(optLevel, ptr, pitch, pixelsize, aligned) \
+__m128i a2, a7; \
+if(!aligned) {\
+a2 = simd_loadu_si128<optLevel>((ptr) - (pitch)); \
+a7 = simd_loadu_si128<optLevel>((ptr) + (pitch)); \
+} else {\
+a2 = simd_loada_si128<optLevel>((ptr) - (pitch)); \
+a7 = simd_loada_si128<optLevel>((ptr) + (pitch)); \
+}
+
+#define LOAD_SQUARE_SSE_0_36(optLevel, ptr, pitch, pixelsize, aligned) \
+__m128i a3, a6; \
+if(!aligned) {\
+a3 = simd_loadu_si128<optLevel>((ptr) - (pitch) + (pixelsize)); \
+a6 = simd_loadu_si128<optLevel>((ptr) + (pitch) - (pixelsize)); \
+} else {\
+a3 = simd_loadu_si128<optLevel>((ptr) - (pitch) + (pixelsize)); \
+a6 = simd_loadu_si128<optLevel>((ptr) + (pitch) - (pixelsize)); \
+}
+
+#define LOAD_SQUARE_SSE_0_45(optLevel, ptr, pitch, pixelsize, aligned) \
+__m128i a4, a5; \
+if(!aligned) {\
+a4 = simd_loadu_si128<optLevel>((ptr) - (pixelsize)); \
+a5 = simd_loadu_si128<optLevel>((ptr) + (pixelsize)); \
+} else {\
+a4 = simd_loadu_si128<optLevel>((ptr) - (pixelsize)); \
+a5 = simd_loadu_si128<optLevel>((ptr) + (pixelsize)); \
+}
+
+#define LOAD_SQUARE_SSE_0_Cent(optLevel, ptr, pitch, pixelsize, aligned) \
+__m128i c; \
+if(!aligned) {\
+c  = simd_loadu_si128<optLevel>((ptr) ); \
+} else {\
+c  = simd_loada_si128<optLevel>((ptr) ); \
+}
+
 #define LOAD_SQUARE_SSE_0(optLevel, ptr, pitch, pixelsize, aligned) \
 __m128i a1, a2, a3, a4, a5, a6, a7, a8, c; \
 if(!aligned) {\
@@ -216,6 +265,11 @@ a8 = simd_loadu_si128<optLevel>((ptr) + (pitch) + (pixelsize)); \
 #define LOAD_SQUARE_SSE(optLevel, ptr, pitch) LOAD_SQUARE_SSE_0(optLevel, ptr, pitch, 1, false)
 // unaligned or aligned
 #define LOAD_SQUARE_SSE_UA(optLevel, ptr, pitch, aligned) LOAD_SQUARE_SSE_0(optLevel, ptr, pitch, 1, aligned)
+#define LOAD_SQUARE_SSE_UA_18(optLevel, ptr, pitch, aligned) LOAD_SQUARE_SSE_0_18(optLevel, ptr, pitch, 1, aligned)
+#define LOAD_SQUARE_SSE_UA_27(optLevel, ptr, pitch, aligned) LOAD_SQUARE_SSE_0_27(optLevel, ptr, pitch, 1, aligned)
+#define LOAD_SQUARE_SSE_UA_36(optLevel, ptr, pitch, aligned) LOAD_SQUARE_SSE_0_36(optLevel, ptr, pitch, 1, aligned)
+#define LOAD_SQUARE_SSE_UA_45(optLevel, ptr, pitch, aligned) LOAD_SQUARE_SSE_0_45(optLevel, ptr, pitch, 1, aligned)
+#define LOAD_SQUARE_SSE_UA_Cent(optLevel, ptr, pitch, aligned) LOAD_SQUARE_SSE_0_Cent(optLevel, ptr, pitch, 1, aligned)
 
 // 16 bit loads
 // unaligned

@@ -6,7 +6,14 @@ Some routines might be slightly less efficient than original, some are faster. O
 
 This plugin is written from scratch and licensed under the [MIT license][1]. Some modes of RemoveGrain and Repair were taken from the Firesledge's Dither package.
 
-From v0.93 new pixel formats are supported
+v0.94
+- Clense: new parameter (from v0.9): bool reduceflicker (default false)
+- Clense: dummy compatibility parameters: bool planar, int cache
+- autoregister filter MT modes as NICE_FILTER for Avisynth+
+  except for Clense: when reduceflicker is true, MULTI_INSTANCE MT mode is reported
+- alignment check in Repair and RemoveGrain (anti-unaligned crop measures)  
+
+v0.93: new pixel formats are supported
 - 10, 12, 14, 16 bit and float 
 - Planar RGB, RGBA and YUVA (alpha plane is copied)
 
@@ -23,19 +30,24 @@ Repair(clip c, int "mode", int "modeU", int "modeV", bool "planar")
 Repairs unwanted artifacts from (but not limited to) RemoveGrain, includes 24 modes.
 
 ```
-Clense(clip c, clip "previous", clip "next", bool "grey")
+Clense(clip c, clip "previous", clip "next", bool "grey", bool "reduceflicker", bool "planar", int "cache")
 ```
 Temporal median of three frames. Identical to `MedianBlurTemporal(0,0,0,1)` but a lot faster. Can be used as a building block for [many][3] [fancy][4] [medians][5].
+If reduceflicker is true, the (n-1)th source frame is reused from the previous "clensed" frame, that the filter stored internally. 
+This works however only if Clense is getting frame requests sequentally.
+Parameters "planar" and "cache" are dummy, they exist for compatibility reasons
 
 ```
-ForwardClense(clip c, bool "grey")
+ForwardClense(clip c, bool "grey", bool "planar", int "cache")
 ```
 Modified version of Clense that works on current and next frames.
+Parameters "planar" and "cache" are dummy, they exist for compatibility reasons
 
 ```
-BackwardClense(clip c, bool "grey")
+BackwardClense(clip c, bool "grey", bool "planar", int "cache")
 ```
 Modified version of Clense that works on current and previous frames.
+Parameters "planar" and "cache" are dummy, they exist for compatibility reasons
 
 ```
 VerticalCleaner(clip c, int "mode", int "modeU", int "modeV", bool "planar")

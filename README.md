@@ -6,6 +6,10 @@ Some routines might be slightly less efficient than original, some are faster. O
 
 This plugin is written from scratch and licensed under the [MIT license][1]. Some modes of RemoveGrain and Repair were taken from the Firesledge's Dither package.
 
+v0.95
+- Fix: RemoveGrain Mode 20: overflow at 14 and 16 bit depths in SSE4 (stripes)
+- Repair: error on unaligned frames (unaligned crop) instead of access violation error
+
 v0.94
 - Clense: new parameter (from v0.9): bool reduceflicker (default false)
 - Clense: dummy compatibility parameters: bool planar, int cache

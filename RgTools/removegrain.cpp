@@ -772,22 +772,19 @@ PVideoFrame RemoveGrain::GetFrame(int n, IScriptEnvironment* env) {
       for (int p = 0; p < 3; ++p) {
         const int plane = planes[p];
 
-        if (!is_16byte_aligned(srcFrame->GetReadPtr(plane)))
-          env->ThrowError("RemoveGrain: Unaligned frame!");
-
         functions[mode_ + 1](env, srcFrame->GetReadPtr(plane), dstFrame->GetWritePtr(plane), srcFrame->GetRowSize(plane),
           srcFrame->GetHeight(plane), srcFrame->GetPitch(plane), dstFrame->GetPitch(plane));
       }
     } else {
       if(!is_16byte_aligned(srcFrame->GetReadPtr(PLANAR_Y)))
-        env->ThrowError("RemoveGrain: Unaligned frame!");
+        env->ThrowError("RemoveGrain: Invalid memory alignment. Unaligned crop?");
 
       functions[mode_+1](env, srcFrame->GetReadPtr(PLANAR_Y), dstFrame->GetWritePtr(PLANAR_Y), srcFrame->GetRowSize(PLANAR_Y), 
         srcFrame->GetHeight(PLANAR_Y), srcFrame->GetPitch(PLANAR_Y), dstFrame->GetPitch(PLANAR_Y));
 
       if (vi.IsPlanar() && !vi.IsY()) {
         if(!is_16byte_aligned(srcFrame->GetReadPtr(PLANAR_U)))
-          env->ThrowError("RemoveGrain: Unaligned frame!");
+          env->ThrowError("RemoveGrain: Invalid memory alignment. Unaligned crop?");
 
         functions[modeU_ + 1](env, srcFrame->GetReadPtr(PLANAR_U), dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetRowSize(PLANAR_U),
           srcFrame->GetHeight(PLANAR_U), srcFrame->GetPitch(PLANAR_U), dstFrame->GetPitch(PLANAR_U));

@@ -1652,7 +1652,7 @@ RG_FORCEINLINE __m128i rg_mode20_sse_16(const Byte* pSrc, int srcPitch) {
   // ((1<<15) / 9  + 4) = 0xE3C (3644)
   const byte FACTOR = 15;
   auto zero = _mm_setzero_si128();
-  auto onenineth = _mm_set1_epi32((unsigned short)(((1u << FACTOR) + 4) / 9));
+  auto onenineth = _mm_set1_epi32(((1u << FACTOR) + 4) / 9);
   auto bias = _mm_set1_epi32(4);
 
   auto a1unpck_lo = _mm_unpacklo_epi16(a1, zero);
@@ -1669,14 +1669,14 @@ RG_FORCEINLINE __m128i rg_mode20_sse_16(const Byte* pSrc, int srcPitch) {
   auto sum_t1 = _mm_add_epi32(a1unpck_lo, a2unpck_lo);
   sum_t1 = _mm_add_epi32(sum_t1, a3unpck_lo);
   sum_t1 = _mm_add_epi32(sum_t1, a4unpck_lo);
-
+  
   auto sum_t2 = _mm_add_epi32(a5unpck_lo, a6unpck_lo);
   sum_t2 = _mm_add_epi32(sum_t2, a7unpck_lo);
   sum_t2 = _mm_add_epi32(sum_t2, a8unpck_lo);
 
-  auto sum = _mm_adds_epu16(sum_t1, sum_t2);
-  sum = _mm_adds_epu16(sum, cunpck_lo);
-  sum = _mm_adds_epu16(sum, bias);
+  auto sum = _mm_add_epi32(sum_t1, sum_t2);
+  sum = _mm_add_epi32(sum, cunpck_lo);
+  sum = _mm_add_epi32(sum, bias);
 
   auto result_lo = _mm_srli_epi32(_mm_mullo_epi32(sum, onenineth),FACTOR);
   // we have sum of lower 4 pixels

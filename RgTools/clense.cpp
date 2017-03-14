@@ -281,11 +281,6 @@ PVideoFrame Clense::GetFrame(int n, IScriptEnvironment* env) {
 
     auto dstFrame = env->NewVideoFrame(vi);
 
-    if (reduceflicker_) {
-      lastDstFrame = dstFrame;
-      lastRequestedFrameNo = n;
-    }
-
     if (vi.IsPlanarRGB() || vi.IsPlanarRGBA()) {
       processor_(dstFrame->GetWritePtr(PLANAR_G), srcFrame->GetReadPtr(PLANAR_G), frame1->GetReadPtr(PLANAR_G), frame2->GetReadPtr(PLANAR_G),
         dstFrame->GetPitch(PLANAR_G), srcFrame->GetPitch(PLANAR_G), frame1->GetPitch(PLANAR_G), frame2->GetPitch(PLANAR_G),
@@ -311,10 +306,16 @@ PVideoFrame Clense::GetFrame(int n, IScriptEnvironment* env) {
           srcFrame->GetRowSize(PLANAR_V), srcFrame->GetHeight(PLANAR_V), env);
       }
     }
-    if (vi.IsYUVA() || vi.IsPlanarRGBA() && !grey_)
+    if ((vi.IsYUVA() || vi.IsPlanarRGBA()) && !grey_)
     { // copy alpha
       env->BitBlt(dstFrame->GetWritePtr(PLANAR_A), dstFrame->GetPitch(PLANAR_A), srcFrame->GetReadPtr(PLANAR_A), srcFrame->GetPitch(PLANAR_A), srcFrame->GetRowSize(PLANAR_A_ALIGNED), srcFrame->GetHeight(PLANAR_A));
     }
+
+    if (reduceflicker_) {
+      lastDstFrame = dstFrame;
+      lastRequestedFrameNo = n;
+    }
+
     return dstFrame;
 }
 

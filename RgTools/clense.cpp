@@ -328,11 +328,11 @@ AVSValue __cdecl Create_Clense(AVSValue args, void*, IScriptEnvironment* env) {
 }
 
 AVSValue __cdecl Create_ForwardClense(AVSValue args, void*, IScriptEnvironment* env) {
-    enum { CLIP, GREY };
-    return new Clense(args[CLIP].AsClip(), nullptr, nullptr, args[GREY].AsBool(false), false, ClenseMode::FORWARD, env);
+    enum { CLIP, GREY, PLANAR};
+    return new Clense(args[CLIP].AsClip(), nullptr, nullptr, args[GREY].AsBool(false), false, ClenseMode::FORWARD, args[PLANAR].AsBool(false), env);
 }
 
 AVSValue __cdecl Create_BackwardClense(AVSValue args, void*, IScriptEnvironment* env) {
-    enum { CLIP, GREY };
-    return new Clense(args[CLIP].AsClip(), nullptr, nullptr, args[GREY].AsBool(false), false, ClenseMode::BACKWARD, env);
+    enum { CLIP, GREY, PLANAR};
+    return new Clense(args[CLIP].AsClip(), nullptr, nullptr, args[GREY].AsBool(false), false, ClenseMode::BACKWARD, args[PLANAR].AsBool(false), env);
 }

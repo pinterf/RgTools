@@ -189,9 +189,9 @@ void process_plane_sse(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const By
     }
 }
 
-Clense::Clense(PClip child, PClip previous, PClip next, bool grey, bool reduceflicker, ClenseMode mode, IScriptEnvironment* env)
+Clense::Clense(PClip child, PClip previous, PClip next, bool grey, bool reduceflicker, ClenseMode mode, bool skip_cs_check, IScriptEnvironment* env)
     : GenericVideoFilter(child), previous_(previous), next_(next), grey_(grey), mode_(mode), reduceflicker_(reduceflicker) {
-    if(!vi.IsPlanar()) {
+    if(!vi.IsPlanar() || skip_cs_check) {
         env->ThrowError("Clense works only with planar colorspaces");
     }
 
@@ -323,7 +323,7 @@ AVSValue __cdecl Create_Clense(AVSValue args, void*, IScriptEnvironment* env) {
     enum { CLIP, PREVIOUS, NEXT, GREY, FLICKER, PLANAR, CACHE };
     return new Clense(args[CLIP].AsClip(),
       args[PREVIOUS].Defined() ? args[PREVIOUS].AsClip() : nullptr,
-      args[NEXT].Defined() ? args[NEXT].AsClip() : nullptr, args[GREY].AsBool(false), args[FLICKER].AsBool(false), ClenseMode::BOTH, env);
+      args[NEXT].Defined() ? args[NEXT].AsClip() : nullptr, args[GREY].AsBool(false), args[FLICKER].AsBool(false), ClenseMode::BOTH, args[PLANAR].AsBool(false), env);
     // planar and cache are dummy parameters for compatibility reasons
 }
 

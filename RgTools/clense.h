@@ -17,7 +17,7 @@ class Clense : public GenericVideoFilter {
 
 
 public:
-    Clense(PClip child, PClip previous, PClip next, bool grey, bool reduceflicker, ClenseMode mode, IScriptEnvironment* env);
+    Clense(PClip child, PClip previous, PClip next, bool grey, bool reduceflicker, ClenseMode mode, bool skip_cs_check, IScriptEnvironment* env);
 
     PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 

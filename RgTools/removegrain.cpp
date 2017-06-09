@@ -502,9 +502,9 @@ PlaneProcessor* sse4_functions_32[] = {
   process_plane_sse<float, rg_mode8_sse_32<false>, rg_mode8_sse_32<true>>,
   process_plane_sse<float, rg_mode9_sse_32<false>, rg_mode9_sse_32<true>>,
   process_plane_sse<float, rg_mode10_sse_32<false>, rg_mode10_sse_32<true>>,
-  process_plane_sse<float, rg_mode11_sse_32<false>, rg_mode10_sse_32<true>>,
+  process_plane_sse<float, rg_mode11_sse_32<false>, rg_mode11_sse_32<true>>,
   process_plane_sse<float, rg_mode12_sse_32<false>, rg_mode12_sse_32<true>>,
-  process_even_rows_sse<float, rg_mode13_and14_sse_32<false>, rg_mode12_sse_32<true>>,
+  process_even_rows_sse<float, rg_mode13_and14_sse_32<false>, rg_mode13_and14_sse_32<true>>,
   process_odd_rows_sse<float, rg_mode13_and14_sse_32<false>, rg_mode13_and14_sse_32<true>>,
   process_even_rows_sse<float, rg_mode15_and16_sse_32<false>, rg_mode15_and16_sse_32<true>>,
   process_odd_rows_sse<float, rg_mode15_and16_sse_32<false>, rg_mode15_and16_sse_32<true>>,
@@ -694,8 +694,14 @@ PlaneProcessor* c_functions_32[] = {
   process_plane_c<float, rg_mode24_cpp_32>
 };
 
+extern PlaneProcessor* avx2_functions[];
+extern PlaneProcessor* avx2_functions_16_10[];
+extern PlaneProcessor* avx2_functions_16_12[];
+extern PlaneProcessor* avx2_functions_16_14[];
+extern PlaneProcessor* avx2_functions_16_16[];
+extern PlaneProcessor* avx2_functions_32[];
 
-RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_cs_check, IScriptEnvironment* env)
+RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_cs_check, bool use_avx2, IScriptEnvironment* env)
     : GenericVideoFilter(child), mode_(mode), modeU_(modeU), modeV_(modeV), functions(nullptr) {
     if (!(vi.IsPlanar() || skip_cs_check)) {
         env->ThrowError("RemoveGrain works only with planar colorspaces");
@@ -721,17 +727,37 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
     pixelsize = vi.ComponentSize();
     bits_per_pixel = vi.BitsPerComponent();
 
-    if (pixelsize == 1) {
-      functions = (env->GetCPUFlags() & CPUF_SSE3) ? sse3_functions
-        : (env->GetCPUFlags() & CPUF_SSE2) ? sse2_functions
-        : c_functions;
+    bool avx2 = (env->GetCPUFlags() & CPUF_AVX2) && use_avx2;
 
-      if (vi.width < 17) { //not enough for XMM
+    if (pixelsize == 1) {
+      if (avx2)
+        functions = avx2_functions;
+      else if (env->GetCPUFlags() & CPUF_SSE3)
+        functions = sse3_functions;
+      else if (env->GetCPUFlags() & CPUF_SSE2)
+        functions = sse2_functions;
+      else
+        functions = c_functions;
+
+      if (vi.width < 32 + 1 && avx2) { //not enough for YMM, try SSE3
+        functions = sse3_functions;
+      }
+      if (vi.width < 16+1) { //not enough for XMM
         functions = c_functions;
       }
     }
     else if (pixelsize == 2) {
-      if ((env->GetCPUFlags() & CPUF_SSE4) && vi.width >= (16/sizeof(uint16_t) + 1)) {
+      if (avx2 && vi.width >= (32 / sizeof(uint16_t) + 1)) {
+        // mode 6 and 8 bitdepth clamp specific
+        switch (bits_per_pixel) {
+        case 10: functions = avx2_functions_16_10; break;
+        case 12: functions = avx2_functions_16_12; break;
+        case 14: functions = avx2_functions_16_14; break;
+        case 16: functions = avx2_functions_16_16; break;
+        default: env->ThrowError("Illegal bit-depth: %d!", bits_per_pixel);
+        }
+      }
+      else if ((env->GetCPUFlags() & CPUF_SSE4) && vi.width >= (16/sizeof(uint16_t) + 1)) {
         // mode 6 and 8 bitdepth clamp specific
         switch (bits_per_pixel) {
         case 10: functions = sse4_functions_16_10; break;
@@ -752,7 +778,9 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
       }
     }
     else {// if (pixelsize == 4) 
-      if ((env->GetCPUFlags() & CPUF_SSE4) && vi.width >= (16/sizeof(float) + 1))
+      if (avx2 && vi.width >= (32 / sizeof(float) + 1))
+        functions = avx2_functions_32;
+      else if ((env->GetCPUFlags() & CPUF_SSE4) && vi.width >= (16/sizeof(float) + 1))
         functions = sse4_functions_32;
       else
         functions = c_functions_32;
@@ -767,6 +795,8 @@ PVideoFrame RemoveGrain::GetFrame(int n, IScriptEnvironment* env) {
     int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
     int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
     int *planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
+
+    // remark: no special alignment required for AVX2
 
     if (vi.IsPlanarRGB() || vi.IsPlanarRGBA()) {
       for (int p = 0; p < 3; ++p) {
@@ -802,6 +832,7 @@ PVideoFrame RemoveGrain::GetFrame(int n, IScriptEnvironment* env) {
 
 
 AVSValue __cdecl Create_RemoveGrain(AVSValue args, void*, IScriptEnvironment* env) {
-    enum { CLIP, MODE, MODEU, MODEV, PLANAR };
-    return new RemoveGrain(args[CLIP].AsClip(), args[MODE].AsInt(1), args[MODEU].AsInt(RemoveGrain::UNDEFINED_MODE), args[MODEV].AsInt(RemoveGrain::UNDEFINED_MODE), args[PLANAR].AsBool(false), env);
+    enum { CLIP, MODE, MODEU, MODEV, PLANAR, OPTAVX2 };
+    return new RemoveGrain(args[CLIP].AsClip(), args[MODE].AsInt(1), args[MODEU].AsInt(RemoveGrain::UNDEFINED_MODE), args[MODEV].AsInt(RemoveGrain::UNDEFINED_MODE), 
+      args[PLANAR].AsBool(false), args[OPTAVX2].AsBool(true), env);
 }

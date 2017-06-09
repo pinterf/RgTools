@@ -27,10 +27,8 @@ static RG_FORCEINLINE __m128i not_rounded_average_16(__m128i a, __m128i b) {
 //-------------------
 
 // todo: 
-// - AVX/AVX2
-// - uint16_t saturates to 65535, bit we have 10, 12 and 14 bot formats
-// - todo: Float parts were blindly converted, should be optimized,
-//         check averaging simplifications, clamping
+// - Float parts were blindly converted, should be optimized,
+//   check averaging simplifications, clamping
 
 //-------------------
 
@@ -1093,7 +1091,7 @@ RG_FORCEINLINE __m128i rg_mode12_sse_32(const Byte* pSrc, int srcPitch);
 //todo: actually implement is as mode 11
 template<bool aligned, InstructionSet optLevel>
 RG_FORCEINLINE __m128i rg_mode11_sse(const Byte* pSrc, int srcPitch) {
-    return rg_mode12_sse<aligned, optLevel>(pSrc, srcPitch);
+  return rg_mode12_sse<aligned, optLevel>(pSrc, srcPitch);
 }
 template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode11_sse_16(const Byte* pSrc, int srcPitch) {

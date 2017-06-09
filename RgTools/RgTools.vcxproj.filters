@@ -60,6 +60,12 @@
     <ClInclude Include="include\avs\win.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="rg_functions_avx2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="common_avx2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="removegrain.cpp">
@@ -81,6 +87,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="vertical_cleaner.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="removegrain_avx2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

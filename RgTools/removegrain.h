@@ -9,7 +9,7 @@ typedef void (PlaneProcessor)(IScriptEnvironment* env, const BYTE* pSrc, BYTE* p
 
 class RemoveGrain : public GenericVideoFilter {
 public:
-    RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_cs_check, IScriptEnvironment* env);
+    RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_cs_check, bool use_avx2, IScriptEnvironment* env);
 
     PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 
@@ -23,6 +23,8 @@ private:
     int mode_;
     int modeU_;
     int modeV_;
+
+    bool avx2_; // for disabling avx2
 
     int pixelsize;
     int bits_per_pixel;

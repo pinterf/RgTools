@@ -191,7 +191,7 @@ void process_plane_sse(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const By
 
 Clense::Clense(PClip child, PClip previous, PClip next, bool grey, bool reduceflicker, ClenseMode mode, bool skip_cs_check, IScriptEnvironment* env)
     : GenericVideoFilter(child), previous_(previous), next_(next), grey_(grey), mode_(mode), reduceflicker_(reduceflicker) {
-    if(!vi.IsPlanar() || skip_cs_check) {
+    if(!(vi.IsPlanar() || skip_cs_check)) {
         env->ThrowError("Clense works only with planar colorspaces");
     }
 

@@ -38,7 +38,7 @@ static RG_FORCEINLINE float clip_32(T val, T minimum, T maximum) {
 }
 
 static RG_FORCEINLINE bool is_16byte_aligned(const void *ptr) {
-    return (((unsigned long)ptr) & 15) == 0;
+    return (((uintptr_t)ptr) & 15) == 0;
 }
 
 static RG_FORCEINLINE __m128i simd_clip(const __m128i &val, const __m128i &minimum, const __m128i &maximum) {

@@ -38,11 +38,26 @@ RG_FORCEINLINE uint16_t sclense_process_pixel_c_16(uint16_t src, uint16_t ref1, 
   return clip_16(src, (uint16_t)std::max(minref*2 - ref2, 0), (uint16_t)std::min(maxref*2-ref2, pixel_max));
 }
 
+//template<bool chroma>
 RG_FORCEINLINE float sclense_process_pixel_c_32(float src, float ref1, float ref2) {
   float minref = std::min(ref1, ref2);
   float maxref = std::max(ref1, ref2);
 
-  return clip_32(src, std::max(minref*2 - ref2, 0.0f), std::min(maxref*2-ref2, 1.0f));
+#if 0
+  // no max_pixel_value clamp for float
+#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
+  const float pixel_min = 0.0f;
+  const float pixel_max = 1.0f;
+#else
+  const float pixel_min = chroma ? -0.5f : 0.0f;
+  const float pixel_max = chroma ? 0.5f : 1.0f;
+#endif
+#endif
+  float mi = minref * 2 - ref2;
+  float ma = maxref * 2 - ref2;
+  // mi = std::max(mi, pixel_min);
+  // ma = std::min(ma, pixel_max)
+  return clip_32(src, mi, ma);
 }
 
 template<typename pixel_t, CModeProcessor<pixel_t>/*(clense_process_pixel_c)*/ processor>
@@ -149,9 +164,20 @@ RG_FORCEINLINE void sclense_process_line_sse4_16(Byte* pDst, const Byte *pSrc, c
   }
 }
 
+//template<bool chroma>
 RG_FORCEINLINE void sclense_process_line_sse2_32(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize) {
-  __m128 zero = _mm_setzero_ps();
-  __m128 one = _mm_set1_ps(1.0f);
+#if 0
+  // no max_pixel_value clamp for float
+#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
+  const float pixel_min = 0.0f;
+  const float pixel_max = 1.0f;
+#else
+  const float pixel_min = chroma ? -0.5f : 0.0f;
+  const float pixel_max = chroma ? 0.5f : 1.0f;
+#endif
+  const __m128 pixel_min_128 = _mm_set1_ps(pixel_min);
+  const __m128 pixel_max_128 = _mm_set1_ps(pixel_max);
+#endif
   for (int x = 0; x < rowsize; x+=16) {
     auto src = _mm_load_ps(reinterpret_cast<const float*>(pSrc+x));
     auto ref1 = _mm_load_ps(reinterpret_cast<const float*>(pRef1+x));
@@ -160,8 +186,12 @@ RG_FORCEINLINE void sclense_process_line_sse2_32(Byte* pDst, const Byte *pSrc, c
     auto minref = _mm_min_ps(ref1, ref2);
     auto maxref = _mm_max_ps(ref1, ref2);
 
-    auto mi = _mm_max_ps(_mm_sub_ps(_mm_add_ps(minref, minref), ref2), zero);
-    auto ma = _mm_min_ps(_mm_sub_ps(_mm_add_ps(maxref, maxref), ref2), one);
+    auto mi = _mm_sub_ps(_mm_add_ps(minref, minref), ref2);
+    auto ma = _mm_sub_ps(_mm_add_ps(maxref, maxref), ref2);
+
+    // no max_pixel_value clamp for float
+    //mi = _mm_max_ps(mi, pixel_min_128);
+    //ma = _mm_max_ps(ma, pixel_max_128);
 
     auto dst = simd_clip_32(src, mi, ma);
 

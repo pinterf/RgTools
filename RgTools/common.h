@@ -157,14 +157,24 @@ static RG_FORCEINLINE __m128 abs_diff_32(__m128 a, __m128 b) {
 
 // PF until I find out better
 static RG_FORCEINLINE __m128 _mm_subs_ps(__m128 a, __m128 b) {
+#if 0
 const __m128 zero = _mm_setzero_ps();
 return _mm_max_ps(_mm_sub_ps(a, b), zero);
+#else
+  // no float clamp
+  return _mm_sub_ps(a, b);
+#endif
 }
 
 // PF until I find out better
 static RG_FORCEINLINE __m128 _mm_adds_ps(__m128 a, __m128 b) {
+#if 0
   const __m128 one = _mm_set1_ps(1.0f);
   return _mm_min_ps(_mm_add_ps(a, b), one);
+#else
+  // no float clamp
+  return _mm_add_ps(a, b);
+#endif
 }
 
 // PF until I find out better

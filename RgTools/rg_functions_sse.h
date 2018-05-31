@@ -619,6 +619,8 @@ RG_FORCEINLINE __m128i rg_mode6_sse_32(const Byte* pSrc, int srcPitch) {
   auto c3 = _mm_adds_ps(_mm_adds_ps(absdiff3, absdiff3), d3);
   auto c4 = _mm_adds_ps(_mm_adds_ps(absdiff4, absdiff4), d4);
 
+  // no max_pixel_value clamp for float
+
   auto mindiff = _mm_min_ps(c1, c2);
   mindiff = _mm_min_ps(mindiff, c3);
   mindiff = _mm_min_ps(mindiff, c4);
@@ -877,6 +879,8 @@ RG_FORCEINLINE __m128i rg_mode8_sse_32(const Byte* pSrc, int srcPitch) {
   auto c2 = _mm_adds_ps(abs_diff_32(c, clipped2), _mm_adds_ps(d2, d2));
   auto c3 = _mm_adds_ps(abs_diff_32(c, clipped3), _mm_adds_ps(d3, d3));
   auto c4 = _mm_adds_ps(abs_diff_32(c, clipped4), _mm_adds_ps(d4, d4));
+
+  // no max_pixel_value clamp for float
 
   auto mindiff = _mm_min_ps(c1, c2);
   mindiff = _mm_min_ps(mindiff, c3);

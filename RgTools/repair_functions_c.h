@@ -343,11 +343,26 @@ RG_FORCEINLINE float repair_mode6_cpp_32(const Byte* pSrc, float val, int srcPit
   float clipped3 = clip_32(val, mil3, mal3);
   float clipped4 = clip_32(val, mil4, mal4);
 
+  float c1 = (std::abs(val - clipped1) * 2) + d1;
+  float c2 = (std::abs(val - clipped2) * 2) + d2;
+  float c3 = (std::abs(val - clipped3) * 2) + d3;
+  float c4 = (std::abs(val - clipped4) * 2) + d4;
+
+#if 0
+  // no max_pixel_value clamp for float
+#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
+  const float pixel_min = 0.0f;
   const float pixel_max = 1.0f;
-  float c1 = clip_32((std::abs(val-clipped1) * 2)+d1, 0.0f, pixel_max);
-  float c2 = clip_32((std::abs(val-clipped2) * 2)+d2, 0.0f, pixel_max);
-  float c3 = clip_32((std::abs(val-clipped3) * 2)+d3, 0.0f, pixel_max);
-  float c4 = clip_32((std::abs(val-clipped4) * 2)+d4, 0.0f, pixel_max);
+#else
+  const float pixel_min = chroma ? -0.5f : 0.0f;
+  const float pixel_max = chroma ? 0.5f : 1.0f;
+#endif
+  // special case, in this mode we allow clipping to a valid range
+  c1 = clip_32(c1, pixel_min, pixel_max);
+  c2 = clip_32(c2, pixel_min, pixel_max);
+  c3 = clip_32(c3, pixel_min, pixel_max);
+  c4 = clip_32(c4, pixel_min, pixel_max);
+#endif
 
   float mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
 
@@ -579,11 +594,26 @@ RG_FORCEINLINE float repair_mode8_cpp_32(const Byte* pSrc, float val, int srcPit
   float clipped3 = clip_32(val, mil3, mal3);
   float clipped4 = clip_32(val, mil4, mal4);
 
+  float c1 = std::abs(val-clipped1)+(d1 * 2);
+  float c2 = std::abs(val-clipped2)+(d2 * 2);
+  float c3 = std::abs(val-clipped3)+(d3 * 2);
+  float c4 = std::abs(val-clipped4)+(d4 * 2);
+
+#if 0
+  // no max_pixel_value clamp for float
+#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
+  const float pixel_min = 0.0f;
   const float pixel_max = 1.0f;
-  float c1 = clip_32(std::abs(val-clipped1)+(d1 * 2), 0.0f, pixel_max);
-  float c2 = clip_32(std::abs(val-clipped2)+(d2 * 2), 0.0f, pixel_max);
-  float c3 = clip_32(std::abs(val-clipped3)+(d3 * 2), 0.0f, pixel_max);
-  float c4 = clip_32(std::abs(val-clipped4)+(d4 * 2), 0.0f, pixel_max);
+#else
+  const float pixel_min = chroma ? -0.5f : 0.0f;
+  const float pixel_max = chroma ? 0.5f : 1.0f;
+#endif
+  // special case, in this mode we allow clipping to a valid range
+  c1 = clip_32(c1, pixel_min, pixel_max);
+  c2 = clip_32(c2, pixel_min, pixel_max);
+  c3 = clip_32(c3, pixel_min, pixel_max);
+  c4 = clip_32(c4, pixel_min, pixel_max);
+#endif
 
   float mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
 
@@ -1183,11 +1213,26 @@ RG_FORCEINLINE float repair_mode16_cpp_32(const Byte* pSrc, float val, int srcPi
   auto d3 = mal3 - mil3;
   auto d4 = mal4 - mil4;
 
+  auto c1 = (std::abs (c - clip_32(c, mil1, mal1)) * 2) + d1;
+  auto c2 = (std::abs (c - clip_32(c, mil2, mal2)) * 2) + d2;
+  auto c3 = (std::abs (c - clip_32(c, mil3, mal3)) * 2) + d3;
+  auto c4 = (std::abs (c - clip_32(c, mil4, mal4)) * 2) + d4;
+
+#if 0
+  // no max_pixel_value clamp for float
+#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
+  const float pixel_min = 0.0f;
   const float pixel_max = 1.0f;
-  auto c1 = clip_32((std::abs (c - clip_32(c, mil1, mal1)) * 2) + d1, 0.0f, pixel_max);
-  auto c2 = clip_32((std::abs (c - clip_32(c, mil2, mal2)) * 2) + d2, 0.0f, pixel_max);
-  auto c3 = clip_32((std::abs (c - clip_32(c, mil3, mal3)) * 2) + d3, 0.0f, pixel_max);
-  auto c4 = clip_32((std::abs (c - clip_32(c, mil4, mal4)) * 2) + d4, 0.0f, pixel_max);
+#else
+  const float pixel_min = chroma ? -0.5f : 0.0f;
+  const float pixel_max = chroma ? 0.5f : 1.0f;
+#endif
+  // special case, in this mode we allow clipping to a valid range
+  c1 = clip_32(c1, pixel_min, pixel_max);
+  c2 = clip_32(c2, pixel_min, pixel_max);
+  c3 = clip_32(c3, pixel_min, pixel_max);
+  c4 = clip_32(c4, pixel_min, pixel_max);
+#endif
 
   auto mindiff = std::min (std::min (c1, c2), std::min (c3, c4));
 
@@ -1469,8 +1514,21 @@ RG_FORCEINLINE float repair_mode19_cpp_32(const Byte* pSrc, float val, int srcPi
 
   auto mindiff = std::min(std::min(std::min(std::min(std::min(std::min(std::min(d1, d2), d3), d4), d5), d6), d7), d8);
 
+  float mi = c - mindiff;
+  float ma = c + mindiff;
+#if 0
+  // no max_pixel_value clamp for float
+#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
+  const float pixel_min = 0.0f;
   const float pixel_max = 1.0f;
-  return clip_32(val, clip_32(c-mindiff, 0.0f, pixel_max), clip_32(c+mindiff, 0.0f, pixel_max));
+#else
+  const float pixel_min = chroma ? -0.5f : 0.0f;
+  const float pixel_max = chroma ? 0.5f : 1.0f;
+#endif
+#endif
+  // mi = clip_32(c-mindiff, pixel_min, pixel_max);
+  // ma = clip_32(c+mindiff, pixel_min, pixel_max);
+  return clip_32(val, mi, ma);
 }
 
 // ------------
@@ -1579,8 +1637,21 @@ RG_FORCEINLINE float repair_mode20_cpp_32(const Byte* pSrc, float val, int srcPi
 
   maxdiff = clip_32(maxdiff, mindiff, d8);
 
-  const float max_pixel = 1.0f;
-  return clip_32(val, clip_32(c-maxdiff, 0.0f, max_pixel), clip_32(c+maxdiff, 0.0f, max_pixel));
+#if 0
+  // no max_pixel_value clamp for float
+#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
+  const float pixel_min = 0.0f;
+  const float pixel_max = 1.0f;
+#else
+  const float pixel_min = chroma ? -0.5f : 0.0f;
+  const float pixel_max = chroma ? 0.5f : 1.0f;
+#endif
+#endif
+  float mi = c - maxdiff;
+  float ma = c + maxdiff;
+  // mi = clip_32(mi, pixel_min, pixel_max)
+  // ma = clip_32(ma, pixel_min, pixel_max)
+  return clip_32(val, mi, ma);
 }
 
 
@@ -1673,16 +1744,34 @@ RG_FORCEINLINE float repair_mode21_cpp_32(const Byte* pSrc, float val, int srcPi
   auto mal4 = std::max(a4, a5);
   auto mil4 = std::min(a4, a5);
 
-  const float max_pixel = 1.0f;
-  auto d1 = clip_32(mal1 - c, 0.0f, max_pixel);
-  auto d2 = clip_32(mal2 - c, 0.0f, max_pixel);
-  auto d3 = clip_32(mal3 - c, 0.0f, max_pixel);
-  auto d4 = clip_32(mal4 - c, 0.0f, max_pixel);
+  auto d1 = mal1 - c;
+  auto d2 = mal2 - c;
+  auto d3 = mal3 - c;
+  auto d4 = mal4 - c;
 
-  auto rd1 = clip_32(c-mil1, 0.0f, max_pixel);
-  auto rd2 = clip_32(c-mil2, 0.0f, max_pixel);
-  auto rd3 = clip_32(c-mil3, 0.0f, max_pixel);
-  auto rd4 = clip_32(c-mil4, 0.0f, max_pixel);
+  auto rd1 = c-mil1;
+  auto rd2 = c-mil2;
+  auto rd3 = c-mil3;
+  auto rd4 = c-mil4;
+
+#if 0
+  // no max_pixel_value clamp for float
+#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
+  const float pixel_min = 0.0f;
+  const float pixel_max = 1.0f;
+#else
+  const float pixel_min = chroma ? -0.5f : 0.0f;
+  const float pixel_max = chroma ? 0.5f : 1.0f;
+#endif
+  d1 = clip_32(d1, pixel_min, pixel_max);
+  d2 = clip_32(d2, pixel_min, pixel_max);
+  d3 = clip_32(d3, pixel_min, pixel_max);
+  d4 = clip_32(d4, pixel_min, pixel_max);
+  rd1 = clip_32(rd1, pixel_min, pixel_max);
+  rd2 = clip_32(rd2, pixel_min, pixel_max);
+  rd3 = clip_32(rd3, pixel_min, pixel_max);
+  rd4 = clip_32(rd4, pixel_min, pixel_max);
+#endif
 
   auto u1  = std::max(d1, rd1);
   auto u2  = std::max(d2, rd2);
@@ -1691,7 +1780,11 @@ RG_FORCEINLINE float repair_mode21_cpp_32(const Byte* pSrc, float val, int srcPi
 
   auto u = std::min(std::min(std::min(u1, u2), u3), u4);
 
-  return clip_32(val, clip_32(c-u, 0.0f, max_pixel), clip_32(c+u, 0.0f, max_pixel));
+  float mi = c - u;
+  float ma = c + u;
+  // mi = clip_32(mi, pixel_min, pixel_max);
+  // ma = clip_32(ma, pixel_min, pixel_max);
+  return clip_32(val, mi, ma);  
 }
 
 // ------------
@@ -1746,8 +1839,21 @@ RG_FORCEINLINE float repair_mode22_cpp_32(const Byte* pSrc, float val, int srcPi
 
   auto mindiff = std::min(std::min(std::min(std::min(std::min(std::min(std::min(d1, d2), d3), d4), d5), d6), d7), d8);
 
-  const float max_pixel = 1.0f;
-  return clip_32(c, clip_32(val-mindiff, 0.0f, max_pixel), clip_32(val+mindiff, 0.0f, max_pixel));
+#if 0
+  // no max_pixel_value clamp for float
+#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
+  const float pixel_min = 0.0f;
+  const float pixel_max = 1.0f;
+#else
+  const float pixel_min = chroma ? -0.5f : 0.0f;
+  const float pixel_max = chroma ? 0.5f : 1.0f;
+#endif
+#endif
+  float mi = val - mindiff;
+  float ma = val + mindiff;
+  // mi = clip_32(mi, min_pixel, max_pixel);
+  // ma = clip_32(ma, min_pixel, max_pixel);
+  return clip_32(c, mi, ma);
 }
 
 // ------------
@@ -1856,8 +1962,21 @@ RG_FORCEINLINE float repair_mode23_cpp_32(const Byte* pSrc, float val, int srcPi
 
   maxdiff = clip_32(maxdiff, mindiff, d8);
 
-  const float max_pixel = 1.0f;
-  return clip_32(c, clip_32(val-maxdiff, 0.0f, max_pixel), clip_32(val+maxdiff, 0.0f, max_pixel));
+#if 0
+  // no max_pixel_value clamp for float
+#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
+  const float pixel_min = 0.0f;
+  const float pixel_max = 1.0f;
+#else
+  const float pixel_min = chroma ? -0.5f : 0.0f;
+  const float pixel_max = chroma ? 0.5f : 1.0f;
+#endif
+#endif
+  float mi = val - maxdiff;
+  float ma = val + maxdiff;
+  // mi =  clip_32(mi, pixel_min, pixel_max)
+  // ma =  clip_32(ma, pixel_min, pixel_max)
+  return clip_32(c, mi, ma);
 }
 
 // ------------
@@ -1949,16 +2068,34 @@ RG_FORCEINLINE float repair_mode24_cpp_32(const Byte* pSrc, float val, int srcPi
   auto mal4 = std::max(a4, a5);
   auto mil4 = std::min(a4, a5);
 
-  const float max_pixel = 1.0f;
-  auto d1 = clip_32(mal1 - val, 0.0f, max_pixel);
-  auto d2 = clip_32(mal2 - val, 0.0f, max_pixel);
-  auto d3 = clip_32(mal3 - val, 0.0f, max_pixel);
-  auto d4 = clip_32(mal4 - val, 0.0f, max_pixel);
+  auto d1 = mal1 - val;
+  auto d2 = mal2 - val;
+  auto d3 = mal3 - val;
+  auto d4 = mal4 - val;
 
-  auto rd1 = clip_32(val-mil1, 0.0f, max_pixel);
-  auto rd2 = clip_32(val-mil2, 0.0f, max_pixel);
-  auto rd3 = clip_32(val-mil3, 0.0f, max_pixel);
-  auto rd4 = clip_32(val-mil4, 0.0f, max_pixel);
+  auto rd1 = val-mil1;
+  auto rd2 = val-mil2;
+  auto rd3 = val-mil3;
+  auto rd4 = val-mil4;
+
+#if 0
+  // no max_pixel_value clamp for float
+#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
+  const float pixel_min = 0.0f;
+  const float pixel_max = 1.0f;
+#else
+  const float pixel_min = chroma ? -0.5f : 0.0f;
+  const float pixel_max = chroma ? 0.5f : 1.0f;
+#endif
+  d1 = clip_32(d1, pixel_min, pixel_max);
+  d2 = clip_32(d2, pixel_min, pixel_max);
+  d3 = clip_32(d3, pixel_min, pixel_max);
+  d4 = clip_32(d4, pixel_min, pixel_max);
+  rd1 = clip_32(rd1, pixel_min, pixel_max);
+  rd2 = clip_32(rd2, pixel_min, pixel_max);
+  rd3 = clip_32(rd3, pixel_min, pixel_max);
+  rd4 = clip_32(rd4, pixel_min, pixel_max);
+#endif
 
   auto u1  = std::max(d1, rd1);
   auto u2  = std::max(d2, rd2);
@@ -1967,7 +2104,11 @@ RG_FORCEINLINE float repair_mode24_cpp_32(const Byte* pSrc, float val, int srcPi
 
   auto u = std::min(std::min(std::min(u1, u2), u3), u4);
 
-  return clip_32(c, clip_32(val-u, 0.0f, max_pixel), clip_32(val+u, 0.0f, max_pixel));
+  float mi = val - u;
+  float ma = val + u;
+  // mi = clip_32(mi, pixel_min, pixel_max)
+  // ma = clip_32(ma, pixel_min, pixel_max)
+  return clip_32(c, mi, ma);
 }
 
 #undef LOAD_SQUARE_CPP

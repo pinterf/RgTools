@@ -188,6 +188,8 @@ static void vcleaner_relaxed_median_sse_32(Byte* pDst8, const Byte *pSrc8, int d
       __m128 pt = _mm_adds_ps(pdiff, p1);
       __m128 nt = _mm_adds_ps(ndiff, n1);
 
+      // no max_pixel_value clamp for float
+
       __m128 upper = _mm_min_ps(pt, nt);
       upper = _mm_max_ps(upper, p1);
       upper = _mm_max_ps(upper, n1);
@@ -256,7 +258,12 @@ static __forceinline uint16_t satb_16(int value, int max_pixel_value) {
 }
 
 static __forceinline float satb_32(float value) {
+#if 0
+  // no clamp for float
   return clip_32(value, 0.0f, 1.0f);
+#else
+  return value;
+#endif
 }
 
 static void vcleaner_relaxed_median_c(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {

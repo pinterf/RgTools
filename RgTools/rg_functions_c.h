@@ -318,6 +318,7 @@ RG_FORCEINLINE uint16_t rg_mode6_cpp_16(const Byte* pSrc, int srcPitch) {
     return clip_16(c, mil1, mal1);
 }
 
+//template<bool chroma>
 RG_FORCEINLINE float rg_mode6_cpp_32(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
@@ -343,10 +344,26 @@ RG_FORCEINLINE float rg_mode6_cpp_32(const Byte* pSrc, int srcPitch) {
   float clipped3 = clip_32(c, mil3, mal3);
   float clipped4 = clip_32(c, mil4, mal4);
 
-  float c1 = clip_32((std::abs(c-clipped1) * 2)+d1, 0.0f, 1.0f);
-  float c2 = clip_32((std::abs(c-clipped2) * 2)+d2, 0.0f, 1.0f);
-  float c3 = clip_32((std::abs(c-clipped3) * 2)+d3, 0.0f, 1.0f);
-  float c4 = clip_32((std::abs(c-clipped4) * 2)+d4, 0.0f, 1.0f);
+  float c1 = (std::abs(c - clipped1) * 2) + d1;
+  float c2 = (std::abs(c - clipped2) * 2) + d2;
+  float c3 = (std::abs(c - clipped3) * 2) + d3;
+  float c4 = (std::abs(c - clipped4) * 2) + d4;
+
+#if 0
+  // no max_pixel_value clamp for float
+#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
+  const float pixel_min = 0.0f;
+  const float pixel_max = 1.0f;
+#else
+  const float pixel_min = chroma ? -0.5f : 0.0f;
+  const float pixel_max = chroma ? 0.5f : 1.0f;
+#endif
+  // special case, in this mode we allow clipping to a valid range
+  c1 = clip_32(c1, pixel_min, pixel_max);
+  c2 = clip_32(c2, pixel_min, pixel_max);
+  c3 = clip_32(c3, pixel_min, pixel_max);
+  c4 = clip_32(c4, pixel_min, pixel_max);
+#endif
 
   float mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
 
@@ -554,6 +571,7 @@ RG_FORCEINLINE uint16_t rg_mode8_cpp_16(const Byte* pSrc, int srcPitch) {
   return clipped1;
 }
 
+//template<bool chroma>
 RG_FORCEINLINE float rg_mode8_cpp_32(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
@@ -579,12 +597,26 @@ RG_FORCEINLINE float rg_mode8_cpp_32(const Byte* pSrc, int srcPitch) {
   float clipped3 = clip_32(c, mil3, mal3);
   float clipped4 = clip_32(c, mil4, mal4);
 
-  const float pixel_max = 1.0f;
+  float c1 = std::abs(c - clipped1) + (d1 * 2);
+  float c2 = std::abs(c - clipped2) + (d2 * 2);
+  float c3 = std::abs(c - clipped3) + (d3 * 2);
+  float c4 = std::abs(c - clipped4) + (d4 * 2);
 
-  float c1 = clip_32(std::abs(c-clipped1)+(d1 * 2), 0.0f, pixel_max);
-  float c2 = clip_32(std::abs(c-clipped2)+(d2 * 2), 0.0f, pixel_max);
-  float c3 = clip_32(std::abs(c-clipped3)+(d3 * 2), 0.0f, pixel_max);
-  float c4 = clip_32(std::abs(c-clipped4)+(d4 * 2), 0.0f, pixel_max);
+#if 0
+  // no max_pixel_value clamp for float
+#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
+  const float pixel_min = 0.0f;
+  const float pixel_max = 1.0f;
+#else
+  const float pixel_min = chroma ? -0.5f : 0.0f;
+  const float pixel_max = chroma ? 0.5f : 1.0f;
+#endif
+  // special case, in this mode we allow clipping to a valid range
+  c1 = clip_32(c1, 0.0f, pixel_max);
+  c2 = clip_32(c2, 0.0f, pixel_max);
+  c3 = clip_32(c3, 0.0f, pixel_max);
+  c4 = clip_32(c4, 0.0f, pixel_max);
+#endif
 
   float mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
 

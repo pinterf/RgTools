@@ -6,9 +6,9 @@ Some routines might be slightly less efficient than original, some are faster. O
 
 This plugin is written from scratch and licensed under the [MIT license][1]. Some modes of RemoveGrain and Repair were taken from the Firesledge's Dither package.
 
-v0.97 (20180601)
+v0.97 (20180702)
 - Remove some inherited clipping to 0..1 range for 32bit float.
-  In general we do not clamp in 32 bit float colorspaces, especially that U/V range is -0.5..+0.5 from June 2018 in Avisynth+.
+  In general we do not clamp in 32 bit float colorspaces, especially that U/V range is -0.5..+0.5 from Avisynth+ r2728
 
 v0.96 (20170609)
 - RemoveGrain: AVX2. Available when Avisynth+ reports AVX2 usability

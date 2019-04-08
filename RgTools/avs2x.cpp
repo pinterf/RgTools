@@ -2,6 +2,7 @@
 #include "clense.h"
 #include "repair.h"
 #include "vertical_cleaner.h"
+#include "RemoveGrainT.h"
 
 
 
@@ -16,5 +17,6 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
     env->AddFunction("ForwardClense", "c[grey]b[planar]b[cache]i", Create_ForwardClense, 0);
     env->AddFunction("BackwardClense", "c[grey]b[planar]b[cache]i", Create_BackwardClense, 0);
     env->AddFunction("VerticalCleaner", "c[mode]i[modeU]i[modeV]i[planar]b", Create_VerticalCleaner, 0);
+    env->AddFunction("TemporalRepair", "cc[mode]i[smooth]i[grey]b[planar]b[opt]i", Create_TemporalRepair, 0);
     return "Itai, onii-chan!";
 }

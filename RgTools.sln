@@ -1,12 +1,16 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28729.10
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RgTools", "RgTools\RgTools.vcxproj", "{07F7D803-BD01-4620-AF0B-18803F302E86}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
 		Debug|x64 = Debug|x64
+		Release LLVM|Win32 = Release LLVM|Win32
+		Release LLVM|x64 = Release LLVM|x64
 		Release|Win32 = Release|Win32
 		Release|x64 = Release|x64
 	EndGlobalSection
@@ -15,6 +19,10 @@ Global
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Debug|Win32.Build.0 = Debug|Win32
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Debug|x64.ActiveCfg = Debug|x64
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Debug|x64.Build.0 = Debug|x64
+		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release LLVM|Win32.ActiveCfg = Release LLVM|Win32
+		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release LLVM|Win32.Build.0 = Release LLVM|Win32
+		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release LLVM|x64.ActiveCfg = Release LLVM|x64
+		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release LLVM|x64.Build.0 = Release LLVM|x64
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release|Win32.ActiveCfg = Release|Win32
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release|Win32.Build.0 = Release|Win32
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release|x64.ActiveCfg = Release|x64
@@ -22,5 +30,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {01B2AE93-93DE-4CE1-A609-D94388170CB4}
 	EndGlobalSection
 EndGlobal

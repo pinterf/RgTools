@@ -18,8 +18,9 @@ CMakeFiles/*
 [Dd]ebug LLVM/
 [Dd]ebugPublic/
 [Rr]elease/
+[Rr]eleaseWithDebug/
 [Rr]elease LLVM/
-[Rr]eleaseWithDebugInfo/
+[Rr]elease LLVM WithDebug/
 [Rr]eleases/
 x64/
 x86/

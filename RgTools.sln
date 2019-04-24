@@ -9,16 +9,24 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
 		Debug|x64 = Debug|x64
+		Release LLVM WithDebug|Win32 = Release LLVM WithDebug|Win32
+		Release LLVM WithDebug|x64 = Release LLVM WithDebug|x64
 		Release LLVM|Win32 = Release LLVM|Win32
 		Release LLVM|x64 = Release LLVM|x64
 		Release|Win32 = Release|Win32
 		Release|x64 = Release|x64
+		ReleaseWithDebug|Win32 = ReleaseWithDebug|Win32
+		ReleaseWithDebug|x64 = ReleaseWithDebug|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Debug|Win32.ActiveCfg = Debug|Win32
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Debug|Win32.Build.0 = Debug|Win32
-		{07F7D803-BD01-4620-AF0B-18803F302E86}.Debug|x64.ActiveCfg = Debug|x64
-		{07F7D803-BD01-4620-AF0B-18803F302E86}.Debug|x64.Build.0 = Debug|x64
+		{07F7D803-BD01-4620-AF0B-18803F302E86}.Debug|x64.ActiveCfg = Debug|Win32
+		{07F7D803-BD01-4620-AF0B-18803F302E86}.Debug|x64.Build.0 = Debug|Win32
+		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release LLVM WithDebug|Win32.ActiveCfg = Release LLVM WithDebug|Win32
+		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release LLVM WithDebug|Win32.Build.0 = Release LLVM WithDebug|Win32
+		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release LLVM WithDebug|x64.ActiveCfg = Release LLVM WithDebug|x64
+		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release LLVM WithDebug|x64.Build.0 = Release LLVM WithDebug|x64
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release LLVM|Win32.ActiveCfg = Release LLVM|Win32
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release LLVM|Win32.Build.0 = Release LLVM|Win32
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release LLVM|x64.ActiveCfg = Release LLVM|x64
@@ -27,6 +35,10 @@ Global
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release|Win32.Build.0 = Release|Win32
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release|x64.ActiveCfg = Release|x64
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release|x64.Build.0 = Release|x64
+		{07F7D803-BD01-4620-AF0B-18803F302E86}.ReleaseWithDebug|Win32.ActiveCfg = ReleaseWithDebug|Win32
+		{07F7D803-BD01-4620-AF0B-18803F302E86}.ReleaseWithDebug|Win32.Build.0 = ReleaseWithDebug|Win32
+		{07F7D803-BD01-4620-AF0B-18803F302E86}.ReleaseWithDebug|x64.ActiveCfg = ReleaseWithDebug|x64
+		{07F7D803-BD01-4620-AF0B-18803F302E86}.ReleaseWithDebug|x64.Build.0 = ReleaseWithDebug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

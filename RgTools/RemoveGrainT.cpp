@@ -26,11 +26,11 @@
 #include <stdarg.h>
 #include <cassert>
 #include "RemoveGrainT.h"
-#include "stdint.h"
 #include "emmintrin.h"
 #include "immintrin.h"
 #include <math.h>
 #include <algorithm>
+#include "common.h"
 
 
 RG_FORCEINLINE void RepairPixel(uint8_t *dest, const uint8_t *src1, const uint8_t *src2, const uint8_t *previous, const uint8_t *next)
@@ -42,8 +42,7 @@ RG_FORCEINLINE void RepairPixel(uint8_t *dest, const uint8_t *src1, const uint8_
 
 	auto min_np2 = _mm_min_epu8(_mm_min_epu8(src_next, src_prev), src_2);
 	auto max_np2 = _mm_max_epu8(_mm_max_epu8(src_next, src_prev), src_2);
-	auto reg1 = _mm_max_epu8(min_np2, src_1);
-	auto result = _mm_min_epu8(reg1, max_np2);
+	auto result = simd_clip(src_1, min_np2, max_np2);
 
 	_mm_storeu_si128(reinterpret_cast<__m128i*>(dest), result);
 }
@@ -76,10 +75,9 @@ static void temporal_repair_mode0_sse2(BYTE *dp, int dpitch, const BYTE *sp1, in
 RG_FORCEINLINE int RepairPixel_c(int src_1, int src_2, int src_prev, int src_next)
 {
 
-	auto min_np2 = std::min(std::min(src_next, src_prev), src_2); //_mm_min_epu8(_mm_min_epu8(src_next, src_prev), src_2);
+	auto min_np2 = std::min(std::min(src_next, src_prev), src_2);
 	auto max_np2 = std::max(std::max(src_next, src_prev), src_2);
-	auto reg1 = std::max(min_np2, src_1);
-	return std::min(reg1, max_np2);
+	return clip(src_1, min_np2, max_np2);
 }
 
 static void temporal_repair_mode0_c(BYTE* dp, int dpitch, const BYTE* sp1, int spitch1, const BYTE* sp2, int spitch2, const BYTE* pp, int ppitch, const BYTE* np, int npitch, int width, int height)
@@ -128,9 +126,8 @@ RG_FORCEINLINE void BRepairPixel(uint8_t *dest, const uint8_t *src1, const uint8
 	auto equ2 = _mm_cmpeq_epi8(max_np, reg3);
   auto equ = _mm_or_si128(equ1, equ2);// _mm_max_epu8(equ1, equ2); // pracically or. mask set if min_np == reg5 or max_np == reg3 FIXME
 
-	reg5 = _mm_min_epu8(reg5, src_1);
-	reg5 = _mm_max_epu8(reg5, reg3);
-
+  reg5 = simd_clip(src_1, reg3, reg5);
+  // FIXME: SSE4.1
   // real SSE4.1 _mm_blendv_epi8: 2830 vs 2960 FPS, worth using it
   auto result = _MM_BLENDV_EPI8(reg5, src_2, equ); // keep src2 where equal
 
@@ -160,13 +157,37 @@ static void btemporal_repair_mode4_sse2(BYTE *dp, int dpitch, const BYTE *sp1, i
   }
 }
 
-RG_FORCEINLINE int subs_int(int x, int y) {
-  return x < y ? 0 : x - y;
+RG_FORCEINLINE int subs_c(int x, int y) {
+  return std::max(0, x - y);
 }
 
-RG_FORCEINLINE int adds_uint8(int x, int y) {
-  int sum = x + y;
-  return sum > 255 ? 255 : sum;
+RG_FORCEINLINE int subs_16_c(int x, int y) {
+  return std::max(0, x - y);
+}
+
+RG_FORCEINLINE float subs_32_c(float x, float y) {
+  //return (float)std::max(0.0f, x - y);
+  return x - y; // float: no clamp
+}
+
+RG_FORCEINLINE int adds_c(int x, int y) {
+  constexpr int pixel_max = 255;
+  return std::min(pixel_max, x + y);
+}
+
+ 
+template<int bits_per_pixel>
+RG_FORCEINLINE int adds_16_c(int x, int y) {
+  constexpr int pixel_max = (1 << bits_per_pixel) - 1;
+  return std::min(pixel_max, x + y);
+}
+
+RG_FORCEINLINE float adds_32_c(float x, float y) {
+  /*
+  constexpr float pixel_max = 1.0f; // or 0.5 if chroma
+  return (uint8_t)std::min(pixel_max, x + y);
+  */
+  return x + y; // float: no clamp
 }
 
 RG_FORCEINLINE int BRepairPixel_c(int src_1, int src_2, int src_prev, int src_next)
@@ -174,20 +195,18 @@ RG_FORCEINLINE int BRepairPixel_c(int src_1, int src_2, int src_prev, int src_ne
   auto max_np = std::max(src_next, src_prev);
   auto min_np = std::min(src_next, src_prev);
 
-  auto diff_src2_minnp = subs_int(src_2, min_np);
-  auto reg5 = adds_uint8(adds_uint8(diff_src2_minnp, diff_src2_minnp), min_np); // diff_src2_minnp * 2 - min_np
+  auto diff_src2_minnp = subs_c(src_2, min_np);
+  auto reg5 = adds_c(adds_c(diff_src2_minnp, diff_src2_minnp), min_np); // diff_src2_minnp * 2 - min_np
 
-  auto diff_maxnp_src2 = subs_int(max_np, src_2);
-  auto reg3 = subs_int(max_np, adds_uint8(diff_maxnp_src2, diff_maxnp_src2)); // max_np - 2 * diff_maxnp_src2
+  auto diff_maxnp_src2 = subs_c(max_np, src_2);
+  auto reg3 = subs_c(max_np, adds_c(diff_maxnp_src2, diff_maxnp_src2)); // max_np - 2 * diff_maxnp_src2
 
   reg5 = std::min(reg5, max_np);
   reg3 = std::max(reg3, min_np);
 
   auto equ = min_np == reg5 || max_np == reg3;
 
-  reg5 = std::min(reg5, src_1);
-  reg5 = std::max(reg5, reg3);
-
+  reg5 = clip(src_1, reg3, reg5);
   return equ ? src_2 : reg5;
 }
 
@@ -229,7 +248,7 @@ static void copy_plane(PVideoFrame& destf, PVideoFrame& currf, int plane, IScrip
 
 class	TemporalRepair : public GenericVideoFilter
 {
-  void(*trepair)(BYTE *dp, int dpitch, const BYTE *sp1, int spitch1, const BYTE *sp2, int spitch2, const BYTE *pp, int ppitch, const BYTE *np, int npitch, int width, int height);
+  void(*processor_t_repair)(BYTE *dp, int dpitch, const BYTE *sp1, int spitch1, const BYTE *sp2, int spitch2, const BYTE *pp, int ppitch, const BYTE *np, int npitch, int width, int height);
   int last_frame;
   PClip orig;
   bool grey;
@@ -258,7 +277,7 @@ class	TemporalRepair : public GenericVideoFilter
     for (int p = 0; p < planecount; ++p) {
       const int plane = planes[p];
 
-      trepair(
+      processor_t_repair(
         df->GetWritePtr(plane), df->GetPitch(plane), 
         cf->GetReadPtr(plane), cf->GetPitch(plane), 
         sf->GetReadPtr(plane), sf->GetPitch(plane), 
@@ -285,9 +304,9 @@ public:
 
     assert(mode == 0 || mode == 4);
     if (opt == 0) // 0: C
-      trepair = mode == 4 ? btemporal_repair_mode4_c : temporal_repair_mode0_c;
+      processor_t_repair = mode == 4 ? btemporal_repair_mode4_c : temporal_repair_mode0_c;
     else // SSE2 new simd
-      trepair = mode == 4 ? btemporal_repair_mode4_sse2 : temporal_repair_mode0_sse2;
+      processor_t_repair = mode == 4 ? btemporal_repair_mode4_sse2 : temporal_repair_mode0_sse2;
     last_frame = vi.num_frames >= 2 ? vi.num_frames - 2 : 0;
   }
 };
@@ -307,8 +326,8 @@ RG_FORCEINLINE void get_lu_c(int& lower, int& upper, int src_prev, int src_curr,
 {
   auto max_np = std::max(src_next, src_prev);
   auto min_np = std::min(src_next, src_prev);
-  upper = subs_int(max_np, src_curr);
-  lower = subs_int(src_curr, min_np);
+  upper = subs_c(max_np, src_curr);
+  lower = subs_c(src_curr, min_np);
 }
 
 RG_FORCEINLINE void SmoothTRepair(uint8_t *dest, __m128i &lower, __m128i &upper, const uint8_t *previous, const uint8_t *current, const uint8_t *next)
@@ -324,7 +343,7 @@ RG_FORCEINLINE void SmoothTRepair(uint8_t *dest, __m128i &lower, __m128i &upper,
   auto tmp_max = _mm_max_epu8(_mm_max_epu8(tmp_u, src_prev), src_next);
   auto tmp_min = _mm_min_epu8(_mm_min_epu8(tmp_l, src_prev), src_next);
   
-  auto result = _mm_max_epu8(_mm_min_epu8(tmp_max, src_dest), tmp_min);
+  auto result = simd_clip(src_dest, tmp_min, tmp_max);
   
   _mm_storeu_si128(reinterpret_cast<__m128i *>(dest), result);
 }
@@ -333,18 +352,20 @@ RG_FORCEINLINE void SmoothTRepair_c(BYTE &dest, int lower, int upper, const int 
 {
   auto src_dest = dest;
 
-  auto tmp_u = adds_uint8(upper, src_curr);
-  auto tmp_l = subs_int(src_curr, lower);
+  auto tmp_u = adds_c(upper, src_curr);
+  auto tmp_l = subs_c(src_curr, lower);
 
   auto tmp_max = std::max(std::max(tmp_u, src_prev), src_next);
   auto tmp_min = std::min(std::min(tmp_l, src_prev), src_next);
 
-  auto result = std::max(std::min(tmp_max, (int)src_dest), tmp_min);
+  auto result = clip((int)src_dest, tmp_min, tmp_max);
 
   dest = result;
 }
 
-void smooth_temporal_repair1_sse2(BYTE *dp, const BYTE *previous, const BYTE *sp, const BYTE *next, intptr_t* pitches, int width, int height)
+
+
+void smooth_temporal_repair_mode1_sse2(BYTE *dp, const BYTE *previous, const BYTE *sp, const BYTE *next, intptr_t* pitches, int width, int height)
 {
   // #   X    X
   // X new_dp X
@@ -440,7 +461,7 @@ void smooth_temporal_repair1_sse2(BYTE *dp, const BYTE *previous, const BYTE *sp
   }
 }
 
-void smooth_temporal_repair1_c(BYTE* dp, const BYTE* previous, const BYTE* sp, const BYTE* next, intptr_t* pitches, int width, int height)
+void smooth_temporal_repair_mode1_c(BYTE* dp, const BYTE* previous, const BYTE* sp, const BYTE* next, intptr_t* pitches, int width, int height)
 {
   // #   X    X
   // X new_dp X
@@ -508,10 +529,10 @@ RG_FORCEINLINE void SmoothTRepair2(uint8_t *dest, __m128i lower, __m128i upper, 
   auto lowermax = _mm_max_epu8(lower, lower1);
   auto upperlowermax = _mm_max_epu8(uppermax, lowermax);
 
-  auto tmp1 = _mm_adds_epu8(src_curr, upperlowermax);
-  auto tmp2 = _mm_subs_epu8(src_curr, upperlowermax);
+  auto tmp_max = _mm_adds_epu8(src_curr, upperlowermax);
+  auto tmp_min = _mm_subs_epu8(src_curr, upperlowermax);
 
-  auto result = _mm_max_epu8(_mm_min_epu8(tmp1, src_dest), tmp2);
+  auto result = simd_clip(src_dest, tmp_min, tmp_max);
   _mm_storeu_si128(reinterpret_cast<__m128i *>(dest), result);
 }
 
@@ -527,14 +548,19 @@ RG_FORCEINLINE void SmoothTRepair2_c(BYTE &dest, int lower, int upper, int src_p
   auto lowermax = std::max(lower, lower1);
   auto upperlowermax = std::max(uppermax, lowermax);
 
-  auto tmp1 = adds_uint8(src_curr, upperlowermax);
-  auto tmp2 = subs_int(src_curr, upperlowermax);
+  auto tmp_max = adds_c(src_curr, upperlowermax);
+  auto tmp_min = subs_c(src_curr, upperlowermax);
 
-  auto result = std::max(std::min(tmp1, (int)src_dest), tmp2);
+  auto result = clip((int)src_dest, tmp_min, tmp_max);
   dest = result;
 }
 
-void	smooth_temporal_repair2_sse2(BYTE *dp, const BYTE *previous, const BYTE *_sp, const BYTE *next, intptr_t* pitches, int width, int height)
+/*
+FIXME: do like in removegrain.
+  Keep center  
+*/
+
+void	smooth_temporal_repair_mode2_sse2(BYTE *dp, const BYTE *previous, const BYTE *sp, const BYTE *next, intptr_t* pitches, int width, int height)
 {
   // #   X    X
   // X new_dp X
@@ -565,75 +591,75 @@ void	smooth_temporal_repair2_sse2(BYTE *dp, const BYTE *previous, const BYTE *_s
     __m128i upper = _mm_undefined_si128();
     for (int x = 0; x < hblocks; x++)
     {
-      get_lu(lowermax, uppermax, previous, _sp, next);
-      get_lu(lower, upper, previous + 1, _sp + 1, next + 1);
+      get_lu(lowermax, uppermax, previous, sp, next);
+      get_lu(lower, upper, previous + 1, sp + 1, next + 1);
       uppermax = _mm_max_epu8(uppermax, upper);
       lowermax = _mm_max_epu8(lowermax, lower);
-      get_lu(lower, upper, previous + 2, _sp + 2, next + 2);
+      get_lu(lower, upper, previous + 2, sp + 2, next + 2);
       uppermax = _mm_max_epu8(uppermax, upper);
       lowermax = _mm_max_epu8(lowermax, lower);
-      get_lu(lower, upper, previous + 2 * pfpitch, _sp + 2 * ofpitch, next + 2 * nfpitch);
+      get_lu(lower, upper, previous + 2 * pfpitch, sp + 2 * ofpitch, next + 2 * nfpitch);
       uppermax = _mm_max_epu8(uppermax, upper);
       lowermax = _mm_max_epu8(lowermax, lower);
-      get_lu(lower, upper, previous + 2 * pfpitch + 1, _sp + 2 * ofpitch + 1, next + 2 * nfpitch + 1);
+      get_lu(lower, upper, previous + 2 * pfpitch + 1, sp + 2 * ofpitch + 1, next + 2 * nfpitch + 1);
       uppermax = _mm_max_epu8(uppermax, upper);
       lowermax = _mm_max_epu8(lowermax, lower);
-      get_lu(lower, upper, previous + 2 * pfpitch + 2, _sp + 2 * ofpitch + 2, next + 2 * nfpitch + 2);
+      get_lu(lower, upper, previous + 2 * pfpitch + 2, sp + 2 * ofpitch + 2, next + 2 * nfpitch + 2);
       uppermax = _mm_max_epu8(uppermax, upper);
       lowermax = _mm_max_epu8(lowermax, lower);
-      get_lu(lower, upper, previous + pfpitch, _sp + ofpitch, next + nfpitch);
+      get_lu(lower, upper, previous + pfpitch, sp + ofpitch, next + nfpitch);
       uppermax = _mm_max_epu8(uppermax, upper);
       lowermax = _mm_max_epu8(lowermax, lower);
-      get_lu(lower, upper, previous + pfpitch + 2, _sp + ofpitch + 2, next + nfpitch + 2);
+      get_lu(lower, upper, previous + pfpitch + 2, sp + ofpitch + 2, next + nfpitch + 2);
       uppermax = _mm_max_epu8(uppermax, upper);
       lowermax = _mm_max_epu8(lowermax, lower);
-      SmoothTRepair2(dp, lowermax, uppermax, previous + pfpitch + 1, _sp + ofpitch + 1, next + nfpitch + 1);
+      SmoothTRepair2(dp, lowermax, uppermax, previous + pfpitch + 1, sp + ofpitch + 1, next + nfpitch + 1);
 
-      _sp += 16;
+      sp += 16;
       previous += 16;
       next += 16;
       dp += 16;
     }
 
     // the last pixels. Do simd to the rightmost 16 pixels, overlap is possible but no problem
-    _sp += remainder;
+    sp += remainder;
     previous += remainder;
     next += remainder;
     dp += remainder;
 
-    get_lu(lowermax, uppermax, previous, _sp, next);
-    get_lu(lower, upper, previous + 1, _sp + 1, next + 1);
+    get_lu(lowermax, uppermax, previous, sp, next);
+    get_lu(lower, upper, previous + 1, sp + 1, next + 1);
     uppermax = _mm_max_epu8(uppermax, upper);
     lowermax = _mm_max_epu8(lowermax, lower);
-    get_lu(lower, upper, previous + 2, _sp + 2, next + 2);
+    get_lu(lower, upper, previous + 2, sp + 2, next + 2);
     uppermax = _mm_max_epu8(uppermax, upper);
     lowermax = _mm_max_epu8(lowermax, lower);
-    get_lu(lower, upper, previous + 2 * pfpitch, _sp + 2 * ofpitch, next + 2 * nfpitch);
+    get_lu(lower, upper, previous + 2 * pfpitch, sp + 2 * ofpitch, next + 2 * nfpitch);
     uppermax = _mm_max_epu8(uppermax, upper);
     lowermax = _mm_max_epu8(lowermax, lower);
-    get_lu(lower, upper, previous + 2 * pfpitch + 1, _sp + 2 * ofpitch + 1, next + 2 * nfpitch + 1);
+    get_lu(lower, upper, previous + 2 * pfpitch + 1, sp + 2 * ofpitch + 1, next + 2 * nfpitch + 1);
     uppermax = _mm_max_epu8(uppermax, upper);
     lowermax = _mm_max_epu8(lowermax, lower);
-    get_lu(lower, upper, previous + 2 * pfpitch + 2, _sp + 2 * ofpitch + 2, next + 2 * nfpitch + 2);
+    get_lu(lower, upper, previous + 2 * pfpitch + 2, sp + 2 * ofpitch + 2, next + 2 * nfpitch + 2);
     uppermax = _mm_max_epu8(uppermax, upper);
     lowermax = _mm_max_epu8(lowermax, lower);
-    get_lu(lower, upper, previous + pfpitch, _sp + ofpitch, next + nfpitch);
+    get_lu(lower, upper, previous + pfpitch, sp + ofpitch, next + nfpitch);
     uppermax = _mm_max_epu8(uppermax, upper);
     lowermax = _mm_max_epu8(lowermax, lower);
-    get_lu(lower, upper, previous + pfpitch + 2, _sp + ofpitch + 2, next + nfpitch + 2);
+    get_lu(lower, upper, previous + pfpitch + 2, sp + ofpitch + 2, next + nfpitch + 2);
     uppermax = _mm_max_epu8(uppermax, upper);
     lowermax = _mm_max_epu8(lowermax, lower);
-    SmoothTRepair2(dp, lowermax, uppermax, previous + pfpitch + 1, _sp + ofpitch + 1, next + nfpitch + 1);
+    SmoothTRepair2(dp, lowermax, uppermax, previous + pfpitch + 1, sp + ofpitch + 1, next + nfpitch + 1);
 
     dp += pitches[0];
     previous += pitches[1];
-    _sp += pitches[2];
+    sp += pitches[2];
     next += pitches[3];
   }
 }
 
 
-void	smooth_temporal_repair2_c(BYTE* dp, const BYTE* previous, const BYTE* sp, const BYTE* next, intptr_t* pitches, int width, int height)
+void	smooth_temporal_repair_mode2_c(BYTE* dp, const BYTE* previous, const BYTE* sp, const BYTE* next, intptr_t* pitches, int width, int height)
 {
   // #   X    X
   // X new_dp X
@@ -693,13 +719,8 @@ RG_FORCEINLINE void get2diff(__m128i &pdiff, __m128i &ndiff, const uint8_t *prev
   auto src_prev = _mm_loadu_si128(reinterpret_cast<const __m128i *>(previous));
   auto src_next = _mm_loadu_si128(reinterpret_cast<const __m128i *>(next));
 
-  auto diff_cp = _mm_subs_epu8(src_curr, src_prev);
-  auto diff_pc = _mm_subs_epu8(src_prev, src_curr);
-  pdiff = _mm_or_si128(diff_pc, diff_cp); // abs(c-p)
-
-  auto diff_cn = _mm_subs_epu8(src_curr, src_next);
-  auto diff_nc = _mm_subs_epu8(src_next, src_curr);
-  ndiff = _mm_or_si128(diff_nc, diff_cn); // abs(c-n)
+  pdiff = abs_diff(src_curr, src_prev); // abs(c-p)
+  ndiff = abs_diff(src_curr, src_next); // abs(c-n)
 }
 
 RG_FORCEINLINE void get2diff_c(int& pdiff, int& ndiff, int src_prev, int src_curr, int src_next)
@@ -721,9 +742,9 @@ RG_FORCEINLINE void SmoothTRepair3(uint8_t *dest, __m128i &pmax, __m128i &nmax, 
 
   pmax = _mm_min_epu8(pmax, nmax);
   auto src_dest = _mm_loadu_si128(reinterpret_cast<const __m128i *>(dest));
-  auto tmp_upper = _mm_adds_epu8(src_curr, pmax);
-  auto tmp_lower = _mm_subs_epu8(src_curr, pmax);
-  auto result = _mm_max_epu8(_mm_min_epu8(tmp_upper, src_dest), tmp_lower);
+  auto tmp_max = _mm_adds_epu8(src_curr, pmax);
+  auto tmp_min = _mm_subs_epu8(src_curr, pmax);
+  auto result = simd_clip(src_dest, tmp_min, tmp_max);
   _mm_storeu_si128(reinterpret_cast<__m128i *>(dest), result);
 }
 
@@ -738,14 +759,14 @@ RG_FORCEINLINE void SmoothTRepair3_c(BYTE &dest, int& pmax, int& nmax, int src_p
 
   pmax = std::min(pmax, nmax);
   auto src_dest = dest;
-  auto tmp_upper = adds_uint8(src_curr, pmax);
-  auto tmp_lower = subs_int(src_curr, pmax);
-  auto result = std::max(std::min(tmp_upper, (int)src_dest), tmp_lower);
+  auto tmp_max = adds_c(src_curr, pmax);
+  auto tmp_min = subs_c(src_curr, pmax);
+  auto result = clip((int)src_dest, tmp_min, tmp_max);
   dest = result;
 }
 
 
-void smooth_temporal_repair3_sse2(BYTE *dp, const BYTE *previous, const BYTE *_sp, const BYTE *next, intptr_t* pitches, int width, int height)
+void smooth_temporal_repair_mode3_sse2(BYTE *dp, const BYTE *previous, const BYTE *sp, const BYTE *next, intptr_t* pitches, int width, int height)
 {
   // #   X    X
   // X new_dp X
@@ -775,73 +796,73 @@ void smooth_temporal_repair3_sse2(BYTE *dp, const BYTE *previous, const BYTE *_s
     __m128i ndiff = _mm_undefined_si128();
     for (int x = 0; x < hblocks; x++)
     {
-      get2diff(pdiffmax, ndiffmax, previous, _sp, next);
-      get2diff(pdiff, ndiff, previous + 1, _sp + 1, next + 1);
+      get2diff(pdiffmax, ndiffmax, previous, sp, next);
+      get2diff(pdiff, ndiff, previous + 1, sp + 1, next + 1);
       pdiffmax = _mm_max_epu8(pdiffmax, pdiff);
       ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-      get2diff(pdiff, ndiff, previous + 2, _sp + 2, next + 2);
+      get2diff(pdiff, ndiff, previous + 2, sp + 2, next + 2);
       pdiffmax = _mm_max_epu8(pdiffmax, pdiff);
       ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-      get2diff(pdiff, ndiff, previous + 2 * pfpitch, _sp + 2 * ofpitch, next + 2 * nfpitch);
+      get2diff(pdiff, ndiff, previous + 2 * pfpitch, sp + 2 * ofpitch, next + 2 * nfpitch);
       pdiffmax = _mm_max_epu8(pdiffmax, pdiff);
       ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-      get2diff(pdiff, ndiff, previous + 2 * pfpitch + 1, _sp + 2 * ofpitch + 1, next + 2 * nfpitch + 1);
+      get2diff(pdiff, ndiff, previous + 2 * pfpitch + 1, sp + 2 * ofpitch + 1, next + 2 * nfpitch + 1);
       pdiffmax = _mm_max_epu8(pdiffmax, pdiff);
       ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-      get2diff(pdiff, ndiff, previous + 2 * pfpitch + 2, _sp + 2 * ofpitch + 2, next + 2 * nfpitch + 2);
+      get2diff(pdiff, ndiff, previous + 2 * pfpitch + 2, sp + 2 * ofpitch + 2, next + 2 * nfpitch + 2);
       pdiffmax = _mm_max_epu8(pdiffmax, pdiff); // __asm	pmaxub		pdiffmax, pdiff // BUG Fixed by PF 2019, this line was missing
       ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-      get2diff(pdiff, ndiff, previous + pfpitch, _sp + ofpitch, next + nfpitch);
+      get2diff(pdiff, ndiff, previous + pfpitch, sp + ofpitch, next + nfpitch);
       pdiffmax = _mm_max_epu8(pdiffmax, pdiff);
       ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-      get2diff(pdiff, ndiff, previous + pfpitch + 2, _sp + ofpitch + 2, next + nfpitch + 2);
+      get2diff(pdiff, ndiff, previous + pfpitch + 2, sp + ofpitch + 2, next + nfpitch + 2);
       pdiffmax = _mm_max_epu8(pdiffmax, pdiff);
       ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-      SmoothTRepair3(dp, pdiffmax, ndiffmax, previous + pfpitch + 1, _sp + ofpitch + 1, next + nfpitch + 1);
-      _sp += 16;
+      SmoothTRepair3(dp, pdiffmax, ndiffmax, previous + pfpitch + 1, sp + ofpitch + 1, next + nfpitch + 1);
+      sp += 16;
       previous += 16;
       next += 16;
       dp += 16;
     }
     // the last pixels. Do simd to the rightmost 16 pixels, overlap is possible but no problem
-    _sp += remainder;
+    sp += remainder;
     previous += remainder;
     next += remainder;
     dp += remainder;
 
-    get2diff(pdiffmax, ndiffmax, previous, _sp, next);
-    get2diff(pdiff, ndiff, previous + 1, _sp + 1, next + 1);
+    get2diff(pdiffmax, ndiffmax, previous, sp, next);
+    get2diff(pdiff, ndiff, previous + 1, sp + 1, next + 1);
     pdiffmax = _mm_max_epu8(pdiffmax, pdiff);
     ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-    get2diff(pdiff, ndiff, previous + 2, _sp + 2, next + 2);
+    get2diff(pdiff, ndiff, previous + 2, sp + 2, next + 2);
     pdiffmax = _mm_max_epu8(pdiffmax, pdiff);
     ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-    get2diff(pdiff, ndiff, previous + 2 * pfpitch, _sp + 2 * ofpitch, next + 2 * nfpitch);
+    get2diff(pdiff, ndiff, previous + 2 * pfpitch, sp + 2 * ofpitch, next + 2 * nfpitch);
     pdiffmax = _mm_max_epu8(pdiffmax, pdiff);
     ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-    get2diff(pdiff, ndiff, previous + 2 * pfpitch + 1, _sp + 2 * ofpitch + 1, next + 2 * nfpitch + 1);
+    get2diff(pdiff, ndiff, previous + 2 * pfpitch + 1, sp + 2 * ofpitch + 1, next + 2 * nfpitch + 1);
     pdiffmax = _mm_max_epu8(pdiffmax, pdiff);
     ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-    get2diff(pdiff, ndiff, previous + 2 * pfpitch + 2, _sp + 2 * ofpitch + 2, next + 2 * nfpitch + 2);
+    get2diff(pdiff, ndiff, previous + 2 * pfpitch + 2, sp + 2 * ofpitch + 2, next + 2 * nfpitch + 2);
     pdiffmax = _mm_max_epu8(pdiffmax, pdiff); // __asm	pmaxub		pdiffmax, pdiff // BUG Fixed by PF 2019, this line was missing
     ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-    get2diff(pdiff, ndiff, previous + pfpitch, _sp + ofpitch, next + nfpitch);
+    get2diff(pdiff, ndiff, previous + pfpitch, sp + ofpitch, next + nfpitch);
     pdiffmax = _mm_max_epu8(pdiffmax, pdiff);
     ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-    get2diff(pdiff, ndiff, previous + pfpitch + 2, _sp + ofpitch + 2, next + nfpitch + 2);
+    get2diff(pdiff, ndiff, previous + pfpitch + 2, sp + ofpitch + 2, next + nfpitch + 2);
     pdiffmax = _mm_max_epu8(pdiffmax, pdiff);
     ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-    SmoothTRepair3(dp, pdiffmax, ndiffmax, previous + pfpitch + 1, _sp + ofpitch + 1, next + nfpitch + 1);
+    SmoothTRepair3(dp, pdiffmax, ndiffmax, previous + pfpitch + 1, sp + ofpitch + 1, next + nfpitch + 1);
 
 
     dp += pitches[0];
     previous += pitches[1];
-    _sp += pitches[2];
+    sp += pitches[2];
     next += pitches[3];
   }
 }
 
-void smooth_temporal_repair3_c(BYTE* dp, const BYTE* previous, const BYTE* sp, const BYTE* next, intptr_t* pitches, int width, int height)
+void smooth_temporal_repair_mode3_c(BYTE* dp, const BYTE* previous, const BYTE* sp, const BYTE* next, intptr_t* pitches, int width, int height)
 {
   // #   X    X
   // X new_dp X
@@ -901,7 +922,7 @@ class SmoothTemporalRepair : public GenericVideoFilter
 {
   PClip oclip;
 
-  void(*st_repair)(BYTE *dp, const BYTE *previous, const BYTE *_sp, const BYTE *next, intptr_t* pitches, int width, int height);
+  void(*processor_st_repair)(BYTE *dp, const BYTE *previous, const BYTE *_sp, const BYTE *next, intptr_t* pitches, int width, int height);
 
   int last_frame;
   bool grey;
@@ -944,7 +965,7 @@ class SmoothTemporalRepair : public GenericVideoFilter
       intptr_t pitches[4] = { dppitch, pfpitch, ofpitch, nfpitch };
 
       // Spatial: Edge rows/columns are unhandled: -2 pixels less
-      st_repair(dp, pf->GetReadPtr(plane), of->GetReadPtr(plane), nf->GetReadPtr(plane),
+      processor_st_repair(dp, pf->GetReadPtr(plane), of->GetReadPtr(plane), nf->GetReadPtr(plane),
         pitches, // pitch array
         df->GetRowSize(plane) / vi.ComponentSize() - 2,
         df->GetHeight(plane) - 2);
@@ -974,21 +995,21 @@ public:
     {
     case 1:
       if (opt == 0)
-        st_repair = smooth_temporal_repair1_c;
+        processor_st_repair = smooth_temporal_repair_mode1_c;
       else
-        st_repair = smooth_temporal_repair1_sse2;
+        processor_st_repair = smooth_temporal_repair_mode1_sse2;
       break;
     case 2:
       if (opt == 0)
-        st_repair = smooth_temporal_repair2_c;
+        processor_st_repair = smooth_temporal_repair_mode2_c;
       else
-        st_repair = smooth_temporal_repair2_sse2;
+        processor_st_repair = smooth_temporal_repair_mode2_sse2;
       break;
     default:
       if (opt == 0)
-        st_repair = smooth_temporal_repair3_c;
+        processor_st_repair = smooth_temporal_repair_mode3_c;
       else
-        st_repair = smooth_temporal_repair3_sse2;
+        processor_st_repair = smooth_temporal_repair_mode3_sse2;
       break;
     }
 

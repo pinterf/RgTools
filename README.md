@@ -6,6 +6,18 @@ Some routines might be slightly less efficient than original, some are faster. O
 
 This plugin is written from scratch and licensed under the [MIT license][1]. Some modes of RemoveGrain and Repair were taken from the Firesledge's Dither package.
 
+v0.98 (20190418)
+- Include TemporalRepair filter from RemoveGrainT (C and SIMD intrinsics from pure inline asm)
+  Add Y8, YV16, YV24 besides YV12, drop YUY2 support.
+- Codes for different processor targets (SSSE3 and SSE4.1) are now separated and are compiled using function attributes.
+- Other source changes for errorless gcc and clang build
+- LLVM 8.0 support, see howto in RgTools.txt
+  Not recommended (as of 20190418), due to a current clang compiler bug (_mm_avg_epu8 related, fixed on April 14 2019) it's up-to 1/3 slower than the Microsoft build.
+  or you can try latest snapshot builds from https://llvm.org/builds/ (15 April 2019 build is still not good)
+- GCC 8.3 support, CMakeFiles.txt, see howto in RgTools.txt
+- RemoveGrain/Repair different code paths for SSE2/SSE4.1/AVX2 instead of SSE2/SSE3/AVX2.
+- Add documentation (from old docs, new part: gcc/clang howto)
+
 v0.97 (20180702)
 - Remove some inherited clipping to 0..1 range for 32bit float.
   In general we do not clamp in 32 bit float colorspaces, especially that U/V range is -0.5..+0.5 from Avisynth+ r2728

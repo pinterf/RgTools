@@ -1,53 +1,101 @@
 #include "vertical_cleaner.h"
-#include <xutility>
 
+static void vcleaner_median_sse2_uint8(Byte* pDst, const Byte* pSrc, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment* env) {
+  typedef uint8_t pixel_t;
+  env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
 
-template<typename pixel_t>
-static void vcleaner_median_sse(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {
-    env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
+  const int width = rowsize / sizeof(pixel_t);
 
-    const int width = rowsize / sizeof(pixel_t);
+  pSrc += srcPitch;
+  pDst += dstPitch;
+
+  for (int y = 1; y < height - 1; ++y) {
+    for (int x = 0; x < width; x += 16 / sizeof(pixel_t)) {
+      __m128i up = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x * sizeof(pixel_t) - srcPitch));
+      __m128i center = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x * sizeof(pixel_t)));
+      __m128i down = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x * sizeof(pixel_t) + srcPitch));
+
+      __m128i mi = _mm_min_epu8(up, down);
+      __m128i ma = _mm_max_epu8(up, down);
+
+      __m128i cma = _mm_max_epu8(mi, center);
+      __m128i dst = _mm_min_epu8(cma, ma);
+
+      _mm_store_si128(reinterpret_cast<__m128i*>(pDst + x * sizeof(pixel_t)), dst);
+    }
 
     pSrc += srcPitch;
     pDst += dstPitch;
+  }
 
-    for (int y = 1; y < height-1; ++y) {
-        for (int x = 0; x < width; x+=16/sizeof(pixel_t)) {
-            __m128i up     = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x*sizeof(pixel_t) - srcPitch));
-            __m128i center = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x*sizeof(pixel_t)));
-            __m128i down   = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x*sizeof(pixel_t) + srcPitch));
+  env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
+}
 
-            __m128i dst;
-            if (sizeof(pixel_t) == 1) {
-              __m128i mi = _mm_min_epu8(up, down);
-              __m128i ma = _mm_max_epu8(up, down);
 
-              __m128i cma = _mm_max_epu8(mi, center);
-              dst = _mm_min_epu8(cma, ma);
-            }
-            else if (sizeof(pixel_t) == 2) {
-              __m128i mi = _mm_min_epu16(up, down);
-              __m128i ma = _mm_max_epu16(up, down);
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+static void vcleaner_median_sse4_uint16(Byte* pDst, const Byte* pSrc, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment* env) {
+  typedef uint16_t pixel_t;
 
-              __m128i cma = _mm_max_epu16(mi, center);
-              dst = _mm_min_epu16(cma, ma);
-            }
-            else {  // sizeof(pixel_t) == 4: float
-              __m128 mi = _mm_min_ps(_mm_castsi128_ps(up), _mm_castsi128_ps(down));
-              __m128 ma = _mm_max_ps(_mm_castsi128_ps(up), _mm_castsi128_ps(down));
+  env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
 
-              __m128 cma = _mm_max_ps(mi, _mm_castsi128_ps(center));
-              dst = _mm_castps_si128(_mm_min_ps(cma, ma));
-            }
+  const int width = rowsize / sizeof(pixel_t);
 
-            _mm_store_si128(reinterpret_cast<__m128i*>(pDst+x*sizeof(pixel_t)), dst);
-        }
+  pSrc += srcPitch;
+  pDst += dstPitch;
 
-        pSrc += srcPitch;
-        pDst += dstPitch;
+  for (int y = 1; y < height - 1; ++y) {
+    for (int x = 0; x < width; x += 16 / sizeof(pixel_t)) {
+      __m128i up = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x * sizeof(pixel_t) - srcPitch));
+      __m128i center = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x * sizeof(pixel_t)));
+      __m128i down = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x * sizeof(pixel_t) + srcPitch));
+
+      __m128i mi = _mm_min_epu16(up, down);
+      __m128i ma = _mm_max_epu16(up, down);
+
+      __m128i cma = _mm_max_epu16(mi, center);
+      __m128i dst = _mm_min_epu16(cma, ma);
+
+      _mm_store_si128(reinterpret_cast<__m128i*>(pDst + x * sizeof(pixel_t)), dst);
     }
 
-    env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
+    pSrc += srcPitch;
+    pDst += dstPitch;
+  }
+
+  env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
+}
+
+static void vcleaner_median_sse2_float(Byte* pDst, const Byte* pSrc, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment* env) {
+  typedef float pixel_t;
+  env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
+
+  const int width = rowsize / sizeof(pixel_t);
+
+  pSrc += srcPitch;
+  pDst += dstPitch;
+
+  for (int y = 1; y < height - 1; ++y) {
+    for (int x = 0; x < width; x += 16 / sizeof(pixel_t)) {
+      __m128i up = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x * sizeof(pixel_t) - srcPitch));
+      __m128i center = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x * sizeof(pixel_t)));
+      __m128i down = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc + x * sizeof(pixel_t) + srcPitch));
+
+      __m128 mi = _mm_min_ps(_mm_castsi128_ps(up), _mm_castsi128_ps(down));
+      __m128 ma = _mm_max_ps(_mm_castsi128_ps(up), _mm_castsi128_ps(down));
+
+      __m128 cma = _mm_max_ps(mi, _mm_castsi128_ps(center));
+      __m128 dst = _mm_min_ps(cma, ma);
+
+      _mm_store_ps(reinterpret_cast<float *>(pDst + x * sizeof(pixel_t)), dst);
+    }
+
+    pSrc += srcPitch;
+    pDst += dstPitch;
+  }
+
+  env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
 }
 
 static void vcleaner_relaxed_median_sse2(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {
@@ -98,7 +146,10 @@ static void vcleaner_relaxed_median_sse2(Byte* pDst, const Byte *pSrc, int dstPi
 }
 
 template<int bits_per_pixel>
-static void vcleaner_relaxed_median_sse4_16(Byte* pDst8, const Byte *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+static void vcleaner_relaxed_median_sse4_uint16(Byte* pDst8, const Byte *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {
   env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 2);
 
   uint16_t *pDst = reinterpret_cast<uint16_t *>(pDst8);
@@ -376,49 +427,49 @@ static void do_nothing(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch,
 
 }
 
-VCleanerProcessor* sse4_functions_uint16_10[] = {
+static VCleanerProcessor* sse4_functions_uint16_10[] = {
   do_nothing,
   copy_plane,
-  vcleaner_median_sse<uint16_t>,
-  vcleaner_relaxed_median_sse4_16<10>
+  vcleaner_median_sse4_uint16,
+  vcleaner_relaxed_median_sse4_uint16<10>
 };
 
-VCleanerProcessor* sse4_functions_uint16_12[] = {
+static VCleanerProcessor* sse4_functions_uint16_12[] = {
   do_nothing,
   copy_plane,
-  vcleaner_median_sse<uint16_t>,
-  vcleaner_relaxed_median_sse4_16<12>
+  vcleaner_median_sse4_uint16,
+  vcleaner_relaxed_median_sse4_uint16<12>
 };
 
-VCleanerProcessor* sse4_functions_uint16_14[] = {
+static VCleanerProcessor* sse4_functions_uint16_14[] = {
   do_nothing,
   copy_plane,
-  vcleaner_median_sse<uint16_t>,
-  vcleaner_relaxed_median_sse4_16<14>
+  vcleaner_median_sse4_uint16,
+  vcleaner_relaxed_median_sse4_uint16<14>
 };
 
-VCleanerProcessor* sse4_functions_uint16_16[] = {
+static VCleanerProcessor* sse4_functions_uint16_16[] = {
   do_nothing,
   copy_plane,
-  vcleaner_median_sse<uint16_t>,
-  vcleaner_relaxed_median_sse4_16<16>
+  vcleaner_median_sse4_uint16,
+  vcleaner_relaxed_median_sse4_uint16<16>
 };
 
-VCleanerProcessor* sse2_functions_32[] = {
+static VCleanerProcessor* sse2_functions_32[] = {
   do_nothing,
   copy_plane,
-  vcleaner_median_sse<float>,
+  vcleaner_median_sse2_float,
   vcleaner_relaxed_median_sse_32
 };
 
-VCleanerProcessor* sse2_functions[] = {
+static VCleanerProcessor* sse2_functions[] = {
     do_nothing,
     copy_plane,
-    vcleaner_median_sse<uint8_t>,
+    vcleaner_median_sse2_uint8,
     vcleaner_relaxed_median_sse2
 };
 
-VCleanerProcessor* c_functions[] = {
+static VCleanerProcessor* c_functions[] = {
     do_nothing,
     copy_plane,
     vcleaner_median_c<uint8_t>,
@@ -426,35 +477,35 @@ VCleanerProcessor* c_functions[] = {
 };
 
 // distinct templates for 10-12-14-16 bit for const max_pixel_value
-VCleanerProcessor* c_functions_10[] = {
+static VCleanerProcessor* c_functions_10[] = {
   do_nothing,
   copy_plane,
   vcleaner_median_c<uint16_t>,
   vcleaner_relaxed_median_c_16<10>
 };
 
-VCleanerProcessor* c_functions_12[] = {
+static VCleanerProcessor* c_functions_12[] = {
   do_nothing,
   copy_plane,
   vcleaner_median_c<uint16_t>,
   vcleaner_relaxed_median_c_16<12>
 };
 
-VCleanerProcessor* c_functions_14[] = {
+static VCleanerProcessor* c_functions_14[] = {
   do_nothing,
   copy_plane,
   vcleaner_median_c<uint16_t>,
   vcleaner_relaxed_median_c_16<14>
 };
 
-VCleanerProcessor* c_functions_16[] = {
+static VCleanerProcessor* c_functions_16[] = {
   do_nothing,
   copy_plane,
   vcleaner_median_c<uint16_t>,
   vcleaner_relaxed_median_c_16<16>
 };
 
-VCleanerProcessor* c_functions_32[] = {
+static VCleanerProcessor* c_functions_32[] = {
   do_nothing,
   copy_plane,
   vcleaner_median_c<float>,

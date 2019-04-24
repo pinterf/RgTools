@@ -62,7 +62,17 @@
 #   error Unsupported compiler.
 #endif
 
-#if   defined(GCC)
+#if !defined(CLANG) && defined(__clang__)
+ // MSVC is defined when LLVM build in VS
+#   define CLANG
+#endif
+
+#if defined(CLANG)
+#   undef __forceinline
+#   define __forceinline __attribute__((always_inline))
+#endif
+
+#if    defined(GCC)
 #   undef __forceinline
 #   define __forceinline inline
 #endif

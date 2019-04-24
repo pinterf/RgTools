@@ -1,5 +1,4 @@
 #include "clense.h"
-#include <xutility>
 
 static void check_if_match(const VideoInfo &vi, const VideoInfo &otherVi, IScriptEnvironment* env) {
     if (otherVi.height != vi.height || otherVi.width != vi.width) {
@@ -88,7 +87,11 @@ RG_FORCEINLINE void clense_process_line_sse2(Byte* pDst, const Byte *pSrc, const
     }
 }
 
-RG_FORCEINLINE void clense_process_line_sse4_16(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize) {
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE void clense_process_line_sse4_16(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize)
+{
   for (int x = 0; x < rowsize; x+=16) {
     auto src = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc+x));
     auto ref1 = _mm_load_si128(reinterpret_cast<const __m128i*>(pRef1+x));
@@ -138,6 +141,9 @@ RG_FORCEINLINE void sclense_process_line_sse2(Byte* pDst, const Byte *pSrc, cons
 }
 
 template<int bits_per_pixel>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
 RG_FORCEINLINE void sclense_process_line_sse4_16(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize) {
   const __m128i pixel_max = _mm_set1_epi16(bits_per_pixel < 16 ? (1 << bits_per_pixel) - 1 : 0); // anti warning 65535 (not used) vs short
 
@@ -219,6 +225,29 @@ void process_plane_sse(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const By
     }
 }
 
+template<decltype(clense_process_line_sse4_16) processor>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+void process_plane_sse41(Byte* pDst, const Byte* pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, IScriptEnvironment* env) {
+  if (!is_16byte_aligned(pSrc) || !is_16byte_aligned(pRef1) || !is_16byte_aligned(pRef2)) {
+    env->ThrowError("Invalid memory alignment. Used unaligned crop?"); //omg I feel so dumb
+  }
+  auto mod16Width = (rowsize / 16) * 16;
+
+  for (int y = 0; y < height; ++y) {
+    processor(pDst, pSrc, pRef1, pRef2, mod16Width);
+
+    if (mod16Width != rowsize) {
+      processor(pDst + mod16Width, pSrc + mod16Width, pRef1 + mod16Width, pRef2 + mod16Width, 16);
+    }
+    pDst += dstPitch;
+    pSrc += srcPitch;
+    pRef1 += ref1Pitch;
+    pRef2 += ref2Pitch;
+  }
+}
+
 Clense::Clense(PClip child, PClip previous, PClip next, bool grey, bool reduceflicker, ClenseMode mode, bool skip_cs_check, IScriptEnvironment* env)
     : GenericVideoFilter(child), previous_(previous), next_(next), grey_(grey), mode_(mode), reduceflicker_(reduceflicker) {
     if(!(vi.IsPlanar() || skip_cs_check)) {
@@ -252,20 +281,20 @@ Clense::Clense(PClip child, PClip previous, PClip next, bool grey, bool reducefl
       // sse4 needed
       switch (bits_per_pixel) {
       case 10: processor_ = (mode_ == ClenseMode::BOTH)
-        ? (sse4_ ? process_plane_sse<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
-        : (sse4_ ? process_plane_sse<sclense_process_line_sse4_16<10>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<10>>);
+        ? (sse4_ ? process_plane_sse41<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
+        : (sse4_ ? process_plane_sse41<sclense_process_line_sse4_16<10>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<10>>);
         break;
       case 12: processor_ = (mode_ == ClenseMode::BOTH)
-        ? (sse4_ ? process_plane_sse<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
-        : (sse4_ ? process_plane_sse<sclense_process_line_sse4_16<12>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<12>>);
+        ? (sse4_ ? process_plane_sse41<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
+        : (sse4_ ? process_plane_sse41<sclense_process_line_sse4_16<12>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<12>>);
         break;
       case 14: processor_ = (mode_ == ClenseMode::BOTH)
-        ? (sse4_ ? process_plane_sse<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
-        : (sse4_ ? process_plane_sse<sclense_process_line_sse4_16<14>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<14>>);
+        ? (sse4_ ? process_plane_sse41<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
+        : (sse4_ ? process_plane_sse41<sclense_process_line_sse4_16<14>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<14>>);
         break;
       case 16: processor_ = (mode_ == ClenseMode::BOTH)
-        ? (sse4_ ? process_plane_sse<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
-        : (sse4_ ? process_plane_sse<sclense_process_line_sse4_16<16>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<16>>);
+        ? (sse4_ ? process_plane_sse41<clense_process_line_sse4_16> : process_plane_c<uint16_t, clense_process_pixel_c_16>)
+        : (sse4_ ? process_plane_sse41<sclense_process_line_sse4_16<16>> : process_plane_c<uint16_t, sclense_process_pixel_c_16<16>>);
         break;
       default: env->ThrowError("Illegal bit-depth: %d!", bits_per_pixel);
       }

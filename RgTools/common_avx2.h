@@ -2,7 +2,11 @@
 #define __COMMON_AVX2_H__
 
 #include <algorithm>
+
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
+
 #include <Windows.h>
 #pragma warning(disable: 4512 4244 4100)
 #include "avisynth.h"
@@ -12,7 +16,11 @@
 
 typedef unsigned char Byte;
 
+#if defined(CLANG)
+#define RG_FORCEINLINE __attribute__((always_inline)) inline 
+#else
 #define RG_FORCEINLINE __forceinline
+#endif
 
 /*
 template<typename T>
@@ -88,40 +96,25 @@ static RG_FORCEINLINE __m256i simd_loada_si256(const Byte* ptr) {
 
 //mask ? a : b
 static RG_FORCEINLINE __m256i blend(__m256i const &mask, __m256i const &desired, __m256i const &otherwise) {
-  //return  _mm256_blendv_epi8 (otherwise, desired, mask);
-  auto andop = _mm256_and_si256(mask , desired);
-  auto andnop = _mm256_andnot_si256(mask, otherwise);
-  return _mm256_or_si256(andop, andnop);
+  return  _mm256_blendv_epi8 (otherwise, desired, mask);
 }
 
-//avs+
-//sse4
 static RG_FORCEINLINE __m256i blend_16(__m256i const &mask, __m256i const &desired, __m256i const &otherwise) {
   return  _mm256_blendv_epi8 (otherwise, desired, mask); // no need for epi 16 here
-  //auto andop = _mm256_and_si256(mask , desired);
-  //auto andnop = _mm256_andnot_si256(mask, otherwise);
-  //return _mm256_or_si256(andop, andnop);
 }
 
-// sse4
 static RG_FORCEINLINE __m256 blend_32(__m256 const &mask, __m256 const &desired, __m256 const &otherwise) {
   return  _mm256_blendv_ps (otherwise, desired, mask);
-  //auto andop = _mm256_and_si256(mask , desired);
-  //auto andnop = _mm256_andnot_si256(mask, otherwise);
-  //return _mm256_or_si256(andop, andnop);
 }
 
 
 static RG_FORCEINLINE __m256i abs_diff(__m256i a, __m256i b) {
-  //return  _mm256_blendv_epi8 (otherwise, desired, mask); // SSE4
   auto positive = _mm256_subs_epu8(a, b);
   auto negative = _mm256_subs_epu8(b, a);
   return _mm256_or_si256(positive, negative);
 }
 
-// avs+ todo for sse4
 static RG_FORCEINLINE __m256i abs_diff_16(__m256i a, __m256i b) {
-  //return  _mm256_blendv_epi16 (otherwise, desired, mask); // SSE4
   auto positive = _mm256_subs_epu16(a, b);
   auto negative = _mm256_subs_epu16(b, a);
   return _mm256_or_si256(positive, negative);
@@ -136,14 +129,24 @@ static RG_FORCEINLINE __m256 abs_diff_32(__m256 a, __m256 b) {
 
 // PF until I find out better
 static RG_FORCEINLINE __m256 _mm256_subs_ps(__m256 a, __m256 b) {
-const __m256 zero = _mm256_setzero_ps();
-return _mm256_max_ps(_mm256_sub_ps(a, b), zero);
+#if 0
+  const __m256 zero = _mm256_setzero_ps();
+  return _mm256_max_ps(_mm256_sub_ps(a, b), zero);
+#else
+  // no float clamp
+  return _mm256_sub_ps(a, b);
+#endif
 }
 
 // PF until I find out better
 static RG_FORCEINLINE __m256 _mm256_adds_ps(__m256 a, __m256 b) {
+#if 0
   const __m256 one = _mm256_set1_ps(1.0f);
   return _mm256_min_ps(_mm256_add_ps(a, b), one);
+#else
+  // no float clamp
+  return _mm256_add_ps(a, b);
+#endif
 }
 
 // PF until I find out better
@@ -169,57 +172,10 @@ static RG_FORCEINLINE __m256 select_on_equal_32(const __m256 &cmp1, const __m256
   return blend_32(eq, desired, current);
 }
 
-#define LOAD_SQUARE_AVX2_0_18(ptr, pitch, pixelsize, aligned) \
-__m256i a1, a8; \
-if(!aligned) {\
-a1 = simd_loadu_si256((ptr) - (pitch) - (pixelsize)); \
-a8 = simd_loadu_si256((ptr) + (pitch) + (pixelsize)); \
-} else {\
-a1 = simd_loadu_si256((ptr) - (pitch) - (pixelsize)); \
-a8 = simd_loadu_si256((ptr) + (pitch) + (pixelsize)); \
-}
-
-#define LOAD_SQUARE_AVX2_0_27(ptr, pitch, pixelsize, aligned) \
-__m256i a2, a7; \
-if(!aligned) {\
-a2 = simd_loadu_si256((ptr) - (pitch)); \
-a7 = simd_loadu_si256((ptr) + (pitch)); \
-} else {\
-a2 = simd_loada_si256((ptr) - (pitch)); \
-a7 = simd_loada_si256((ptr) + (pitch)); \
-}
-
-#define LOAD_SQUARE_AVX2_0_36(ptr, pitch, pixelsize, aligned) \
-__m256i a3, a6; \
-if(!aligned) {\
-a3 = simd_loadu_si256((ptr) - (pitch) + (pixelsize)); \
-a6 = simd_loadu_si256((ptr) + (pitch) - (pixelsize)); \
-} else {\
-a3 = simd_loadu_si256((ptr) - (pitch) + (pixelsize)); \
-a6 = simd_loadu_si256((ptr) + (pitch) - (pixelsize)); \
-}
-
-#define LOAD_SQUARE_AVX2_0_45(ptr, pitch, pixelsize, aligned) \
-__m256i a4, a5; \
-if(!aligned) {\
-a4 = simd_loadu_si256((ptr) - (pixelsize)); \
-a5 = simd_loadu_si256((ptr) + (pixelsize)); \
-} else {\
-a4 = simd_loadu_si256((ptr) - (pixelsize)); \
-a5 = simd_loadu_si256((ptr) + (pixelsize)); \
-}
-
-#define LOAD_SQUARE_AVX2_0_Cent(ptr, pitch, pixelsize, aligned) \
-__m256i c; \
-if(!aligned) {\
-c  = simd_loadu_si256((ptr) ); \
-} else {\
-c  = simd_loada_si256((ptr) ); \
-}
 
 #define LOAD_SQUARE_AVX2_0(ptr, pitch, pixelsize, aligned) \
 __m256i a1, a2, a3, a4, a5, a6, a7, a8, c; \
-if(!aligned) {\
+if constexpr(!aligned) {\
 a1 = simd_loadu_si256((ptr) - (pitch) - (pixelsize)); \
 a2 = simd_loadu_si256((ptr) - (pitch)); \
 a3 = simd_loadu_si256((ptr) - (pitch) + (pixelsize)); \
@@ -242,26 +198,17 @@ a8 = simd_loadu_si256((ptr) + (pitch) + (pixelsize)); \
 }
 
 // 8 bit loads
-// unaligned
-#define LOAD_SQUARE_AVX2(ptr, pitch) LOAD_SQUARE_AVX2_0(ptr, pitch, 1, false)
 // unaligned or aligned
 #define LOAD_SQUARE_AVX2_UA(ptr, pitch, aligned) LOAD_SQUARE_AVX2_0(ptr, pitch, 1, aligned)
-#define LOAD_SQUARE_AVX2_UA_18(ptr, pitch, aligned) LOAD_SQUARE_AVX2_0_18(ptr, pitch, 1, aligned)
-#define LOAD_SQUARE_AVX2_UA_27(ptr, pitch, aligned) LOAD_SQUARE_AVX2_0_27(ptr, pitch, 1, aligned)
-#define LOAD_SQUARE_AVX2_UA_36(ptr, pitch, aligned) LOAD_SQUARE_AVX2_0_36(ptr, pitch, 1, aligned)
-#define LOAD_SQUARE_AVX2_UA_45(ptr, pitch, aligned) LOAD_SQUARE_AVX2_0_45(ptr, pitch, 1, aligned)
-#define LOAD_SQUARE_AVX2_UA_Cent(ptr, pitch, aligned) LOAD_SQUARE_AVX2_0_Cent(ptr, pitch, 1, aligned)
 
 // 16 bit loads
-// unaligned
-#define LOAD_SQUARE_AVX2_16(ptr, pitch) LOAD_SQUARE_AVX2_0(ptr, pitch, 2, false)
 // unaligned or aligned
 #define LOAD_SQUARE_AVX2_16_UA(ptr, pitch, aligned) LOAD_SQUARE_AVX2_0(ptr, pitch, 2, aligned)
 
 // 32 bit float loads
 #define LOAD_SQUARE_AVX2_0_32(ptr, pitch, aligned) \
 __m256 a1, a2, a3, a4, a5, a6, a7, a8, c; \
-if(!aligned) {\
+if constexpr(!aligned) {\
 a1 = _mm256_loadu_ps((const float *)((ptr) - (pitch) - 4)); \
 a2 = _mm256_loadu_ps((const float *)((ptr) - (pitch))); \
 a3 = _mm256_loadu_ps((const float *)((ptr) - (pitch) + (4))); \

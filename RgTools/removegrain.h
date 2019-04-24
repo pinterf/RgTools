@@ -24,8 +24,6 @@ private:
     int modeU_;
     int modeV_;
 
-    bool avx2_; // for disabling avx2
-
     int pixelsize;
     int bits_per_pixel;
 

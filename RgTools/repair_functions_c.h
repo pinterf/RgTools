@@ -2,13 +2,11 @@
 #define __REPAIR_FUNCTIONS_C_H__
 
 #include "common.h"
-#include <xutility>
+#include <array>
 #include <algorithm>  
-#include <utility>
 
 template<typename pixel_t>
 using CModeProcessor = pixel_t (*)(const Byte*, pixel_t val, int);
-//typedef byte (CModeProcessor)(const Byte*, Byte val, int);
 
 RG_FORCEINLINE Byte repair_mode1_cpp(const Byte* pSrc, Byte val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
@@ -60,7 +58,7 @@ RG_FORCEINLINE float repair_mode1_cpp_32(const Byte* pSrc, float val, int srcPit
 RG_FORCEINLINE Byte repair_mode2_cpp(const Byte* pSrc, Byte val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    Byte a[9] = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
+    std::array<Byte, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
 
     std::sort(std::begin(a), std::end(a));
 
@@ -70,7 +68,7 @@ RG_FORCEINLINE Byte repair_mode2_cpp(const Byte* pSrc, Byte val, int srcPitch) {
 RG_FORCEINLINE uint16_t repair_mode2_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
-  uint16_t a[9] = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
+  std::array<uint16_t, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
 
   std::sort(std::begin(a), std::end(a));
 
@@ -80,7 +78,7 @@ RG_FORCEINLINE uint16_t repair_mode2_cpp_16(const Byte* pSrc, uint16_t val, int 
 RG_FORCEINLINE float repair_mode2_cpp_32(const Byte* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
-  float a[9] = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
+  std::array<float, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
 
   std::sort(std::begin(a), std::end(a));
 
@@ -92,7 +90,7 @@ RG_FORCEINLINE float repair_mode2_cpp_32(const Byte* pSrc, float val, int srcPit
 RG_FORCEINLINE Byte repair_mode3_cpp(const Byte* pSrc, Byte val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    Byte a[9] = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
+    std::array<Byte, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
 
     std::sort(std::begin(a), std::end(a));
 
@@ -102,7 +100,7 @@ RG_FORCEINLINE Byte repair_mode3_cpp(const Byte* pSrc, Byte val, int srcPitch) {
 RG_FORCEINLINE uint16_t repair_mode3_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
-  uint16_t a[9] = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
+  std::array<uint16_t, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
 
   std::sort(std::begin(a), std::end(a));
 
@@ -112,7 +110,7 @@ RG_FORCEINLINE uint16_t repair_mode3_cpp_16(const Byte* pSrc, uint16_t val, int 
 RG_FORCEINLINE float repair_mode3_cpp_32(const Byte* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
-  float a[9] = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
+  std::array<float, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
 
   std::sort(std::begin(a), std::end(a));
 
@@ -124,7 +122,7 @@ RG_FORCEINLINE float repair_mode3_cpp_32(const Byte* pSrc, float val, int srcPit
 RG_FORCEINLINE Byte repair_mode4_cpp(const Byte* pSrc, Byte val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    Byte a[9] = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
+    std::array<Byte, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
 
     std::sort(std::begin(a), std::end(a));
 
@@ -134,7 +132,7 @@ RG_FORCEINLINE Byte repair_mode4_cpp(const Byte* pSrc, Byte val, int srcPitch) {
 RG_FORCEINLINE uint16_t repair_mode4_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
-  uint16_t a[9] = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
+  std::array<uint16_t, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
 
   std::sort(std::begin(a), std::end(a));
 
@@ -144,7 +142,7 @@ RG_FORCEINLINE uint16_t repair_mode4_cpp_16(const Byte* pSrc, uint16_t val, int 
 RG_FORCEINLINE float repair_mode4_cpp_32(const Byte* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
-  float a[9] = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
+  std::array<float, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
 
   std::sort(std::begin(a), std::end(a));
 
@@ -795,7 +793,7 @@ RG_FORCEINLINE float repair_mode10_cpp_32(const Byte* pSrc, float val, int srcPi
 RG_FORCEINLINE Byte repair_mode12_cpp(const Byte* pSrc, Byte val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    Byte a[8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
+    std::array<Byte, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
 
     std::sort(std::begin(a), std::end(a));
     Byte mi = std::min(a[1], c);
@@ -807,7 +805,7 @@ RG_FORCEINLINE Byte repair_mode12_cpp(const Byte* pSrc, Byte val, int srcPitch) 
 RG_FORCEINLINE uint16_t repair_mode12_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
-  uint16_t a[8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
+  std::array<uint16_t, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
 
   std::sort(std::begin(a), std::end(a));
   uint16_t mi = std::min(a[1], c);
@@ -819,7 +817,7 @@ RG_FORCEINLINE uint16_t repair_mode12_cpp_16(const Byte* pSrc, uint16_t val, int
 RG_FORCEINLINE float repair_mode12_cpp_32(const Byte* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
-  float a[8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
+  std::array<float, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
 
   std::sort(std::begin(a), std::end(a));
   float mi = std::min(a[1], c);
@@ -833,7 +831,7 @@ RG_FORCEINLINE float repair_mode12_cpp_32(const Byte* pSrc, float val, int srcPi
 RG_FORCEINLINE Byte repair_mode13_cpp(const Byte* pSrc, Byte val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    Byte a[8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
+    std::array<Byte, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
 
     std::sort(std::begin(a), std::end(a));
     Byte mi = std::min(a[2], c);
@@ -845,7 +843,7 @@ RG_FORCEINLINE Byte repair_mode13_cpp(const Byte* pSrc, Byte val, int srcPitch) 
 RG_FORCEINLINE uint16_t repair_mode13_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
-  uint16_t a[8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
+  std::array<uint16_t, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
 
   std::sort(std::begin(a), std::end(a));
   uint16_t mi = std::min(a[2], c);
@@ -857,7 +855,7 @@ RG_FORCEINLINE uint16_t repair_mode13_cpp_16(const Byte* pSrc, uint16_t val, int
 RG_FORCEINLINE float repair_mode13_cpp_32(const Byte* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
-  float a[8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
+  std::array<float, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
 
   std::sort(std::begin(a), std::end(a));
   float mi = std::min(a[2], c);
@@ -872,7 +870,7 @@ RG_FORCEINLINE float repair_mode13_cpp_32(const Byte* pSrc, float val, int srcPi
 RG_FORCEINLINE Byte repair_mode14_cpp(const Byte* pSrc, Byte val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    Byte a [8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
+    std::array<Byte, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
 
     std::sort(std::begin(a), std::end(a));
     Byte mi = std::min(a[3], c);
@@ -884,7 +882,7 @@ RG_FORCEINLINE Byte repair_mode14_cpp(const Byte* pSrc, Byte val, int srcPitch) 
 RG_FORCEINLINE uint16_t repair_mode14_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
-  uint16_t a [8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
+  std::array<uint16_t, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
 
   std::sort(std::begin(a), std::end(a));
   uint16_t mi = std::min(a[3], c);
@@ -896,7 +894,7 @@ RG_FORCEINLINE uint16_t repair_mode14_cpp_16(const Byte* pSrc, uint16_t val, int
 RG_FORCEINLINE float repair_mode14_cpp_32(const Byte* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
-  float a [8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
+  std::array<float, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
 
   std::sort(std::begin(a), std::end(a));
   float mi = std::min(a[3], c);

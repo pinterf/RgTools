@@ -158,7 +158,6 @@ static void vcleaner_relaxed_median_sse4_uint16(Byte* pDst8, const Byte *pSrc8, 
   dstPitch /= sizeof(uint16_t);
   srcPitch /= sizeof(uint16_t);
 
-  const int max_pixel_value = (1 << bits_per_pixel) - 1;
   const int width = rowsize / sizeof(uint16_t);
 
   pSrc += srcPitch*2;

@@ -7,7 +7,6 @@
 #define NOMINMAX
 #endif
 
-#include <Windows.h>
 #pragma warning(disable: 4512 4244 4100)
 #include "avisynth.h"
 #pragma warning(default: 4512 4244 4100)

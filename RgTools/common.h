@@ -8,7 +8,6 @@
 #define NOMINMAX
 #endif
 
-#include <Windows.h>
 #pragma warning(disable: 4512 4244 4100)
 #include "avisynth.h"
 #pragma warning(default: 4512 4244 4100)
@@ -33,13 +32,11 @@ static RG_FORCEINLINE Byte clip(T val, T minimum, T maximum) {
     return std::max(std::min(val, maximum), minimum);
 }
 
-// avs+
 template<typename T>
 static RG_FORCEINLINE uint16_t clip_16(T val, T minimum, T maximum) {
   return std::max(std::min(val, maximum), minimum);
 }
 
-// avs+
 template<typename T>
 static RG_FORCEINLINE float clip_32(T val, T minimum, T maximum) {
   return std::max(std::min(val, maximum), minimum);
@@ -81,14 +78,14 @@ static RG_FORCEINLINE void sort_pair_16(__m128i &a1, __m128i &a2)
   a1 = tmp;
 }
 
-RG_FORCEINLINE void sort_pair_32(__m128 &a1, __m128 &a2)
+static RG_FORCEINLINE void sort_pair_32(__m128 &a1, __m128 &a2)
 {
   const __m128 tmp = _mm_min_ps (a1, a2);
   a2 = _mm_max_ps (a1, a2);
   a1 = tmp;
 }
 
-RG_FORCEINLINE __m128i simd_loadu_si128(const Byte* ptr) {
+static RG_FORCEINLINE __m128i simd_loadu_si128(const Byte* ptr) {
 #ifdef USE_MOVPS
   return _mm_castps_si128(_mm_loadu_ps(reinterpret_cast<const float*>(ptr)));
 #else
@@ -100,11 +97,11 @@ RG_FORCEINLINE __m128i simd_loadu_si128(const Byte* ptr) {
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse3")))
 #endif
-RG_FORCEINLINE __m128i simd_loadu_si128_sse3(const Byte* ptr) {
+static RG_FORCEINLINE __m128i simd_loadu_si128_sse3(const Byte* ptr) {
   return _mm_lddqu_si128(reinterpret_cast<const __m128i*>(ptr));
 }
 
-RG_FORCEINLINE __m128i simd_loada_si128(const Byte* ptr) {
+static RG_FORCEINLINE __m128i simd_loada_si128(const Byte* ptr) {
 #ifdef USE_MOVPS
     return _mm_castps_si128(_mm_load_ps(reinterpret_cast<const float*>(ptr)));
 #else

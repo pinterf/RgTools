@@ -2385,7 +2385,7 @@ RG_FORCEINLINE __m128i rg_mode20_sse_16(const Byte* pSrc, int srcPitch) {
   // worst case: 9*FFFF * E39 = 8000B8E3 ( 8000B8E3 >> 15 = 10001, packus rounding to FFFF)
   // Try with
   // ((1<<15) / 9  + 4) = 0xE3C (3644)
-  constexpr byte FACTOR = 15;
+  constexpr Byte FACTOR = 15;
   auto zero = _mm_setzero_si128();
   auto onenineth = _mm_set1_epi32(((1u << FACTOR) + 4) / 9);
   auto bias = _mm_set1_epi32(4);

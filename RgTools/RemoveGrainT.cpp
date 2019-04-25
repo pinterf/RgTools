@@ -19,18 +19,11 @@
 // Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA, or visit
 // http://www.gnu.org/copyleft/gpl.html .
 
-#include "avisynth.h"
-#include "common.h"
-#include <Windows.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <cassert>
 #include "RemoveGrainT.h"
+#include "common.h"
+#include <cassert>
 #include "emmintrin.h"
 #include "immintrin.h"
-#include <math.h>
-#include <algorithm>
-#include "common.h"
 
 
 RG_FORCEINLINE void RepairPixel(uint8_t *dest, const uint8_t *src1, const uint8_t *src2, const uint8_t *previous, const uint8_t *next)
@@ -252,7 +245,6 @@ class	TemporalRepair : public GenericVideoFilter
   int last_frame;
   PClip orig;
   bool grey;
-  int opt;
 
   // MT mode Registration for Avisynth+
   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
@@ -295,7 +287,7 @@ class	TemporalRepair : public GenericVideoFilter
 public:
   TemporalRepair(PClip clip, PClip oclip, int mode, bool grey, bool planar, int opt, IScriptEnvironment* env) : 
     GenericVideoFilter(clip), 
-    orig(oclip), opt(opt), grey(grey)
+    orig(oclip), grey(grey)
   {
     if (!planar && !vi.IsPlanar())
       env->ThrowError("TemporalRepair: only planar color spaces are supported");
@@ -926,7 +918,6 @@ class SmoothTemporalRepair : public GenericVideoFilter
 
   int last_frame;
   bool grey;
-  int opt;
   
   // MT mode Registration for Avisynth+
   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
@@ -950,8 +941,6 @@ class SmoothTemporalRepair : public GenericVideoFilter
     const int planecount = grey ? 1 : std::min(vi.NumComponents(), 3); // no Alpha plane processing
     for (int p = 0; p < planecount; ++p) {
       const int plane = planes[p];
-
-      int sfpitch = sf->GetPitch(plane);
 
       BYTE* dp = df->GetWritePtr(plane);
       int dppitch = df->GetPitch(plane);
@@ -980,8 +969,7 @@ public:
   SmoothTemporalRepair(PClip clip, PClip _oclip, int mode, bool grey, bool planar, int opt, IScriptEnvironment* env) : 
     GenericVideoFilter(clip), 
     oclip(_oclip),
-    grey(grey),
-    opt(opt)
+    grey(grey)
   {
     if (!planar && !vi.IsPlanar())
       env->ThrowError("TemporalRepair: only planar color spaces are supported");
@@ -1020,12 +1008,11 @@ public:
   }
 };
 
-#define MAXTMODE	4	
-
-bool spatial[MAXTMODE + 1] = { false, true, true, true, false };
 
 AVSValue __cdecl Create_TemporalRepair(AVSValue args, void* user_data, IScriptEnvironment* env)
 {
+  constexpr int MAXTMODE = 4;
+
   enum ARGS { CLIP, OCLIP, MODE, SMOOTH, GREY, PLANAR, OPT };
   PClip clip = args[CLIP].AsClip();
   PClip oclip = args[OCLIP].AsClip();
@@ -1039,6 +1026,8 @@ AVSValue __cdecl Create_TemporalRepair(AVSValue args, void* user_data, IScriptEn
 
   if (clip->GetVideoInfo().BitsPerComponent() > 8)
     env->ThrowError("TemporalRepair: only 8 bit colorspaces are supported");
+
+  bool spatial[MAXTMODE + 1] = { false, true, true, true, false };
 
   return spatial[mode] ? (AVSValue) new SmoothTemporalRepair(clip, oclip, mode, grey, planar, opt, env)
     : (AVSValue) new TemporalRepair(clip, oclip, mode, grey, planar, opt, env);

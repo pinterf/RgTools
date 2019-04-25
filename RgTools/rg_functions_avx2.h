@@ -583,8 +583,6 @@ template<bool aligned>
 RG_FORCEINLINE __m256i rg_mode6_avx2_32(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
-  auto zero = _mm256_setzero_ps();
-
   auto mal1 = _mm256_max_ps(a1, a8);
   auto mil1 = _mm256_min_ps(a1, a8);
 
@@ -1648,7 +1646,7 @@ RG_FORCEINLINE __m256i rg_mode20_avx2_16(const Byte* pSrc, int srcPitch) {
   // worst case: 9*FFFF * E39 = 8000B8E3 ( 8000B8E3 >> 15 = 10001, packus rounding to FFFF)
   // Try with
   // ((1<<15) / 9  + 4) = 0xE3C (3644)
-  const byte FACTOR = 15;
+  const Byte FACTOR = 15;
   auto zero = _mm256_setzero_si256();
   auto onenineth = _mm256_set1_epi32(((1u << FACTOR) + 4) / 9);
   auto bias = _mm256_set1_epi32(4);

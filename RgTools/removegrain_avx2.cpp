@@ -102,7 +102,7 @@ static void process_halfplane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, B
 
 template<typename pixel_t, SseModeProcessor processor>
 static void process_even_rows_avx2(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch) {
-    _mm256_zeroupper(); // paranoia
+    _mm256_zeroupper();
     env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 2); //copy first two lines
 
     process_halfplane_avx2<pixel_t, processor>(env, pSrc+srcPitch, pDst+dstPitch, rowsize, height, srcPitch, dstPitch);
@@ -110,11 +110,12 @@ static void process_even_rows_avx2(IScriptEnvironment* env, const BYTE* pSrc, BY
 
 template<typename pixel_t, SseModeProcessor processor>
 static void process_odd_rows_avx2(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch) {
-    _mm256_zeroupper();  // paranoia
+    _mm256_zeroupper();
     env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1); //top border
 
     process_halfplane_avx2<pixel_t, processor>(env, pSrc, pDst, rowsize, height, srcPitch, dstPitch);
 
+    _mm256_zeroupper();
     env->BitBlt(pDst+dstPitch*(height-1), dstPitch, pSrc+srcPitch*(height-1), srcPitch, rowsize, 1); //bottom border
 }
 
@@ -123,7 +124,7 @@ static void doNothing(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int
 }
 
 static void copyPlane(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch) {
-  _mm256_zeroupper(); // paranoia
+  _mm256_zeroupper();
   env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, height);
 }
 

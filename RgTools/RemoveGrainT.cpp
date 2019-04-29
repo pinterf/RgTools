@@ -173,7 +173,7 @@ static void btemporal_repair_mode4_sse2(BYTE *dp, int dpitch, const BYTE *sp1, i
 
 // unaligned, aligned
 template<typename pixel_t, temporal_repair_processor_simd processor, temporal_repair_processor_simd processor_a>
-void temporal_repair_mode4_sse2(BYTE* dp8, int dpitch, const BYTE* sp1_8, int spitch1, const BYTE* sp2_8, int spitch2, const BYTE* pp8, int ppitch, const BYTE* np8, int npitch, int width, int height)
+void temporal_repair_mode0and4_sse2(BYTE* dp8, int dpitch, const BYTE* sp1_8, int spitch1, const BYTE* sp2_8, int spitch2, const BYTE* pp8, int ppitch, const BYTE* np8, int npitch, int width, int height)
 {
   dpitch /= sizeof(pixel_t);
   spitch1 /= sizeof(pixel_t);
@@ -213,7 +213,7 @@ void temporal_repair_mode4_sse2(BYTE* dp8, int dpitch, const BYTE* sp1_8, int sp
 
 // unaligned, aligned
 template<typename pixel_t, temporal_repair_processor_c processor>
-void temporal_repair_mode4_c(BYTE* dp8, int dpitch, const BYTE* sp1_8, int spitch1, const BYTE* sp2_8, int spitch2, const BYTE* pp8, int ppitch, const BYTE* np8, int npitch, int width, int height)
+void temporal_repair_mode0and4_c(BYTE* dp8, int dpitch, const BYTE* sp1_8, int spitch1, const BYTE* sp2_8, int spitch2, const BYTE* pp8, int ppitch, const BYTE* np8, int npitch, int width, int height)
 {
   dpitch /= sizeof(pixel_t);
   spitch1 /= sizeof(pixel_t);
@@ -313,19 +313,19 @@ static void btemporal_repair_mode4_c(BYTE* dp, int dpitch, const BYTE* sp1, int 
 #endif
 
 static PlaneProcessor_t* t_c_functions[] = {
-    temporal_repair_mode4_c<uint8_t, RepairPixel_mode0_c>,
+    temporal_repair_mode0and4_c<uint8_t, RepairPixel_mode0_c>,
     nullptr,
     nullptr,
     nullptr,
-    temporal_repair_mode4_c<uint8_t, BRepairPixel_mode4_c>
+    temporal_repair_mode0and4_c<uint8_t, BRepairPixel_mode4_c>
 };
 
 static PlaneProcessor_t* t_sse2_functions[] = {
-    temporal_repair_mode4_sse2<uint8_t, RepairPixel_mode0_sse2, RepairPixel_mode0_sse2>,
+    temporal_repair_mode0and4_sse2<uint8_t, RepairPixel_mode0_sse2, RepairPixel_mode0_sse2>,
     nullptr,
     nullptr,
     nullptr,
-    temporal_repair_mode4_sse2<uint8_t, BRepairPixel_mode4_sse2, BRepairPixel_mode4_sse2>
+    temporal_repair_mode0and4_sse2<uint8_t, BRepairPixel_mode4_sse2, BRepairPixel_mode4_sse2>
 };
 
 

@@ -30,6 +30,7 @@ typedef void (PlaneProcessor_t)(BYTE* dp8, int dpitch, const BYTE* sp1_8, int sp
 
 typedef void (temporal_repair_processor_simd)(uint8_t* dp, const uint8_t* sp1, const uint8_t* sp2, const uint8_t* pp, const uint8_t* np);
 typedef int (temporal_repair_processor_c)(int src_1, int src_2, int src_prev, int src_next);
+typedef float (temporal_repair_processor_32_c)(float src_1, float src_2, float src_prev, float src_next);
 
 typedef void (PlaneProcessor_st)(BYTE* dp8, const BYTE* previous8, const BYTE* sp8, const BYTE* next8, intptr_t* pitches, int width, int height);
 
@@ -56,12 +57,58 @@ RG_FORCEINLINE void RepairPixel_mode0_sse2(uint8_t *dest, const uint8_t *src1, c
 	_mm_storeu_si128(reinterpret_cast<__m128i*>(dest), result);
 }
 
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE void RepairPixel_mode0_sse41_16(uint8_t* dest, const uint8_t* src1, const uint8_t* src2, const uint8_t* previous, const uint8_t* next)
+{
+  auto src_next = _mm_loadu_si128(reinterpret_cast<const __m128i*>(next));
+  auto src_prev = _mm_loadu_si128(reinterpret_cast<const __m128i*>(previous));
+  auto src_1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src1));
+  auto src_2 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src2));
+
+  auto min_np2 = _mm_min_epu16(_mm_min_epu16(src_next, src_prev), src_2);
+  auto max_np2 = _mm_max_epu16(_mm_max_epu16(src_next, src_prev), src_2);
+  auto result = simd_clip_16(src_1, min_np2, max_np2);
+
+  _mm_storeu_si128(reinterpret_cast<__m128i*>(dest), result);
+}
+
+RG_FORCEINLINE void RepairPixel_mode0_sse2_32(uint8_t* dest, const uint8_t* src1, const uint8_t* src2, const uint8_t* previous, const uint8_t* next)
+{
+  auto src_next = _mm_loadu_ps(reinterpret_cast<const float*>(next));
+  auto src_prev = _mm_loadu_ps(reinterpret_cast<const float*>(previous));
+  auto src_1 = _mm_loadu_ps(reinterpret_cast<const float*>(src1));
+  auto src_2 = _mm_loadu_ps(reinterpret_cast<const float*>(src2));
+
+  auto min_np2 = _mm_min_ps(_mm_min_ps(src_next, src_prev), src_2);
+  auto max_np2 = _mm_max_ps(_mm_max_ps(src_next, src_prev), src_2);
+  auto result = simd_clip_32(src_1, min_np2, max_np2);
+
+  _mm_storeu_ps(reinterpret_cast<float*>(dest), result);
+}
+
 RG_FORCEINLINE int RepairPixel_mode0_c(int src_1, int src_2, int src_prev, int src_next)
 {
 	auto min_np2 = std::min(std::min(src_next, src_prev), src_2);
 	auto max_np2 = std::max(std::max(src_next, src_prev), src_2);
 	return clip(src_1, min_np2, max_np2);
 }
+
+RG_FORCEINLINE int RepairPixel_mode0_16_c(int src_1, int src_2, int src_prev, int src_next)
+{
+  auto min_np2 = std::min(std::min(src_next, src_prev), src_2);
+  auto max_np2 = std::max(std::max(src_next, src_prev), src_2);
+  return clip_16(src_1, min_np2, max_np2);
+}
+
+RG_FORCEINLINE float RepairPixel_mode0_32_c(float src_1, float src_2, float src_prev, float src_next)
+{
+  auto min_np2 = std::min(std::min(src_next, src_prev), src_2);
+  auto max_np2 = std::max(std::max(src_next, src_prev), src_2);
+  return clip_32(src_1, min_np2, max_np2);
+}
+
 
 // SSE4.1 simulation for SSE2
 // false: a, true: b
@@ -91,7 +138,7 @@ RG_FORCEINLINE void BRepairPixel_mode4_sse2(uint8_t *dest, const uint8_t *src1, 
 
 	auto equ1 = _mm_cmpeq_epi8(min_np, reg5);
 	auto equ2 = _mm_cmpeq_epi8(max_np, reg3);
-  auto equ = _mm_or_si128(equ1, equ2);// _mm_max_epu8(equ1, equ2); // pracically or. mask set if min_np == reg5 or max_np == reg3 FIXME
+  auto equ = _mm_or_si128(equ1, equ2);// _mm_max_epu8(equ1, equ2); // pracically or. mask set if min_np == reg5 or max_np == reg3
 
   reg5 = simd_clip(src_1, reg3, reg5);
   // FIXME: SSE4.1
@@ -99,6 +146,110 @@ RG_FORCEINLINE void BRepairPixel_mode4_sse2(uint8_t *dest, const uint8_t *src1, 
   auto result = _MM_BLENDV_EPI8(reg5, src_2, equ); // keep src2 where equal
 
 	_mm_storeu_si128(reinterpret_cast<__m128i*>(dest), result);
+}
+
+// real SSE4.1 _mm_blendv_epi8: 2830 vs 2960 FPS, worth using it
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE void BRepairPixel_mode4_sse41(uint8_t* dest, const uint8_t* src1, const uint8_t* src2, const uint8_t* previous, const uint8_t* next)
+{
+  __m128i reg3, reg5;
+  auto src_next = _mm_loadu_si128(reinterpret_cast<const __m128i*>(next));
+  auto src_prev = _mm_loadu_si128(reinterpret_cast<const __m128i*>(previous));
+  auto src_1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src1));
+  auto src_2 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src2));
+
+  auto max_np = _mm_max_epu8(src_next, src_prev);
+  auto min_np = _mm_min_epu8(src_next, src_prev);
+
+  auto diff_src2_minnp = _mm_subs_epu8(src_2, min_np);
+  reg5 = _mm_adds_epu8(_mm_adds_epu8(diff_src2_minnp, diff_src2_minnp), min_np); // diff_src2_minnp * 2 - min_np
+
+  auto diff_maxnp_src2 = _mm_subs_epu8(max_np, src_2);
+  reg3 = _mm_subs_epu8(max_np, _mm_adds_epu8(diff_maxnp_src2, diff_maxnp_src2)); // max_np - 2 * diff_maxnp_src2
+
+  reg5 = _mm_min_epu8(reg5, max_np);
+  reg3 = _mm_max_epu8(reg3, min_np);
+
+  auto equ1 = _mm_cmpeq_epi8(min_np, reg5);
+  auto equ2 = _mm_cmpeq_epi8(max_np, reg3);
+  auto equ = _mm_or_si128(equ1, equ2);// _mm_max_epu8(equ1, equ2); // pracically or. mask set if min_np == reg5 or max_np == reg3
+
+  reg5 = simd_clip(src_1, reg3, reg5);
+  auto result = _mm_blendv_epi8(reg5, src_2, equ); // keep src2 where equal
+
+  _mm_storeu_si128(reinterpret_cast<__m128i*>(dest), result);
+}
+
+template<int bits_per_pixel>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE void BRepairPixel_mode4_sse41_16(uint8_t* dest, const uint8_t* src1, const uint8_t* src2, const uint8_t* previous, const uint8_t* next)
+{
+  __m128i reg3, reg5;
+  auto src_next = _mm_loadu_si128(reinterpret_cast<const __m128i*>(next));
+  auto src_prev = _mm_loadu_si128(reinterpret_cast<const __m128i*>(previous));
+  auto src_1 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src1));
+  auto src_2 = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src2));
+
+  auto max_np = _mm_max_epu16(src_next, src_prev);
+  auto min_np = _mm_min_epu16(src_next, src_prev);
+
+  auto diff_src2_minnp = _mm_subs_epu16(src_2, min_np);
+  reg5 = _mm_adds_epu16(_mm_adds_epu16(diff_src2_minnp, diff_src2_minnp), min_np); // diff_src2_minnp * 2 - min_np
+
+  auto diff_maxnp_src2 = _mm_subs_epu16(max_np, src_2);
+  reg3 = _mm_subs_epu16(max_np, _mm_adds_epu16(diff_maxnp_src2, diff_maxnp_src2)); // max_np - 2 * diff_maxnp_src2
+
+  reg5 = _mm_min_epu16(reg5, max_np);
+  reg3 = _mm_max_epu16(reg3, min_np);
+
+  auto equ1 = _mm_cmpeq_epi16(min_np, reg5);
+  auto equ2 = _mm_cmpeq_epi16(max_np, reg3);
+  auto equ = _mm_or_si128(equ1, equ2); // mask set if min_np == reg5 or max_np == reg3 FIXME
+
+  reg5 = simd_clip_16(src_1, reg3, reg5);
+
+  auto result = _mm_blendv_epi8(reg5, src_2, equ); // keep src2 where equal
+
+  _mm_storeu_si128(reinterpret_cast<__m128i*>(dest), result);
+}
+
+template<bool chroma>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE void BRepairPixel_mode4_sse41_32(uint8_t* dest, const uint8_t* src1, const uint8_t* src2, const uint8_t* previous, const uint8_t* next)
+{
+  __m128 reg3, reg5;
+  auto src_next = _mm_loadu_ps(reinterpret_cast<const float*>(next));
+  auto src_prev = _mm_loadu_ps(reinterpret_cast<const float*>(previous));
+  auto src_1 = _mm_loadu_ps(reinterpret_cast<const float*>(src1));
+  auto src_2 = _mm_loadu_ps(reinterpret_cast<const float*>(src2));
+
+  auto max_np = _mm_max_ps(src_next, src_prev);
+  auto min_np = _mm_min_ps(src_next, src_prev);
+
+  auto diff_src2_minnp = _mm_subs_ps<chroma>(src_2, min_np);
+  reg5 = _mm_adds_ps<chroma>(_mm_adds_ps<chroma>(diff_src2_minnp, diff_src2_minnp), min_np); // diff_src2_minnp * 2 - min_np
+
+  auto diff_maxnp_src2 = _mm_subs_ps<chroma>(max_np, src_2);
+  reg3 = _mm_subs_ps<chroma>(max_np, _mm_adds_ps<chroma>(diff_maxnp_src2, diff_maxnp_src2)); // max_np - 2 * diff_maxnp_src2
+
+  reg5 = _mm_min_ps(reg5, max_np);
+  reg3 = _mm_max_ps(reg3, min_np);
+
+  auto equ1 = _mm_cmpeq_ps(min_np, reg5);
+  auto equ2 = _mm_cmpeq_ps(max_np, reg3);
+  auto equ = _mm_or_ps(equ1, equ2); // mask set if min_np == reg5 or max_np == reg3 FIXME
+
+  reg5 = simd_clip_32(src_1, reg3, reg5);
+
+  auto result = _mm_blendv_ps(reg5, src_2, equ); // keep src2 where equal
+
+  _mm_storeu_ps(reinterpret_cast<float*>(dest), result);
 }
 
 // unaligned, aligned
@@ -142,8 +293,79 @@ void temporal_repair_mode0and4_sse2(BYTE* dp8, int dpitch, const BYTE* sp1_8, in
 }
 
 // unaligned, aligned
+template<typename pixel_t, temporal_repair_processor_simd processor, temporal_repair_processor_simd processor_a>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+void temporal_repair_mode0and4_sse41(BYTE* dp8, int dpitch, const BYTE* sp1_8, int spitch1, const BYTE* sp2_8, int spitch2, const BYTE* pp8, int ppitch, const BYTE* np8, int npitch, int width, int height)
+{
+  dpitch /= sizeof(pixel_t);
+  spitch1 /= sizeof(pixel_t);
+  spitch2 /= sizeof(pixel_t);
+  ppitch /= sizeof(pixel_t);
+  npitch /= sizeof(pixel_t);
+
+  pixel_t* dp = reinterpret_cast<pixel_t*>(dp8);
+  const pixel_t* sp1 = reinterpret_cast<const pixel_t*>(sp1_8);
+  const pixel_t* sp2 = reinterpret_cast<const pixel_t*>(sp2_8);
+  const pixel_t* pp = reinterpret_cast<const pixel_t*>(pp8);
+  const pixel_t* np = reinterpret_cast<const pixel_t*>(np8);
+
+  const int pixels_at_a_time = 16 / sizeof(pixel_t);
+
+  int mod_width = width / pixels_at_a_time * pixels_at_a_time;
+
+  for (int y = 0; y < height; y++) {
+    // aligned
+    for (int x = 0; x < mod_width; x += pixels_at_a_time) {
+      processor_a((uint8_t *)(dp + x), (uint8_t*)(sp1 + x), (uint8_t*)(sp2 + x), (uint8_t*)(pp + x), (uint8_t*)(np + x));
+    }
+
+    if (mod_width != width) {
+      const int xx = width - pixels_at_a_time;
+      processor((uint8_t*)(dp + xx), (uint8_t*)(sp1 + xx), (uint8_t*)(sp2 + xx), (uint8_t*)(pp + xx), (uint8_t*)(np + xx));
+    }
+
+    dp += dpitch;
+    sp1 += spitch1;
+    sp2 += spitch2;
+    pp += ppitch;
+    np += npitch;
+  }
+
+}
+
 template<typename pixel_t, temporal_repair_processor_c processor>
 void temporal_repair_mode0and4_c(BYTE* dp8, int dpitch, const BYTE* sp1_8, int spitch1, const BYTE* sp2_8, int spitch2, const BYTE* pp8, int ppitch, const BYTE* np8, int npitch, int width, int height)
+{
+  dpitch /= sizeof(pixel_t);
+  spitch1 /= sizeof(pixel_t);
+  spitch2 /= sizeof(pixel_t);
+  ppitch /= sizeof(pixel_t);
+  npitch /= sizeof(pixel_t);
+
+  pixel_t* dp = reinterpret_cast<pixel_t*>(dp8);
+  const pixel_t* sp1 = reinterpret_cast<const pixel_t*>(sp1_8);
+  const pixel_t* sp2 = reinterpret_cast<const pixel_t*>(sp2_8);
+  const pixel_t* pp = reinterpret_cast<const pixel_t*>(pp8);
+  const pixel_t* np = reinterpret_cast<const pixel_t*>(np8);
+
+  for (int y = 0; y < height; y++)
+  {
+    for (int x = 0; x < width; x++)
+    {
+      dp[x] = processor(sp1[x], sp2[x], pp[x], np[x]);
+    }
+    dp += dpitch;
+    sp1 += spitch1;
+    sp2 += spitch2;
+    pp += ppitch;
+    np += npitch;
+  }
+}
+
+template<typename pixel_t, temporal_repair_processor_32_c processor>
+void temporal_repair_mode0and4_32_c(BYTE* dp8, int dpitch, const BYTE* sp1_8, int spitch1, const BYTE* sp2_8, int spitch2, const BYTE* pp8, int ppitch, const BYTE* np8, int npitch, int width, int height)
 {
   dpitch /= sizeof(pixel_t);
   spitch1 /= sizeof(pixel_t);
@@ -179,9 +401,15 @@ RG_FORCEINLINE int subs_16_c(int x, int y) {
   return std::max(0, x - y);
 }
 
+template<bool chroma>
 RG_FORCEINLINE float subs_32_c(float x, float y) {
-  //return (float)std::max(0.0f, x - y);
+#if 1
+  constexpr float pixel_min = chroma ? -0.5f : 0.0f;
+  return std::max(pixel_min, x - y);
+#else
+  // no clamp, heavy artifacts
   return x - y; // float: no clamp
+#endif
 }
 
 RG_FORCEINLINE int adds_c(int x, int y) {
@@ -196,12 +424,37 @@ RG_FORCEINLINE int adds_16_c(int x, int y) {
   return std::min(pixel_max, x + y);
 }
 
+template<bool chroma>
 RG_FORCEINLINE float adds_32_c(float x, float y) {
-  /*
-  constexpr float pixel_max = 1.0f; // or 0.5 if chroma
-  return (uint8_t)std::min(pixel_max, x + y);
-  */
+#if 1
+  constexpr float pixel_max = chroma ? 0.5f : 1.0f;
+  return std::min(pixel_max, x + y);
+#else
+  // no clamp, heavy artifacts
   return x + y; // float: no clamp
+#endif
+}
+
+template<bool chroma>
+static RG_FORCEINLINE __m128 _mm_subs_ps(__m128 a, __m128 b) {
+#if 1
+  const __m128 pixel_min = chroma ? _mm_set1_ps(-0.5f) : _mm_set1_ps(0.0f);
+  return _mm_max_ps(_mm_sub_ps(a, b), pixel_min);
+#else
+  // no clamp, heavy artifacts
+  return _mm_sub_ps(a, b);
+#endif
+}
+
+template<bool chroma>
+static RG_FORCEINLINE __m128 _mm_adds_ps(__m128 a, __m128 b) {
+#if 1
+  const __m128 pixel_max = chroma ? _mm_set1_ps(0.5f) : _mm_set1_ps(1.0f);
+  return _mm_min_ps(_mm_add_ps(a, b), pixel_max);
+#else
+  // no clamp, heavy artifacts
+  return _mm_add_ps(a, b);
+#endif
 }
 
 RG_FORCEINLINE int BRepairPixel_mode4_c(int src_1, int src_2, int src_prev, int src_next)
@@ -224,6 +477,48 @@ RG_FORCEINLINE int BRepairPixel_mode4_c(int src_1, int src_2, int src_prev, int 
   return equ ? src_2 : reg5;
 }
 
+template<int bits_per_pixel>
+RG_FORCEINLINE int BRepairPixel_mode4_16_c(int src_1, int src_2, int src_prev, int src_next)
+{
+  auto max_np = std::max(src_next, src_prev);
+  auto min_np = std::min(src_next, src_prev);
+
+  auto diff_src2_minnp = subs_16_c(src_2, min_np);
+  auto reg5 = adds_16_c<bits_per_pixel>(adds_16_c<bits_per_pixel>(diff_src2_minnp, diff_src2_minnp), min_np); // diff_src2_minnp * 2 - min_np
+
+  auto diff_maxnp_src2 = subs_16_c(max_np, src_2);
+  auto reg3 = subs_16_c(max_np, adds_16_c<bits_per_pixel>(diff_maxnp_src2, diff_maxnp_src2)); // max_np - 2 * diff_maxnp_src2
+
+  reg5 = std::min(reg5, max_np);
+  reg3 = std::max(reg3, min_np);
+
+  auto equ = min_np == reg5 || max_np == reg3;
+
+  reg5 = clip_16(src_1, reg3, reg5);
+  return equ ? src_2 : reg5;
+}
+
+template<bool chroma>
+RG_FORCEINLINE float BRepairPixel_mode4_32_c(float src_1, float src_2, float src_prev, float src_next)
+{
+  auto max_np = std::max(src_next, src_prev);
+  auto min_np = std::min(src_next, src_prev);
+
+  auto diff_src2_minnp = subs_32_c<chroma>(src_2, min_np);
+  auto reg5 = adds_32_c<chroma>(adds_32_c<chroma>(diff_src2_minnp, diff_src2_minnp), min_np); // diff_src2_minnp * 2 - min_np
+
+  auto diff_maxnp_src2 = subs_32_c<chroma>(max_np, src_2);
+  auto reg3 = subs_32_c<chroma>(max_np, adds_32_c<chroma>(diff_maxnp_src2, diff_maxnp_src2)); // max_np - 2 * diff_maxnp_src2
+
+  reg5 = std::min(reg5, max_np);
+  reg3 = std::max(reg3, min_np);
+
+  auto equ = min_np == reg5 || max_np == reg3;
+
+  reg5 = clip_32(src_1, reg3, reg5);
+  return equ ? src_2 : reg5;
+}
+
 static PlaneProcessor_t* t_c_functions[] = {
     temporal_repair_mode0and4_c<uint8_t, RepairPixel_mode0_c>,
     nullptr,
@@ -232,12 +527,68 @@ static PlaneProcessor_t* t_c_functions[] = {
     temporal_repair_mode0and4_c<uint8_t, BRepairPixel_mode4_c>
 };
 
+static PlaneProcessor_t* t_c_functions_16[] = {
+    temporal_repair_mode0and4_c<uint16_t, RepairPixel_mode0_16_c>,
+    nullptr,
+    nullptr,
+    nullptr,
+    temporal_repair_mode0and4_c<uint16_t, BRepairPixel_mode4_16_c<16>>
+};
+
+static PlaneProcessor_t* t_c_functions_32[] = {
+    temporal_repair_mode0and4_32_c<float, RepairPixel_mode0_32_c>,
+    nullptr,
+    nullptr,
+    nullptr,
+    temporal_repair_mode0and4_32_c<float, BRepairPixel_mode4_32_c<false>> // false: not chroma
+};
+
+static PlaneProcessor_t* t_c_functions_chroma_32[] = {
+    temporal_repair_mode0and4_32_c<float, RepairPixel_mode0_32_c>,
+    nullptr,
+    nullptr,
+    nullptr,
+    temporal_repair_mode0and4_32_c<float, BRepairPixel_mode4_32_c<true>> // false: not chroma
+};
+
 static PlaneProcessor_t* t_sse2_functions[] = {
     temporal_repair_mode0and4_sse2<uint8_t, RepairPixel_mode0_sse2, RepairPixel_mode0_sse2>,
     nullptr,
     nullptr,
     nullptr,
     temporal_repair_mode0and4_sse2<uint8_t, BRepairPixel_mode4_sse2, BRepairPixel_mode4_sse2>
+};
+
+static PlaneProcessor_t* t_sse41_functions[] = {
+    temporal_repair_mode0and4_sse41<uint8_t, RepairPixel_mode0_sse2, RepairPixel_mode0_sse2>, // no 4.1 version
+    nullptr,
+    nullptr,
+    nullptr,
+    temporal_repair_mode0and4_sse41<uint8_t, BRepairPixel_mode4_sse41, BRepairPixel_mode4_sse41>
+};
+
+static PlaneProcessor_t* t_sse41_functions_16[] = {
+    temporal_repair_mode0and4_sse41<uint16_t, RepairPixel_mode0_sse41_16, RepairPixel_mode0_sse41_16>,
+    nullptr,
+    nullptr,
+    nullptr,
+    temporal_repair_mode0and4_sse41<uint16_t, BRepairPixel_mode4_sse41_16<16>, BRepairPixel_mode4_sse41_16<16>>
+};
+
+static PlaneProcessor_t* t_sse41_functions_32[] = {
+    temporal_repair_mode0and4_sse41<float, RepairPixel_mode0_sse2_32, RepairPixel_mode0_sse2_32>,
+    nullptr,
+    nullptr,
+    nullptr,
+    temporal_repair_mode0and4_sse41<float, BRepairPixel_mode4_sse41_32<false>, BRepairPixel_mode4_sse41_32<false>>
+};
+
+static PlaneProcessor_t* t_sse41_functions_chroma_32[] = {
+    temporal_repair_mode0and4_sse41<float, RepairPixel_mode0_sse2_32, RepairPixel_mode0_sse2_32>,
+    nullptr,
+    nullptr,
+    nullptr,
+    temporal_repair_mode0and4_sse41<float, BRepairPixel_mode4_sse41_32<true>, BRepairPixel_mode4_sse41_32<true>>
 };
 
 static void CompareVideoInfo(VideoInfo& vi1, const VideoInfo& vi2, const char* progname, IScriptEnvironment* env)
@@ -263,7 +614,9 @@ static void copy_plane(PVideoFrame& destf, PVideoFrame& currf, int plane, IScrip
 class	TemporalRepair : public GenericVideoFilter
 {
   PlaneProcessor_t* processor_t_repair;
+  PlaneProcessor_t* processor_t_repair_chroma;
   PlaneProcessor_t* processor_t_repair_c;
+  PlaneProcessor_t* processor_t_repair_chroma_c;
   int last_frame;
   PClip orig;
   bool grey;
@@ -291,22 +644,29 @@ class	TemporalRepair : public GenericVideoFilter
     for (int p = 0; p < planecount; ++p) {
       const int plane = planes[p];
 
-      if (sf->GetRowSize(plane) < 16)
-        processor_t_repair_c(
-          df->GetWritePtr(plane), df->GetPitch(plane),
-          cf->GetReadPtr(plane), cf->GetPitch(plane),
-          sf->GetReadPtr(plane), sf->GetPitch(plane),
-          pf->GetReadPtr(plane), pf->GetPitch(plane),
-          nf->GetReadPtr(plane), nf->GetPitch(plane),
-          vi.width >> vi.GetPlaneWidthSubsampling(plane), vi.height >> vi.GetPlaneHeightSubsampling(plane));
-      else
-        processor_t_repair(
-          df->GetWritePtr(plane), df->GetPitch(plane),
-          cf->GetReadPtr(plane), cf->GetPitch(plane),
-          sf->GetReadPtr(plane), sf->GetPitch(plane),
-          pf->GetReadPtr(plane), pf->GetPitch(plane),
-          nf->GetReadPtr(plane), nf->GetPitch(plane),
-          vi.width >> vi.GetPlaneWidthSubsampling(plane), vi.height >> vi.GetPlaneHeightSubsampling(plane));
+      const bool chroma = plane == PLANAR_U || plane == PLANAR_V;
+
+      PlaneProcessor_t* actual_processor;
+
+      if (sf->GetRowSize(plane) < 16) {
+        if (chroma)
+          actual_processor = processor_t_repair_chroma_c;
+        else
+          actual_processor = processor_t_repair_c;
+      }
+      else {
+        if (chroma)
+          actual_processor = processor_t_repair_chroma;
+        else
+          actual_processor = processor_t_repair;
+      }
+      actual_processor(
+        df->GetWritePtr(plane), df->GetPitch(plane),
+        cf->GetReadPtr(plane), cf->GetPitch(plane),
+        sf->GetReadPtr(plane), sf->GetPitch(plane),
+        pf->GetReadPtr(plane), pf->GetPitch(plane),
+        nf->GetReadPtr(plane), nf->GetPitch(plane),
+        vi.width >> vi.GetPlaneWidthSubsampling(plane), vi.height >> vi.GetPlaneHeightSubsampling(plane));
     }
 
     if (vi.NumComponents() == 4)
@@ -316,8 +676,8 @@ class	TemporalRepair : public GenericVideoFilter
   }
 
 public:
-  TemporalRepair(PClip clip, PClip oclip, int mode, bool grey, bool planar, int opt, IScriptEnvironment* env) : 
-    GenericVideoFilter(clip), 
+  TemporalRepair(PClip clip, PClip oclip, int mode, bool grey, bool planar, int opt, IScriptEnvironment* env) :
+    GenericVideoFilter(clip),
     orig(oclip), grey(grey)
   {
     if (!planar && !vi.IsPlanar())
@@ -327,13 +687,64 @@ public:
 
     // only for modes 0 and 4
     assert(mode == 0 || mode == 4);
-    processor_t_repair_c = t_c_functions[mode];
+    switch (vi.BitsPerComponent()) {
+    case 8:
+      processor_t_repair_c = t_c_functions[mode];
+      processor_t_repair_chroma_c = processor_t_repair_c;
+      break;
+    case 10: case 12: case 14: case 16:
+      processor_t_repair_c = t_c_functions_16[mode];
+      processor_t_repair_chroma_c = processor_t_repair_c;
+      break;
+    case 32:
+      processor_t_repair_c = t_c_functions_32[mode];
+      processor_t_repair_chroma_c = t_c_functions_chroma_32[mode]; // float: special
+      break;
+    }
 
-    if (opt == 0) // 0: C
+    bool sse2 = (env->GetCPUFlags() & CPUF_SSE2) == CPUF_SSE2;
+    bool sse41 = (env->GetCPUFlags() & CPUF_SSE4_1) == CPUF_SSE4_1;
+
+    // disable by opt
+    if (opt >= 0) {
+      if (opt < 1) sse2 = false;
+      if (opt < 2) sse41 = false;
+    }
+
+    if (opt == 0) { // 0: C
       processor_t_repair = processor_t_repair_c;
-    else
-      processor_t_repair = t_sse2_functions[mode];
-
+      processor_t_repair_chroma = processor_t_repair_chroma_c;
+    }
+    else {
+      switch (vi.BitsPerComponent()) {
+      case 8:
+        if (sse41)
+          processor_t_repair = t_sse41_functions[mode];
+        else if (sse2)
+          processor_t_repair = t_sse2_functions[mode];
+        else
+          processor_t_repair = processor_t_repair_c;
+        processor_t_repair_chroma = processor_t_repair;
+        break;
+      case 10: case 12: case 14: case 16:
+        if (sse41)
+          processor_t_repair = t_sse41_functions_16[mode];
+        else
+          processor_t_repair = processor_t_repair_c;
+        break;
+        processor_t_repair_chroma = processor_t_repair;
+      case 32:
+        if (sse41) {
+          processor_t_repair = t_sse41_functions_32[mode];
+          processor_t_repair_chroma = t_sse41_functions_chroma_32[mode];
+        }
+        else {
+          processor_t_repair = processor_t_repair_c;
+          processor_t_repair_chroma = processor_t_repair_chroma_c;
+        }
+        break;
+      }
+    }
     last_frame = vi.num_frames >= 2 ? vi.num_frames - 2 : 0;
   }
 };
@@ -883,6 +1294,9 @@ public:
 
     CompareVideoInfo(vi, _oclip->GetVideoInfo(), "TemporalRepair", env);
 
+    if (vi.BitsPerComponent() > 8)
+      env->ThrowError("TemporalRepair: only 8 bit color spaces are supported for this mode");
+
     if (vi.IsY())
       grey = true;
 
@@ -915,10 +1329,10 @@ AVSValue __cdecl Create_TemporalRepair(AVSValue args, void* user_data, IScriptEn
     env->ThrowError("TemporalRepair: illegal mode %i", mode);
   bool planar = args[PLANAR].AsBool(false);
   int opt = args[OPT].AsInt(-1);
-
+  /*
   if (clip->GetVideoInfo().BitsPerComponent() > 8)
     env->ThrowError("TemporalRepair: only 8 bit colorspaces are supported");
-
+    */
   bool spatial[MAXTMODE + 1] = { false, true, true, true, false };
 
   return spatial[mode] ? (AVSValue) new SmoothTemporalRepair(clip, oclip, mode, grey, planar, opt, env)

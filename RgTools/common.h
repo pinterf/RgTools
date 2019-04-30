@@ -158,6 +158,7 @@ static RG_FORCEINLINE __m128 abs_diff_32(__m128 a, __m128 b) {
 }
 
 // PF until I find out better
+// RemoveGraintT has artifacts w/o proper clamping
 static RG_FORCEINLINE __m128 _mm_subs_ps(__m128 a, __m128 b) {
 #if 0
 const __m128 zero = _mm_setzero_ps();

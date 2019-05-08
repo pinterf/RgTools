@@ -613,13 +613,13 @@ static void copy_plane(PVideoFrame& destf, PVideoFrame& currf, int plane, IScrip
 
 class	TemporalRepair : public GenericVideoFilter
 {
+  int last_frame;
+  PClip orig;
+  bool grey;
   PlaneProcessor_t* processor_t_repair;
   PlaneProcessor_t* processor_t_repair_chroma;
   PlaneProcessor_t* processor_t_repair_c;
   PlaneProcessor_t* processor_t_repair_chroma_c;
-  int last_frame;
-  PClip orig;
-  bool grey;
 
   // MT mode Registration for Avisynth+
   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
@@ -678,7 +678,12 @@ class	TemporalRepair : public GenericVideoFilter
 public:
   TemporalRepair(PClip clip, PClip oclip, int mode, bool grey, bool planar, int opt, IScriptEnvironment* env) :
     GenericVideoFilter(clip),
-    orig(oclip), grey(grey)
+    orig(oclip),
+    grey(grey),
+    processor_t_repair(nullptr),
+    processor_t_repair_chroma(nullptr),
+    processor_t_repair_c(nullptr),
+    processor_t_repair_chroma_c(nullptr)
   {
     if (!planar && !vi.IsPlanar())
       env->ThrowError("TemporalRepair: only planar color spaces are supported");

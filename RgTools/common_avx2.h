@@ -127,6 +127,9 @@ static RG_FORCEINLINE __m256 abs_diff_32(__m256 a, __m256 b) {
 }
 
 // PF until I find out better
+// Todo: Separate use cases for getting just a difference (diff = pixel - pixel) which saturates to 0 
+// or chroma aware subtract (pixel = pixel - diff) which saturates to 0.0 (luma) or -0.5 (chroma)
+// latter clamp is subject to consideration
 static RG_FORCEINLINE __m256 _mm256_subs_ps(__m256 a, __m256 b) {
 #if 0
   const __m256 zero = _mm256_setzero_ps();

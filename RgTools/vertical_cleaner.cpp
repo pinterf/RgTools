@@ -232,10 +232,10 @@ static void vcleaner_relaxed_median_sse_32(Byte* pDst8, const Byte *pSrc8, int d
       __m128 n1 = _mm_load_ps(reinterpret_cast<const float*>(pSrc + x+srcPitch));
       __m128 n2 = _mm_load_ps(reinterpret_cast<const float*>(pSrc + x+srcPitch*2));
 
-      __m128 pdiff = _mm_subs_ps(p1, p2);
+      __m128 pdiff = _mm_subs_ps(p1, p2);  // FIXME: real diff, should clamp to zero
       __m128 ndiff = _mm_subs_ps(n1, n2);
 
-      __m128 pt = _mm_adds_ps(pdiff, p1);
+      __m128 pt = _mm_adds_ps(pdiff, p1); // FIXME: chroma aware adds
       __m128 nt = _mm_adds_ps(ndiff, n1);
 
       // no max_pixel_value clamp for float
@@ -244,10 +244,10 @@ static void vcleaner_relaxed_median_sse_32(Byte* pDst8, const Byte *pSrc8, int d
       upper = _mm_max_ps(upper, p1);
       upper = _mm_max_ps(upper, n1);
 
-      pdiff = _mm_subs_ps(p2, p1);
+      pdiff = _mm_subs_ps(p2, p1);  // FIXME: real diff, should clamp to zero
       ndiff = _mm_subs_ps(n2, n1);
 
-      pt = _mm_subs_ps(p1, pdiff);
+      pt = _mm_subs_ps(p1, pdiff); // FIXME: chroma aware subs
       nt = _mm_subs_ps(n1, ndiff);
 
       __m128 minpn1 = _mm_min_ps(p1, n1);

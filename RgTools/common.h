@@ -158,7 +158,11 @@ static RG_FORCEINLINE __m128 abs_diff_32(__m128 a, __m128 b) {
 }
 
 // PF until I find out better
-// RemoveGraintT has artifacts w/o proper clamping
+// Todo: Separate use cases for getting just a difference (diff = pixel - pixel) which saturates to 0 
+// or chroma aware subtract (pixel = pixel - diff) which saturates to 0.0 (luma) or -0.5 (chroma)
+// latter clamp is subject to consideration
+// Check for modes: 6 7 8 9 15 16 23 24
+
 static RG_FORCEINLINE __m128 _mm_subs_ps(__m128 a, __m128 b) {
 #if 0
 const __m128 zero = _mm_setzero_ps();

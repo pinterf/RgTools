@@ -850,7 +850,7 @@ RG_FORCEINLINE __m128i rg_mode6_sse_32(const Byte* pSrc, int srcPitch) {
   auto mal4 = _mm_max_ps(a4, a5);
   auto mil4 = _mm_min_ps(a4, a5);
 
-  auto d1 = _mm_subs_ps(mal1, mil1);
+  auto d1 = _mm_subs_ps(mal1, mil1); // FIXME: use real diff but saturates to zero
   auto d2 = _mm_subs_ps(mal2, mil2);
   auto d3 = _mm_subs_ps(mal3, mil3);
   auto d4 = _mm_subs_ps(mal4, mil4);
@@ -865,7 +865,7 @@ RG_FORCEINLINE __m128i rg_mode6_sse_32(const Byte* pSrc, int srcPitch) {
   auto absdiff3 = abs_diff_32(c, clipped3);
   auto absdiff4 = abs_diff_32(c, clipped4);
 
-  auto c1 = _mm_adds_ps(_mm_adds_ps(absdiff1, absdiff1), d1);
+  auto c1 = _mm_adds_ps(_mm_adds_ps(absdiff1, absdiff1), d1); // FIXME: only comparison, saturated add not needed, plus: absdiff is simply doubled
   auto c2 = _mm_adds_ps(_mm_adds_ps(absdiff2, absdiff2), d2);
   auto c3 = _mm_adds_ps(_mm_adds_ps(absdiff3, absdiff3), d3);
   auto c4 = _mm_adds_ps(_mm_adds_ps(absdiff4, absdiff4), d4);
@@ -876,10 +876,10 @@ RG_FORCEINLINE __m128i rg_mode6_sse_32(const Byte* pSrc, int srcPitch) {
   mindiff = _mm_min_ps(mindiff, c3);
   mindiff = _mm_min_ps(mindiff, c4);
 
-  auto result = select_on_equal_32(mindiff, c1, c, clipped1);
-  result = select_on_equal_32(mindiff, c3, result, clipped3);
-  result = select_on_equal_32(mindiff, c2, result, clipped2);
-  return _mm_castps_si128(select_on_equal_32(mindiff, c4, result, clipped4));
+  auto result = select_on_equal_32(mindiff, c1, c, clipped1); // clipped1 when min(c1,c2,c3,c4) == c1
+  result = select_on_equal_32(mindiff, c3, result, clipped3); // clipped3 when min(c1,c2,c3,c4) == c3
+  result = select_on_equal_32(mindiff, c2, result, clipped2); // clipped2 when min(c1,c2,c3,c4) == c2
+  return _mm_castps_si128(select_on_equal_32(mindiff, c4, result, clipped4)); // clipped4 when min(c1,c2,c3,c4) == c4
 }
 
 
@@ -1033,7 +1033,7 @@ RG_FORCEINLINE __m128i rg_mode7_sse_32(const Byte* pSrc, int srcPitch) {
   auto mal4 = _mm_max_ps(a4, a5);
   auto mil4 = _mm_min_ps(a4, a5);
 
-  auto d1 = _mm_subs_ps(mal1, mil1);
+  auto d1 = _mm_subs_ps(mal1, mil1); // FIXME: use real diff but saturates to zero
   auto d2 = _mm_subs_ps(mal2, mil2);
   auto d3 = _mm_subs_ps(mal3, mil3);
   auto d4 = _mm_subs_ps(mal4, mil4);
@@ -1042,8 +1042,8 @@ RG_FORCEINLINE __m128i rg_mode7_sse_32(const Byte* pSrc, int srcPitch) {
   auto clipped2 = simd_clip_32(c, mil2, mal2);
   auto clipped3 = simd_clip_32(c, mil3, mal3);
   auto clipped4 = simd_clip_32(c, mil4, mal4);
-  //todo: what happens when this overflows?
-  auto c1 = _mm_adds_ps(abs_diff_32(c, clipped1), d1);
+  //todo: what happens when this overflows? Nothing.
+  auto c1 = _mm_adds_ps(abs_diff_32(c, clipped1), d1); // FIXME: only comparison, saturated add not needed
   auto c2 = _mm_adds_ps(abs_diff_32(c, clipped2), d2);
   auto c3 = _mm_adds_ps(abs_diff_32(c, clipped3), d3);
   auto c4 = _mm_adds_ps(abs_diff_32(c, clipped4), d4);
@@ -1052,10 +1052,10 @@ RG_FORCEINLINE __m128i rg_mode7_sse_32(const Byte* pSrc, int srcPitch) {
   mindiff = _mm_min_ps(mindiff, c3);
   mindiff = _mm_min_ps(mindiff, c4);
 
-  auto result = select_on_equal_32(mindiff, c1, c, clipped1);
-  result = select_on_equal_32(mindiff, c3, result, clipped3);
-  result = select_on_equal_32(mindiff, c2, result, clipped2);
-  return _mm_castps_si128(select_on_equal_32(mindiff, c4, result, clipped4));
+  auto result = select_on_equal_32(mindiff, c1, c, clipped1); // clipped1 when min(c1,c2,c3,c4) == c1
+  result = select_on_equal_32(mindiff, c3, result, clipped3); // clipped3 when min(c1,c2,c3,c4) == c3
+  result = select_on_equal_32(mindiff, c2, result, clipped2); // clipped2 when min(c1,c2,c3,c4) == c2
+  return _mm_castps_si128(select_on_equal_32(mindiff, c4, result, clipped4)); // clipped4 when min(c1,c2,c3,c4) == c4
 }
 
 //-------------------
@@ -1216,7 +1216,7 @@ RG_FORCEINLINE __m128i rg_mode8_sse_32(const Byte* pSrc, int srcPitch) {
   auto mal4 = _mm_max_ps(a4, a5);
   auto mil4 = _mm_min_ps(a4, a5);
 
-  auto d1 = _mm_subs_ps(mal1, mil1);
+  auto d1 = _mm_subs_ps(mal1, mil1); // FIXME: use real diff but saturates to zero
   auto d2 = _mm_subs_ps(mal2, mil2);
   auto d3 = _mm_subs_ps(mal3, mil3);
   auto d4 = _mm_subs_ps(mal4, mil4);
@@ -1363,7 +1363,7 @@ RG_FORCEINLINE __m128i rg_mode9_sse_32(const Byte* pSrc, int srcPitch) {
   auto mal4 = _mm_max_ps(a4, a5);
   auto mil4 = _mm_min_ps(a4, a5);
 
-  auto d1 = _mm_subs_ps(mal1, mil1);
+  auto d1 = _mm_subs_ps(mal1, mil1); // FIXME: use real diff but saturates to zero
   auto d2 = _mm_subs_ps(mal2, mil2);
   auto d3 = _mm_subs_ps(mal3, mil3);
   auto d4 = _mm_subs_ps(mal4, mil4);
@@ -1866,7 +1866,7 @@ RG_FORCEINLINE __m128i rg_mode15_and16_sse_32(const Byte* pSrc, int srcPitch) {
   auto max36 = _mm_max_ps(a3, a6);
   auto min36 = _mm_min_ps(a3, a6);
 
-  auto d1 = _mm_subs_ps(max18, min18);
+  auto d1 = _mm_subs_ps(max18, min18); // FIXME: real diff, should clamp to zero
   auto d2 = _mm_subs_ps(max27, min27);
   auto d3 = _mm_subs_ps(max36, min36);
 
@@ -2813,12 +2813,12 @@ RG_FORCEINLINE __m128i rg_mode23_sse_32(const Byte* pSrc, int srcPitch) {
   auto mal4 = _mm_max_ps(a4, a5);
   auto mil4 = _mm_min_ps(a4, a5);
 
-  auto linediff1 = _mm_subs_ps(mal1, mil1);
+  auto linediff1 = _mm_subs_ps(mal1, mil1); // FIXME: real diff, should clamp to zero, check other places
   auto linediff2 = _mm_subs_ps(mal2, mil2);
   auto linediff3 = _mm_subs_ps(mal3, mil3);
   auto linediff4 = _mm_subs_ps(mal4, mil4);
 
-  auto u1 = _mm_min_ps(_mm_subs_ps(c, mal1), linediff1);
+  auto u1 = _mm_min_ps(_mm_subs_ps(c, mal1), linediff1); // FIXME: real diff, should clamp to zero, check other places 
   auto u2 = _mm_min_ps(_mm_subs_ps(c, mal2), linediff2);
   auto u3 = _mm_min_ps(_mm_subs_ps(c, mal3), linediff3);
   auto u4 = _mm_min_ps(_mm_subs_ps(c, mal4), linediff4);
@@ -2827,7 +2827,7 @@ RG_FORCEINLINE __m128i rg_mode23_sse_32(const Byte* pSrc, int srcPitch) {
   u = _mm_max_ps(u, u3);
   u = _mm_max_ps(u, u4);
 
-  auto d1 = _mm_min_ps(_mm_subs_ps(mil1, c), linediff1);
+  auto d1 = _mm_min_ps(_mm_subs_ps(mil1, c), linediff1); // FIXME: real diff, should clamp to zero, check other places
   auto d2 = _mm_min_ps(_mm_subs_ps(mil2, c), linediff2);
   auto d3 = _mm_min_ps(_mm_subs_ps(mil3, c), linediff3);
   auto d4 = _mm_min_ps(_mm_subs_ps(mil4, c), linediff4);
@@ -2836,7 +2836,7 @@ RG_FORCEINLINE __m128i rg_mode23_sse_32(const Byte* pSrc, int srcPitch) {
   d = _mm_max_ps(d, d3);
   d = _mm_max_ps(d, d4);
 
-  return _mm_castps_si128(_mm_adds_ps(_mm_subs_ps(c, u), d));
+  return _mm_castps_si128(_mm_adds_ps(_mm_subs_ps(c, u), d)); // FIXME: should be chroma aware adds/subs
 }
 
 
@@ -3002,7 +3002,7 @@ RG_FORCEINLINE __m128i rg_mode24_sse_32(const Byte* pSrc, int srcPitch) {
 
   auto mal  = _mm_max_ps(a1, a8);
   auto mil  = _mm_min_ps(a1, a8);
-  auto diff = _mm_subs_ps(mal, mil);
+  auto diff = _mm_subs_ps(mal, mil);  // FIXME: use real diff but saturates to zero
   auto temp = _mm_subs_ps(c, mal);
   auto u1   = _mm_min_ps(temp, _mm_subs_ps(diff, temp));
   temp      = _mm_subs_ps(mil, c);
@@ -3041,7 +3041,7 @@ RG_FORCEINLINE __m128i rg_mode24_sse_32(const Byte* pSrc, int srcPitch) {
   d = _mm_max_ps(d, d4);
   u = _mm_max_ps(u, u4);
 
-  return _mm_castps_si128(_mm_adds_ps(_mm_subs_ps(c, u), d));
+  return _mm_castps_si128(_mm_adds_ps(_mm_subs_ps(c, u), d)); // FIXME: use chroma aware sat add sat sub
 }
 
 #endif

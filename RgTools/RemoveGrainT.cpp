@@ -36,6 +36,78 @@ typedef void (PlaneProcessor_st)(BYTE* dp8, const BYTE* previous8, const BYTE* s
 
 typedef __m128i (smooth_temporal_repair_processor_simd)(BYTE* dp, const BYTE* previous, const intptr_t pfpitch, const BYTE* sp, const intptr_t ofpitch, const BYTE* next, const intptr_t nfpitch);
 typedef int (smooth_temporal_repair_processor_c)(BYTE* dp, const BYTE* previous, const intptr_t pfpitch, const BYTE* sp, const intptr_t ofpitch, const BYTE* next, const intptr_t nfpitch);
+typedef float (smooth_temporal_repair_processor_32_c)(BYTE* dp, const BYTE* previous, const intptr_t pfpitch, const BYTE* sp, const intptr_t ofpitch, const BYTE* next, const intptr_t nfpitch);
+
+/*************************************
+
+    Helpers
+
+*************************************/
+
+RG_FORCEINLINE int subs_c(int x, int y) {
+  return std::max(0, x - y);
+}
+
+RG_FORCEINLINE int subs_16_c(int x, int y) {
+  return std::max(0, x - y);
+}
+
+template<bool chroma>
+RG_FORCEINLINE float subs_32_c(float x, float y) {
+  constexpr float pixel_min = chroma ? -0.5f : 0.0f;
+  return std::max(pixel_min, x - y);
+}
+
+RG_FORCEINLINE float subs_32_c_for_diff(float x, float y) {
+  constexpr float pixel_min = 0.0f;
+  return std::max(pixel_min, x - y);
+}
+
+RG_FORCEINLINE int adds_c(int x, int y) {
+  constexpr int pixel_max = 255;
+  return std::min(pixel_max, x + y);
+}
+
+template<int bits_per_pixel>
+RG_FORCEINLINE int adds_16_c(int x, int y) {
+  constexpr int pixel_max = (1 << bits_per_pixel) - 1;
+  return std::min(pixel_max, x + y);
+}
+
+template<bool chroma>
+RG_FORCEINLINE float adds_32_c(float x, float y) {
+  constexpr float pixel_max = chroma ? 0.5f : 1.0f;
+  return std::min(pixel_max, x + y);
+}
+
+RG_FORCEINLINE float adds_32_c_for_diff(float x, float y) {
+  constexpr float pixel_max = 1.0f;
+  return std::min(pixel_max, x + y);
+}
+
+// FIXME: This function has a non-chroma-templated version in common.h used by other filters
+template<bool chroma>
+static RG_FORCEINLINE __m128 _mm_subs_ps(__m128 a, __m128 b) {
+  const __m128 pixel_min = chroma ? _mm_set1_ps(-0.5f) : _mm_set1_ps(0.0f);
+  return _mm_max_ps(_mm_sub_ps(a, b), pixel_min);
+}
+
+// for use case: diff = pixel1 - pixel2, saturates to zero
+static RG_FORCEINLINE __m128 _mm_subs_ps_for_diff(__m128 a, __m128 b) {
+  const __m128 pixel_min = _mm_set1_ps(0.0f);
+  return _mm_max_ps(_mm_sub_ps(a, b), pixel_min);
+}
+
+template<bool chroma>
+static RG_FORCEINLINE __m128 _mm_adds_ps(__m128 a, __m128 b) {
+  const __m128 pixel_max = chroma ? _mm_set1_ps(0.5f) : _mm_set1_ps(1.0f);
+  return _mm_min_ps(_mm_add_ps(a, b), pixel_max);
+}
+
+static RG_FORCEINLINE __m128 _mm_adds_ps_for_diff(__m128 a, __m128 b) {
+  const __m128 pixel_max = _mm_set1_ps(1.0f);
+  return _mm_min_ps(_mm_add_ps(a, b), pixel_max);
+}
 
 /*************************************
 
@@ -232,11 +304,16 @@ RG_FORCEINLINE void BRepairPixel_mode4_sse41_32(uint8_t* dest, const uint8_t* sr
   auto max_np = _mm_max_ps(src_next, src_prev);
   auto min_np = _mm_min_ps(src_next, src_prev);
 
-  auto diff_src2_minnp = _mm_subs_ps<chroma>(src_2, min_np);
-  reg5 = _mm_adds_ps<chroma>(_mm_adds_ps<chroma>(diff_src2_minnp, diff_src2_minnp), min_np); // diff_src2_minnp * 2 - min_np
+  auto diff_src2_minnp = _mm_subs_ps_for_diff(src_2, min_np); // not really subsat, ordinary difference, clamped to zero
+  reg5 = _mm_adds_ps<chroma>(
+    _mm_adds_ps_for_diff(diff_src2_minnp, diff_src2_minnp), // 2x
+    min_np
+    ); // diff_src2_minnp * 2 - min_np
 
-  auto diff_maxnp_src2 = _mm_subs_ps<chroma>(max_np, src_2);
-  reg3 = _mm_subs_ps<chroma>(max_np, _mm_adds_ps<chroma>(diff_maxnp_src2, diff_maxnp_src2)); // max_np - 2 * diff_maxnp_src2
+  auto diff_maxnp_src2 = _mm_subs_ps_for_diff(max_np, src_2); // not really subsat, ordinary difference, clamped to zero
+  reg3 = _mm_subs_ps<chroma>(max_np, 
+    _mm_adds_ps_for_diff(diff_maxnp_src2, diff_maxnp_src2)  // saturated 2x
+    ); // max_np - 2 * diff_maxnp_src2
 
   reg5 = _mm_min_ps(reg5, max_np);
   reg3 = _mm_max_ps(reg3, min_np);
@@ -393,70 +470,6 @@ void temporal_repair_mode0and4_32_c(BYTE* dp8, int dpitch, const BYTE* sp1_8, in
   }
 }
 
-RG_FORCEINLINE int subs_c(int x, int y) {
-  return std::max(0, x - y);
-}
-
-RG_FORCEINLINE int subs_16_c(int x, int y) {
-  return std::max(0, x - y);
-}
-
-template<bool chroma>
-RG_FORCEINLINE float subs_32_c(float x, float y) {
-#if 1
-  constexpr float pixel_min = chroma ? -0.5f : 0.0f;
-  return std::max(pixel_min, x - y);
-#else
-  // no clamp, heavy artifacts
-  return x - y; // float: no clamp
-#endif
-}
-
-RG_FORCEINLINE int adds_c(int x, int y) {
-  constexpr int pixel_max = 255;
-  return std::min(pixel_max, x + y);
-}
-
- 
-template<int bits_per_pixel>
-RG_FORCEINLINE int adds_16_c(int x, int y) {
-  constexpr int pixel_max = (1 << bits_per_pixel) - 1;
-  return std::min(pixel_max, x + y);
-}
-
-template<bool chroma>
-RG_FORCEINLINE float adds_32_c(float x, float y) {
-#if 1
-  constexpr float pixel_max = chroma ? 0.5f : 1.0f;
-  return std::min(pixel_max, x + y);
-#else
-  // no clamp, heavy artifacts
-  return x + y; // float: no clamp
-#endif
-}
-
-template<bool chroma>
-static RG_FORCEINLINE __m128 _mm_subs_ps(__m128 a, __m128 b) {
-#if 1
-  const __m128 pixel_min = chroma ? _mm_set1_ps(-0.5f) : _mm_set1_ps(0.0f);
-  return _mm_max_ps(_mm_sub_ps(a, b), pixel_min);
-#else
-  // no clamp, heavy artifacts
-  return _mm_sub_ps(a, b);
-#endif
-}
-
-template<bool chroma>
-static RG_FORCEINLINE __m128 _mm_adds_ps(__m128 a, __m128 b) {
-#if 1
-  const __m128 pixel_max = chroma ? _mm_set1_ps(0.5f) : _mm_set1_ps(1.0f);
-  return _mm_min_ps(_mm_add_ps(a, b), pixel_max);
-#else
-  // no clamp, heavy artifacts
-  return _mm_add_ps(a, b);
-#endif
-}
-
 RG_FORCEINLINE int BRepairPixel_mode4_c(int src_1, int src_2, int src_prev, int src_next)
 {
   auto max_np = std::max(src_next, src_prev);
@@ -504,11 +517,17 @@ RG_FORCEINLINE float BRepairPixel_mode4_32_c(float src_1, float src_2, float src
   auto max_np = std::max(src_next, src_prev);
   auto min_np = std::min(src_next, src_prev);
 
-  auto diff_src2_minnp = subs_32_c<chroma>(src_2, min_np);
-  auto reg5 = adds_32_c<chroma>(adds_32_c<chroma>(diff_src2_minnp, diff_src2_minnp), min_np); // diff_src2_minnp * 2 - min_np
+  auto diff_src2_minnp = subs_32_c_for_diff(src_2, min_np); // not really subsat, ordinary difference, clamped to zero
+  auto reg5 = adds_32_c<chroma>(
+    adds_32_c_for_diff(diff_src2_minnp, diff_src2_minnp),  // luma-like addsat, simple mul 2
+    min_np
+    ); // diff_src2_minnp * 2 - min_np
 
-  auto diff_maxnp_src2 = subs_32_c<chroma>(max_np, src_2);
-  auto reg3 = subs_32_c<chroma>(max_np, adds_32_c<chroma>(diff_maxnp_src2, diff_maxnp_src2)); // max_np - 2 * diff_maxnp_src2
+  auto diff_maxnp_src2 = subs_32_c_for_diff(max_np, src_2); // not really subsat, ordinary difference, clamped to zero
+  auto reg3 = subs_32_c<chroma>(
+    max_np, 
+    adds_32_c_for_diff(diff_maxnp_src2, diff_maxnp_src2) // luma-like addsat, simple mul 2
+    ); // max_np - 2 * diff_maxnp_src2
 
   reg5 = std::min(reg5, max_np);
   reg3 = std::max(reg3, min_np);
@@ -543,6 +562,7 @@ static PlaneProcessor_t* t_c_functions_32[] = {
     temporal_repair_mode0and4_32_c<float, BRepairPixel_mode4_32_c<false>> // false: not chroma
 };
 
+// 32 bit float luma
 static PlaneProcessor_t* t_c_functions_chroma_32[] = {
     temporal_repair_mode0and4_32_c<float, RepairPixel_mode0_32_c>,
     nullptr,
@@ -551,6 +571,7 @@ static PlaneProcessor_t* t_c_functions_chroma_32[] = {
     temporal_repair_mode0and4_32_c<float, BRepairPixel_mode4_32_c<true>> // false: not chroma
 };
 
+// 32 bit float chroma
 static PlaneProcessor_t* t_sse2_functions[] = {
     temporal_repair_mode0and4_sse2<uint8_t, RepairPixel_mode0_sse2, RepairPixel_mode0_sse2>,
     nullptr,
@@ -648,6 +669,7 @@ class	TemporalRepair : public GenericVideoFilter
 
       PlaneProcessor_t* actual_processor;
 
+      // minimum byte size for simd
       if (sf->GetRowSize(plane) < 16) {
         if (chroma)
           actual_processor = processor_t_repair_chroma_c;
@@ -736,8 +758,8 @@ public:
           processor_t_repair = t_sse41_functions_16[mode];
         else
           processor_t_repair = processor_t_repair_c;
-        break;
         processor_t_repair_chroma = processor_t_repair;
+        break;
       case 32:
         if (sse41) {
           processor_t_repair = t_sse41_functions_32[mode];
@@ -760,7 +782,7 @@ public:
 
 *****************************************/
 
-RG_FORCEINLINE void get_lu(__m128i &lower, __m128i &upper, const uint8_t *previous, const uint8_t *current, const uint8_t *next)
+RG_FORCEINLINE void get_lu_8_sse2(__m128i &lower, __m128i &upper, const uint8_t *previous, const uint8_t *current, const uint8_t *next)
 {
   auto src_next = _mm_loadu_si128(reinterpret_cast<const __m128i *>(next));
   auto src_prev = _mm_loadu_si128(reinterpret_cast<const __m128i *>(previous));
@@ -771,6 +793,32 @@ RG_FORCEINLINE void get_lu(__m128i &lower, __m128i &upper, const uint8_t *previo
   lower = _mm_subs_epu8(src_curr, min_np);
 }
 
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE void get_lu_16_sse41(__m128i& lower, __m128i& upper, const uint8_t* previous, const uint8_t* current, const uint8_t* next)
+{
+  auto src_next = _mm_loadu_si128(reinterpret_cast<const __m128i*>(next));
+  auto src_prev = _mm_loadu_si128(reinterpret_cast<const __m128i*>(previous));
+  auto src_curr = _mm_loadu_si128(reinterpret_cast<const __m128i*>(current));
+  auto max_np = _mm_max_epu16(src_next, src_prev);
+  auto min_np = _mm_min_epu16(src_next, src_prev);
+  upper = _mm_subs_epu16(max_np, src_curr);
+  lower = _mm_subs_epu16(src_curr, min_np);
+}
+
+RG_FORCEINLINE void get_lu_32_sse2(__m128& lower, __m128& upper, const uint8_t* previous, const uint8_t* current, const uint8_t* next)
+{
+  auto src_next = _mm_loadu_ps(reinterpret_cast<const float*>(next));
+  auto src_prev = _mm_loadu_ps(reinterpret_cast<const float*>(previous));
+  auto src_curr = _mm_loadu_ps(reinterpret_cast<const float*>(current));
+  auto max_np = _mm_max_ps(src_next, src_prev);
+  auto min_np = _mm_min_ps(src_next, src_prev);
+  upper = _mm_subs_ps_for_diff(max_np, src_curr); // not really subsat, ordinary difference, clamped to zero
+  lower = _mm_subs_ps_for_diff(src_curr, min_np);
+}
+
+
 RG_FORCEINLINE void get_lu_c(int& lower, int& upper, int src_prev, int src_curr, int src_next)
 {
   auto max_np = std::max(src_next, src_prev);
@@ -779,7 +827,24 @@ RG_FORCEINLINE void get_lu_c(int& lower, int& upper, int src_prev, int src_curr,
   lower = subs_c(src_curr, min_np);
 }
 
-RG_FORCEINLINE __m128i SmoothTRepair1(uint8_t *dest, __m128i &lower, __m128i &upper, const uint8_t *previous, const uint8_t *current, const uint8_t *next)
+RG_FORCEINLINE void get_lu_16_c(int& lower, int& upper, int src_prev, int src_curr, int src_next)
+{
+  auto max_np = std::max(src_next, src_prev);
+  auto min_np = std::min(src_next, src_prev);
+  upper = subs_16_c(max_np, src_curr);
+  lower = subs_16_c(src_curr, min_np);
+}
+
+
+RG_FORCEINLINE void get_lu_32_c(float& lower, float& upper, float src_prev, float src_curr, float src_next)
+{
+  auto max_np = std::max(src_next, src_prev);
+  auto min_np = std::min(src_next, src_prev);
+  upper = subs_32_c_for_diff(max_np, src_curr); // not really subsat, ordinary difference, clamped to zero
+  lower = subs_32_c_for_diff(src_curr, min_np);
+}
+
+RG_FORCEINLINE __m128i SmoothTRepair1_8_sse2(uint8_t *dest, __m128i &lower, __m128i &upper, const uint8_t *previous, const uint8_t *current, const uint8_t *next)
 {
   auto src_curr = _mm_loadu_si128(reinterpret_cast<const __m128i*>(current));
   auto src_prev = _mm_loadu_si128(reinterpret_cast<const __m128i*>(previous));
@@ -797,6 +862,47 @@ RG_FORCEINLINE __m128i SmoothTRepair1(uint8_t *dest, __m128i &lower, __m128i &up
   return result;
 }
 
+template<int bits_per_pixel>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE __m128i SmoothTRepair1_16_sse41(uint8_t* dest, __m128i& lower, __m128i& upper, const uint8_t* previous, const uint8_t* current, const uint8_t* next)
+{
+  auto src_curr = _mm_loadu_si128(reinterpret_cast<const __m128i*>(current));
+  auto src_prev = _mm_loadu_si128(reinterpret_cast<const __m128i*>(previous));
+  auto src_next = _mm_loadu_si128(reinterpret_cast<const __m128i*>(next));
+  auto src_dest = _mm_loadu_si128(reinterpret_cast<const __m128i*>(dest));
+
+  auto tmp_u = _mm_adds_epu16(upper, src_curr); // FIXME: use bits_per_pixel for adds
+  auto tmp_l = _mm_subs_epu16(src_curr, lower);
+
+  auto tmp_max = _mm_max_epu16(_mm_max_epu16(tmp_u, src_prev), src_next);
+  auto tmp_min = _mm_min_epu16(_mm_min_epu16(tmp_l, src_prev), src_next);
+
+  auto result = simd_clip_16(src_dest, tmp_min, tmp_max);
+
+  return result;
+}
+
+template<bool chroma>
+RG_FORCEINLINE __m128 SmoothTRepair1_32_sse2(uint8_t* dest, __m128& lower, __m128& upper, const uint8_t* previous, const uint8_t* current, const uint8_t* next)
+{
+  auto src_curr = _mm_loadu_ps(reinterpret_cast<const float*>(current));
+  auto src_prev = _mm_loadu_ps(reinterpret_cast<const float*>(previous));
+  auto src_next = _mm_loadu_ps(reinterpret_cast<const float*>(next));
+  auto src_dest = _mm_loadu_ps(reinterpret_cast<const float*>(dest));
+
+  auto tmp_u = _mm_adds_ps<chroma>(upper, src_curr); // really addsat
+  auto tmp_l = _mm_subs_ps<chroma>(src_curr, lower); // really subsat
+
+  auto tmp_max = _mm_max_ps(_mm_max_ps(tmp_u, src_prev), src_next);
+  auto tmp_min = _mm_min_ps(_mm_min_ps(tmp_l, src_prev), src_next);
+
+  auto result = simd_clip_32(src_dest, tmp_min, tmp_max);
+
+  return result;
+}
+
 RG_FORCEINLINE int SmoothTRepair1_c(int dest, int lower, int upper, const int src_prev, const int src_curr, const int src_next)
 {
   auto src_dest = dest;
@@ -807,12 +913,44 @@ RG_FORCEINLINE int SmoothTRepair1_c(int dest, int lower, int upper, const int sr
   auto tmp_max = std::max(std::max(tmp_u, src_prev), src_next);
   auto tmp_min = std::min(std::min(tmp_l, src_prev), src_next);
 
-  auto result = clip((int)src_dest, tmp_min, tmp_max);
+  auto result = clip(src_dest, tmp_min, tmp_max);
 
   return result;
 }
 
-RG_FORCEINLINE __m128i SmoothTRepair2(uint8_t *dest, __m128i lower, __m128i upper, const uint8_t *previous, const uint8_t *current, const uint8_t *next)
+template<int bits_per_pixel>
+RG_FORCEINLINE int SmoothTRepair1_16_c(int dest, int lower, int upper, const int src_prev, const int src_curr, const int src_next)
+{
+  auto src_dest = dest;
+
+  auto tmp_u = adds_16_c<bits_per_pixel>(upper, src_curr);
+  auto tmp_l = subs_16_c(src_curr, lower);
+
+  auto tmp_max = std::max(std::max(tmp_u, src_prev), src_next);
+  auto tmp_min = std::min(std::min(tmp_l, src_prev), src_next);
+
+  auto result = clip_16(src_dest, tmp_min, tmp_max);
+
+  return result;
+}
+
+template<bool chroma>
+RG_FORCEINLINE float SmoothTRepair1_32_c(float dest, float lower, float upper, const float src_prev, const float src_curr, const float src_next)
+{
+  auto src_dest = dest;
+
+  auto tmp_u = adds_32_c<chroma>(upper, src_curr); // really addsat
+  auto tmp_l = subs_32_c<chroma>(src_curr, lower); // really subsat
+
+  auto tmp_max = std::max(std::max(tmp_u, src_prev), src_next);
+  auto tmp_min = std::min(std::min(tmp_l, src_prev), src_next);
+
+  auto result = clip_32(src_dest, tmp_min, tmp_max);
+
+  return result;
+}
+
+RG_FORCEINLINE __m128i SmoothTRepair2_8_sse2(uint8_t *dest, __m128i lower, __m128i upper, const uint8_t *previous, const uint8_t *current, const uint8_t *next)
 {
   __m128i lower1 = _mm_undefined_si128();
   __m128i upper1 = _mm_undefined_si128();
@@ -820,7 +958,7 @@ RG_FORCEINLINE __m128i SmoothTRepair2(uint8_t *dest, __m128i lower, __m128i uppe
   auto src_curr = _mm_loadu_si128(reinterpret_cast<const __m128i*>(current));
   auto src_dest = _mm_loadu_si128(reinterpret_cast<const __m128i*>(dest));
 
-  get_lu(lower1, upper1, previous, current, next);
+  get_lu_8_sse2(lower1, upper1, previous, current, next);
   auto uppermax = _mm_max_epu8(upper, upper1);
   auto lowermax = _mm_max_epu8(lower, lower1);
   auto upperlowermax = _mm_max_epu8(uppermax, lowermax);
@@ -832,7 +970,52 @@ RG_FORCEINLINE __m128i SmoothTRepair2(uint8_t *dest, __m128i lower, __m128i uppe
   return result;
 }
 
-RG_FORCEINLINE int SmoothTRepair2_c(int dest, int lower, int upper, int src_prev, int src_curr, int src_next)
+template<int bits_per_pixel>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE __m128i SmoothTRepair2_16_sse41(uint8_t* dest, __m128i lower, __m128i upper, const uint8_t* previous, const uint8_t* current, const uint8_t* next)
+{
+  __m128i lower1 = _mm_undefined_si128();
+  __m128i upper1 = _mm_undefined_si128();
+
+  auto src_curr = _mm_loadu_si128(reinterpret_cast<const __m128i*>(current));
+  auto src_dest = _mm_loadu_si128(reinterpret_cast<const __m128i*>(dest));
+
+  get_lu_16_sse41(lower1, upper1, previous, current, next);
+  auto uppermax = _mm_max_epu16(upper, upper1);
+  auto lowermax = _mm_max_epu16(lower, lower1);
+  auto upperlowermax = _mm_max_epu16(uppermax, lowermax);
+
+  auto tmp_max = _mm_adds_epu16(src_curr, upperlowermax); // FIXME: use bits_per_pixel for adds
+  auto tmp_min = _mm_subs_epu16(src_curr, upperlowermax);
+
+  auto result = simd_clip_16(src_dest, tmp_min, tmp_max);
+  return result;
+}
+
+template<bool chroma>
+RG_FORCEINLINE __m128 SmoothTRepair2_32_sse2(uint8_t* dest, __m128 lower, __m128 upper, const uint8_t* previous, const uint8_t* current, const uint8_t* next)
+{
+  __m128 lower1 = _mm_undefined_ps();
+  __m128 upper1 = _mm_undefined_ps();
+
+  auto src_curr = _mm_loadu_ps(reinterpret_cast<const float*>(current));
+  auto src_dest = _mm_loadu_ps(reinterpret_cast<const float*>(dest));
+
+  get_lu_32_sse2(lower1, upper1, previous, current, next);
+  auto uppermax = _mm_max_ps(upper, upper1);
+  auto lowermax = _mm_max_ps(lower, lower1);
+  auto upperlowermax = _mm_max_ps(uppermax, lowermax);
+
+  auto tmp_max = _mm_adds_ps<chroma>(src_curr, upperlowermax);
+  auto tmp_min = _mm_subs_ps<chroma>(src_curr, upperlowermax);
+
+  auto result = simd_clip_32(src_dest, tmp_min, tmp_max);
+  return result;
+}
+
+RG_FORCEINLINE int SmoothTRepair2_8_c(int dest, int lower, int upper, int src_prev, int src_curr, int src_next)
 {
   int lower1;
   int upper1;
@@ -851,7 +1034,47 @@ RG_FORCEINLINE int SmoothTRepair2_c(int dest, int lower, int upper, int src_prev
   return result;
 }
 
-RG_FORCEINLINE void get2diff(__m128i &pdiff, __m128i &ndiff, const uint8_t *previous, const uint8_t *current, const uint8_t *next)
+template<int bits_per_pixel>
+RG_FORCEINLINE int SmoothTRepair2_16_c(int dest, int lower, int upper, int src_prev, int src_curr, int src_next)
+{
+  int lower1;
+  int upper1;
+
+  auto src_dest = dest;
+
+  get_lu_16_c(lower1, upper1, src_prev, src_curr, src_next);
+  auto uppermax = std::max(upper, upper1);
+  auto lowermax = std::max(lower, lower1);
+  auto upperlowermax = std::max(uppermax, lowermax);
+
+  auto tmp_max = adds_16_c<bits_per_pixel>(src_curr, upperlowermax);
+  auto tmp_min = subs_16_c(src_curr, upperlowermax);
+
+  auto result = clip_16(src_dest, tmp_min, tmp_max);
+  return result;
+}
+
+template<bool chroma>
+RG_FORCEINLINE float SmoothTRepair2_32_c(float dest, float lower, float upper, float src_prev, float src_curr, float src_next)
+{
+  float lower1;
+  float upper1;
+
+  auto src_dest = dest;
+
+  get_lu_32_c(lower1, upper1, src_prev, src_curr, src_next);
+  auto uppermax = std::max(upper, upper1);
+  auto lowermax = std::max(lower, lower1);
+  auto upperlowermax = std::max(uppermax, lowermax);
+
+  auto tmp_max = adds_32_c<chroma>(src_curr, upperlowermax);
+  auto tmp_min = subs_32_c<chroma>(src_curr, upperlowermax);
+
+  auto result = clip_32(src_dest, tmp_min, tmp_max);
+  return result;
+}
+
+RG_FORCEINLINE void get2diff_8_sse2(__m128i &pdiff, __m128i &ndiff, const uint8_t *previous, const uint8_t *current, const uint8_t *next)
 {
   auto src_curr = _mm_loadu_si128(reinterpret_cast<const __m128i *>(current));
   auto src_prev = _mm_loadu_si128(reinterpret_cast<const __m128i *>(previous));
@@ -861,20 +1084,52 @@ RG_FORCEINLINE void get2diff(__m128i &pdiff, __m128i &ndiff, const uint8_t *prev
   ndiff = abs_diff(src_curr, src_next); // abs(c-n)
 }
 
-RG_FORCEINLINE void get2diff_c(int& pdiff, int& ndiff, int src_prev, int src_curr, int src_next)
+RG_FORCEINLINE void get2diff_16_sse2(__m128i& pdiff, __m128i& ndiff, const uint8_t* previous, const uint8_t* current, const uint8_t* next)
+{
+  auto src_curr = _mm_loadu_si128(reinterpret_cast<const __m128i*>(current));
+  auto src_prev = _mm_loadu_si128(reinterpret_cast<const __m128i*>(previous));
+  auto src_next = _mm_loadu_si128(reinterpret_cast<const __m128i*>(next));
+
+  pdiff = abs_diff_16(src_curr, src_prev); // abs(c-p)
+  ndiff = abs_diff_16(src_curr, src_next); // abs(c-n)
+}
+
+RG_FORCEINLINE void get2diff_32_sse2(__m128& pdiff, __m128& ndiff, const uint8_t* previous, const uint8_t* current, const uint8_t* next)
+{
+  auto src_curr = _mm_loadu_ps(reinterpret_cast<const float*>(current));
+  auto src_prev = _mm_loadu_ps(reinterpret_cast<const float*>(previous));
+  auto src_next = _mm_loadu_ps(reinterpret_cast<const float*>(next));
+
+  pdiff = abs_diff_32(src_curr, src_prev); // abs(c-p)
+  ndiff = abs_diff_32(src_curr, src_next); // abs(c-n)
+}
+
+RG_FORCEINLINE void get2diff_8_c(int& pdiff, int& ndiff, int src_prev, int src_curr, int src_next)
 {
   pdiff = abs(src_curr - src_prev); 
   ndiff = abs(src_curr - src_next);
 }
 
-RG_FORCEINLINE __m128i SmoothTRepair3(uint8_t *dest, __m128i &pmax, __m128i &nmax, const uint8_t *previous, const uint8_t *current, const uint8_t *next)
+RG_FORCEINLINE void get2diff_16_c(int& pdiff, int& ndiff, int src_prev, int src_curr, int src_next)
+{
+  pdiff = abs(src_curr - src_prev);
+  ndiff = abs(src_curr - src_next);
+}
+
+RG_FORCEINLINE void get2diff_32_c(float& pdiff, float& ndiff, float src_prev, float src_curr, float src_next)
+{
+  pdiff = abs(src_curr - src_prev);
+  ndiff = abs(src_curr - src_next);
+}
+
+RG_FORCEINLINE __m128i SmoothTRepair3_8_sse2(uint8_t *dest, __m128i &pmax, __m128i &nmax, const uint8_t *previous, const uint8_t *current, const uint8_t *next)
 {
   __m128i pdiff = _mm_undefined_si128();
   __m128i ndiff = _mm_undefined_si128();
 
   auto src_curr = _mm_loadu_si128(reinterpret_cast<const __m128i*>(current));
 
-  get2diff(pdiff, ndiff, previous, current, next);
+  get2diff_8_sse2(pdiff, ndiff, previous, current, next);
   pmax = _mm_max_epu8(pmax, pdiff);
   nmax = _mm_max_epu8(nmax, ndiff);
 
@@ -886,12 +1141,55 @@ RG_FORCEINLINE __m128i SmoothTRepair3(uint8_t *dest, __m128i &pmax, __m128i &nma
   return result;
 }
 
+template<int bits_per_pixel>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE __m128i SmoothTRepair3_16_sse41(uint8_t* dest, __m128i& pmax, __m128i& nmax, const uint8_t* previous, const uint8_t* current, const uint8_t* next)
+{
+  __m128i pdiff = _mm_undefined_si128();
+  __m128i ndiff = _mm_undefined_si128();
+
+  auto src_curr = _mm_loadu_si128(reinterpret_cast<const __m128i*>(current));
+
+  get2diff_16_sse2(pdiff, ndiff, previous, current, next);
+  pmax = _mm_max_epu16(pmax, pdiff);
+  nmax = _mm_max_epu16(nmax, ndiff);
+
+  pmax = _mm_min_epu16(pmax, nmax);
+  auto src_dest = _mm_loadu_si128(reinterpret_cast<const __m128i*>(dest));
+  auto tmp_max = _mm_adds_epu16(src_curr, pmax); // FIXME: use bits_per_pixel for adds
+  auto tmp_min = _mm_subs_epu16(src_curr, pmax);
+  auto result = simd_clip_16(src_dest, tmp_min, tmp_max);
+  return result;
+}
+
+template<bool chroma>
+RG_FORCEINLINE __m128 SmoothTRepair3_32_sse2(uint8_t* dest, __m128& pmax, __m128& nmax, const uint8_t* previous, const uint8_t* current, const uint8_t* next)
+{
+  __m128 pdiff = _mm_undefined_ps();
+  __m128 ndiff = _mm_undefined_ps();
+
+  auto src_curr = _mm_loadu_ps(reinterpret_cast<const float*>(current));
+
+  get2diff_32_sse2(pdiff, ndiff, previous, current, next);
+  pmax = _mm_max_ps(pmax, pdiff);
+  nmax = _mm_max_ps(nmax, ndiff);
+
+  pmax = _mm_min_ps(pmax, nmax);
+  auto src_dest = _mm_loadu_ps(reinterpret_cast<const float*>(dest));
+  auto tmp_max = _mm_adds_ps<chroma>(src_curr, pmax);
+  auto tmp_min = _mm_subs_ps<chroma>(src_curr, pmax);
+  auto result = simd_clip_32(src_dest, tmp_min, tmp_max);
+  return result;
+}
+
 RG_FORCEINLINE int SmoothTRepair3_c(int dest, int pmax, int nmax, int src_prev, int src_curr, int src_next)
 {
   int pdiff;
   int ndiff;
 
-  get2diff_c(pdiff, ndiff, src_prev, src_curr, src_next);
+  get2diff_8_c(pdiff, ndiff, src_prev, src_curr, src_next);
   pmax = std::max(pmax, pdiff);
   nmax = std::max(nmax, ndiff);
 
@@ -899,11 +1197,47 @@ RG_FORCEINLINE int SmoothTRepair3_c(int dest, int pmax, int nmax, int src_prev, 
   auto src_dest = dest;
   auto tmp_max = adds_c(src_curr, pmax);
   auto tmp_min = subs_c(src_curr, pmax);
-  auto result = clip((int)src_dest, tmp_min, tmp_max);
+  auto result = clip(src_dest, tmp_min, tmp_max);
   return result;
 }
 
-RG_FORCEINLINE __m128i temporal_repair_processor_mode1_sse2(
+template<int bits_per_pixel>
+RG_FORCEINLINE int SmoothTRepair3_16_c(int dest, int pmax, int nmax, int src_prev, int src_curr, int src_next)
+{
+  int pdiff;
+  int ndiff;
+
+  get2diff_16_c(pdiff, ndiff, src_prev, src_curr, src_next);
+  pmax = std::max(pmax, pdiff);
+  nmax = std::max(nmax, ndiff);
+
+  pmax = std::min(pmax, nmax);
+  auto src_dest = dest;
+  auto tmp_max = adds_16_c<bits_per_pixel>(src_curr, pmax);
+  auto tmp_min = subs_16_c(src_curr, pmax);
+  auto result = clip_16(src_dest, tmp_min, tmp_max);
+  return result;
+}
+
+template<bool chroma>
+RG_FORCEINLINE float SmoothTRepair3_32_c(float dest, float pmax, float nmax, float src_prev, float src_curr, float src_next)
+{
+  float pdiff;
+  float ndiff;
+
+  get2diff_32_c(pdiff, ndiff, src_prev, src_curr, src_next);
+  pmax = std::max(pmax, pdiff);
+  nmax = std::max(nmax, ndiff);
+
+  pmax = std::min(pmax, nmax);
+  auto src_dest = dest;
+  auto tmp_max = adds_32_c<chroma>(src_curr, pmax);
+  auto tmp_min = subs_32_c<chroma>(src_curr, pmax);
+  auto result = clip_32(src_dest, tmp_min, tmp_max);
+  return result;
+}
+
+RG_FORCEINLINE __m128i temporal_repair_processor_mode1_8_sse2(
   BYTE* dp,
   const BYTE* previous, const intptr_t pfpitch,
   const BYTE* sp, const intptr_t ofpitch,
@@ -914,32 +1248,113 @@ RG_FORCEINLINE __m128i temporal_repair_processor_mode1_sse2(
   __m128i uppermax = _mm_undefined_si128();
   __m128i lower = _mm_undefined_si128();
   __m128i upper = _mm_undefined_si128();
-  get_lu(lowermax, uppermax, previous - 1 * pfpitch - 1, sp - 1 * ofpitch - 1, next - 1 * nfpitch - 1);
-  get_lu(lower, upper, previous - 1 * pfpitch + 0, sp - 1 * ofpitch + 0, next - 1 * nfpitch + 0);
+  get_lu_8_sse2(lowermax, uppermax, previous - 1 * pfpitch - 1, sp - 1 * ofpitch - 1, next - 1 * nfpitch - 1);
+  get_lu_8_sse2(lower, upper, previous - 1 * pfpitch + 0, sp - 1 * ofpitch + 0, next - 1 * nfpitch + 0);
   uppermax = _mm_max_epu8(uppermax, upper);
   lowermax = _mm_max_epu8(lowermax, lower);
-  get_lu(lower, upper, previous - 1 * pfpitch + 1, sp - 1 * ofpitch + 1, next - 1 * nfpitch + 1);
+  get_lu_8_sse2(lower, upper, previous - 1 * pfpitch + 1, sp - 1 * ofpitch + 1, next - 1 * nfpitch + 1);
   uppermax = _mm_max_epu8(uppermax, upper);
   lowermax = _mm_max_epu8(lowermax, lower);
-  get_lu(lower, upper, previous + 1 * pfpitch - 1, sp + 1 * ofpitch - 1, next + 1 * nfpitch - 1);
+  get_lu_8_sse2(lower, upper, previous + 1 * pfpitch - 1, sp + 1 * ofpitch - 1, next + 1 * nfpitch - 1);
   uppermax = _mm_max_epu8(uppermax, upper);
   lowermax = _mm_max_epu8(lowermax, lower);
-  get_lu(lower, upper, previous + 1 * pfpitch + 0, sp + 1 * ofpitch + 0, next + 1 * nfpitch + 0);
+  get_lu_8_sse2(lower, upper, previous + 1 * pfpitch + 0, sp + 1 * ofpitch + 0, next + 1 * nfpitch + 0);
   uppermax = _mm_max_epu8(uppermax, upper);
   lowermax = _mm_max_epu8(lowermax, lower);
-  get_lu(lower, upper, previous + 1 * pfpitch + 1, sp + 1 * ofpitch + 1, next + 1 * nfpitch + 1);
+  get_lu_8_sse2(lower, upper, previous + 1 * pfpitch + 1, sp + 1 * ofpitch + 1, next + 1 * nfpitch + 1);
   uppermax = _mm_max_epu8(uppermax, upper);
   lowermax = _mm_max_epu8(lowermax, lower);
-  get_lu(lower, upper, previous + 0 * pfpitch - 1, sp + 0 * ofpitch - 1, next + 0 * nfpitch - 1);
+  get_lu_8_sse2(lower, upper, previous + 0 * pfpitch - 1, sp + 0 * ofpitch - 1, next + 0 * nfpitch - 1);
   uppermax = _mm_max_epu8(uppermax, upper);
   lowermax = _mm_max_epu8(lowermax, lower);
-  get_lu(lower, upper, previous + 0 * pfpitch + 1, sp + 0 * ofpitch + 1, next + 0 * nfpitch + 1);
+  get_lu_8_sse2(lower, upper, previous + 0 * pfpitch + 1, sp + 0 * ofpitch + 1, next + 0 * nfpitch + 1);
   uppermax = _mm_max_epu8(uppermax, upper);
   lowermax = _mm_max_epu8(lowermax, lower);
-  return SmoothTRepair1(dp, lowermax, uppermax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0);
+  return SmoothTRepair1_8_sse2(dp, lowermax, uppermax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0);
 }
 
-RG_FORCEINLINE __m128i temporal_repair_processor_mode2_sse2(
+template<int bits_per_pixel>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE __m128i temporal_repair_processor_mode1_16_sse41(
+  BYTE* dp,
+  const BYTE* previous, const intptr_t pfpitch,
+  const BYTE* sp, const intptr_t ofpitch,
+  const BYTE* next, const intptr_t nfpitch
+)
+{
+  constexpr int pixelsize = sizeof(uint16_t);
+
+  __m128i lowermax = _mm_undefined_si128();
+  __m128i uppermax = _mm_undefined_si128();
+  __m128i lower = _mm_undefined_si128();
+  __m128i upper = _mm_undefined_si128();
+  get_lu_16_sse41(lowermax, uppermax, previous - 1 * pfpitch - pixelsize, sp - 1 * ofpitch - pixelsize, next - 1 * nfpitch - pixelsize);
+  get_lu_16_sse41(lower, upper, previous - 1 * pfpitch + 0, sp - 1 * ofpitch + 0, next - 1 * nfpitch + 0);
+  uppermax = _mm_max_epu16(uppermax, upper);
+  lowermax = _mm_max_epu16(lowermax, lower);
+  get_lu_16_sse41(lower, upper, previous - 1 * pfpitch + pixelsize, sp - 1 * ofpitch + pixelsize, next - 1 * nfpitch + pixelsize);
+  uppermax = _mm_max_epu16(uppermax, upper);
+  lowermax = _mm_max_epu16(lowermax, lower);
+  get_lu_16_sse41(lower, upper, previous + 1 * pfpitch - pixelsize, sp + 1 * ofpitch - pixelsize, next + 1 * nfpitch - pixelsize);
+  uppermax = _mm_max_epu16(uppermax, upper);
+  lowermax = _mm_max_epu16(lowermax, lower);
+  get_lu_16_sse41(lower, upper, previous + 1 * pfpitch + 0, sp + 1 * ofpitch + 0, next + 1 * nfpitch + 0);
+  uppermax = _mm_max_epu16(uppermax, upper);
+  lowermax = _mm_max_epu16(lowermax, lower);
+  get_lu_16_sse41(lower, upper, previous + 1 * pfpitch + pixelsize, sp + 1 * ofpitch + pixelsize, next + 1 * nfpitch + pixelsize);
+  uppermax = _mm_max_epu16(uppermax, upper);
+  lowermax = _mm_max_epu16(lowermax, lower);
+  get_lu_16_sse41(lower, upper, previous + 0 * pfpitch - pixelsize, sp + 0 * ofpitch - pixelsize, next + 0 * nfpitch - pixelsize);
+  uppermax = _mm_max_epu16(uppermax, upper);
+  lowermax = _mm_max_epu16(lowermax, lower);
+  get_lu_16_sse41(lower, upper, previous + 0 * pfpitch + pixelsize, sp + 0 * ofpitch + pixelsize, next + 0 * nfpitch + pixelsize);
+  uppermax = _mm_max_epu16(uppermax, upper);
+  lowermax = _mm_max_epu16(lowermax, lower);
+  return SmoothTRepair1_16_sse41<bits_per_pixel>(dp, lowermax, uppermax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0);
+}
+
+template<bool chroma>
+RG_FORCEINLINE __m128i temporal_repair_processor_mode1_32_sse2(
+  BYTE* dp,
+  const BYTE* previous, const intptr_t pfpitch,
+  const BYTE* sp, const intptr_t ofpitch,
+  const BYTE* next, const intptr_t nfpitch
+)
+{
+  constexpr int pixelsize = sizeof(float);
+
+  __m128 lowermax = _mm_undefined_ps();
+  __m128 uppermax = _mm_undefined_ps();
+  __m128 lower = _mm_undefined_ps();
+  __m128 upper = _mm_undefined_ps();
+  get_lu_32_sse2(lowermax, uppermax, previous - 1 * pfpitch - pixelsize, sp - 1 * ofpitch - pixelsize, next - 1 * nfpitch - pixelsize);
+  get_lu_32_sse2(lower, upper, previous - 1 * pfpitch + 0, sp - 1 * ofpitch + 0, next - 1 * nfpitch + 0);
+  uppermax = _mm_max_ps(uppermax, upper);
+  lowermax = _mm_max_ps(lowermax, lower);
+  get_lu_32_sse2(lower, upper, previous - 1 * pfpitch + pixelsize, sp - 1 * ofpitch + pixelsize, next - 1 * nfpitch + pixelsize);
+  uppermax = _mm_max_ps(uppermax, upper);
+  lowermax = _mm_max_ps(lowermax, lower);
+  get_lu_32_sse2(lower, upper, previous + 1 * pfpitch - pixelsize, sp + 1 * ofpitch - pixelsize, next + 1 * nfpitch - pixelsize);
+  uppermax = _mm_max_ps(uppermax, upper);
+  lowermax = _mm_max_ps(lowermax, lower);
+  get_lu_32_sse2(lower, upper, previous + 1 * pfpitch + 0, sp + 1 * ofpitch + 0, next + 1 * nfpitch + 0);
+  uppermax = _mm_max_ps(uppermax, upper);
+  lowermax = _mm_max_ps(lowermax, lower);
+  get_lu_32_sse2(lower, upper, previous + 1 * pfpitch + pixelsize, sp + 1 * ofpitch + pixelsize, next + 1 * nfpitch + pixelsize);
+  uppermax = _mm_max_ps(uppermax, upper);
+  lowermax = _mm_max_ps(lowermax, lower);
+  get_lu_32_sse2(lower, upper, previous + 0 * pfpitch - pixelsize, sp + 0 * ofpitch - pixelsize, next + 0 * nfpitch - pixelsize);
+  uppermax = _mm_max_ps(uppermax, upper);
+  lowermax = _mm_max_ps(lowermax, lower);
+  get_lu_32_sse2(lower, upper, previous + 0 * pfpitch + pixelsize, sp + 0 * ofpitch + pixelsize, next + 0 * nfpitch + pixelsize);
+  uppermax = _mm_max_ps(uppermax, upper);
+  lowermax = _mm_max_ps(lowermax, lower);
+  return _mm_castps_si128(SmoothTRepair1_32_sse2<chroma>(dp, lowermax, uppermax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0));
+}
+
+RG_FORCEINLINE __m128i temporal_repair_processor_mode2_8_sse2(
   BYTE* dp,
   const BYTE* previous, const intptr_t pfpitch,
   const BYTE* sp, const intptr_t ofpitch,
@@ -950,32 +1365,113 @@ RG_FORCEINLINE __m128i temporal_repair_processor_mode2_sse2(
   __m128i uppermax = _mm_undefined_si128();
   __m128i lower = _mm_undefined_si128();
   __m128i upper = _mm_undefined_si128();
-  get_lu(lowermax, uppermax, previous - 1 * pfpitch - 1, sp - 1 * ofpitch - 1, next - 1 * nfpitch - 1);
-  get_lu(lower, upper, previous - 1 * pfpitch + 0, sp - 1 * ofpitch + 0, next - 1 * nfpitch + 0);
+  get_lu_8_sse2(lowermax, uppermax, previous - 1 * pfpitch - 1, sp - 1 * ofpitch - 1, next - 1 * nfpitch - 1);
+  get_lu_8_sse2(lower, upper, previous - 1 * pfpitch + 0, sp - 1 * ofpitch + 0, next - 1 * nfpitch + 0);
   uppermax = _mm_max_epu8(uppermax, upper);
   lowermax = _mm_max_epu8(lowermax, lower);
-  get_lu(lower, upper, previous - 1 * pfpitch + 1, sp - 1 * ofpitch + 1, next - 1 * nfpitch + 1);
+  get_lu_8_sse2(lower, upper, previous - 1 * pfpitch + 1, sp - 1 * ofpitch + 1, next - 1 * nfpitch + 1);
   uppermax = _mm_max_epu8(uppermax, upper);
   lowermax = _mm_max_epu8(lowermax, lower);
-  get_lu(lower, upper, previous + 1 * pfpitch - 1, sp + 1 * ofpitch - 1, next + 1 * nfpitch - 1);
+  get_lu_8_sse2(lower, upper, previous + 1 * pfpitch - 1, sp + 1 * ofpitch - 1, next + 1 * nfpitch - 1);
   uppermax = _mm_max_epu8(uppermax, upper);
   lowermax = _mm_max_epu8(lowermax, lower);
-  get_lu(lower, upper, previous + 1 * pfpitch + 0, sp + 1 * ofpitch + 0, next + 1 * nfpitch + 0);
+  get_lu_8_sse2(lower, upper, previous + 1 * pfpitch + 0, sp + 1 * ofpitch + 0, next + 1 * nfpitch + 0);
   uppermax = _mm_max_epu8(uppermax, upper);
   lowermax = _mm_max_epu8(lowermax, lower);
-  get_lu(lower, upper, previous + 1 * pfpitch + 1, sp + 1 * ofpitch + 1, next + 1 * nfpitch + 1);
+  get_lu_8_sse2(lower, upper, previous + 1 * pfpitch + 1, sp + 1 * ofpitch + 1, next + 1 * nfpitch + 1);
   uppermax = _mm_max_epu8(uppermax, upper);
   lowermax = _mm_max_epu8(lowermax, lower);
-  get_lu(lower, upper, previous + 0 * pfpitch - 1, sp + 0 * ofpitch - 1, next + 0 * nfpitch - 1);
+  get_lu_8_sse2(lower, upper, previous + 0 * pfpitch - 1, sp + 0 * ofpitch - 1, next + 0 * nfpitch - 1);
   uppermax = _mm_max_epu8(uppermax, upper);
   lowermax = _mm_max_epu8(lowermax, lower);
-  get_lu(lower, upper, previous + 0 * pfpitch + 1, sp + 0 * ofpitch + 1, next + 0 * nfpitch + 1);
+  get_lu_8_sse2(lower, upper, previous + 0 * pfpitch + 1, sp + 0 * ofpitch + 1, next + 0 * nfpitch + 1);
   uppermax = _mm_max_epu8(uppermax, upper);
   lowermax = _mm_max_epu8(lowermax, lower);
-  return SmoothTRepair2(dp, lowermax, uppermax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0); // dp points to the center already
+  return SmoothTRepair2_8_sse2(dp, lowermax, uppermax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0); // dp points to the center already
 }
 
-RG_FORCEINLINE __m128i temporal_repair_processor_mode3_sse2(
+template<int bits_per_pixel>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE __m128i temporal_repair_processor_mode2_16_sse41(
+  BYTE* dp,
+  const BYTE* previous, const intptr_t pfpitch,
+  const BYTE* sp, const intptr_t ofpitch,
+  const BYTE* next, const intptr_t nfpitch
+)
+{
+  constexpr int pixelsize = sizeof(uint16_t);
+
+  __m128i lowermax = _mm_undefined_si128();
+  __m128i uppermax = _mm_undefined_si128();
+  __m128i lower = _mm_undefined_si128();
+  __m128i upper = _mm_undefined_si128();
+  get_lu_16_sse41(lowermax, uppermax, previous - 1 * pfpitch - pixelsize, sp - 1 * ofpitch - pixelsize, next - 1 * nfpitch - pixelsize);
+  get_lu_16_sse41(lower, upper, previous - 1 * pfpitch + 0, sp - 1 * ofpitch + 0, next - 1 * nfpitch + 0);
+  uppermax = _mm_max_epu16(uppermax, upper);
+  lowermax = _mm_max_epu16(lowermax, lower);
+  get_lu_16_sse41(lower, upper, previous - 1 * pfpitch + pixelsize, sp - 1 * ofpitch + pixelsize, next - 1 * nfpitch + pixelsize);
+  uppermax = _mm_max_epu16(uppermax, upper);
+  lowermax = _mm_max_epu16(lowermax, lower);
+  get_lu_16_sse41(lower, upper, previous + 1 * pfpitch - pixelsize, sp + 1 * ofpitch - pixelsize, next + 1 * nfpitch - pixelsize);
+  uppermax = _mm_max_epu16(uppermax, upper);
+  lowermax = _mm_max_epu16(lowermax, lower);
+  get_lu_16_sse41(lower, upper, previous + 1 * pfpitch + 0, sp + 1 * ofpitch + 0, next + 1 * nfpitch + 0);
+  uppermax = _mm_max_epu16(uppermax, upper);
+  lowermax = _mm_max_epu16(lowermax, lower);
+  get_lu_16_sse41(lower, upper, previous + 1 * pfpitch + pixelsize, sp + 1 * ofpitch + pixelsize, next + 1 * nfpitch + pixelsize);
+  uppermax = _mm_max_epu16(uppermax, upper);
+  lowermax = _mm_max_epu16(lowermax, lower);
+  get_lu_16_sse41(lower, upper, previous + 0 * pfpitch - pixelsize, sp + 0 * ofpitch - pixelsize, next + 0 * nfpitch - pixelsize);
+  uppermax = _mm_max_epu16(uppermax, upper);
+  lowermax = _mm_max_epu16(lowermax, lower);
+  get_lu_16_sse41(lower, upper, previous + 0 * pfpitch + pixelsize, sp + 0 * ofpitch + pixelsize, next + 0 * nfpitch + pixelsize);
+  uppermax = _mm_max_epu16(uppermax, upper);
+  lowermax = _mm_max_epu16(lowermax, lower);
+  return SmoothTRepair2_16_sse41<bits_per_pixel>(dp, lowermax, uppermax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0); // dp points to the center already
+}
+
+template<bool chroma>
+RG_FORCEINLINE __m128i temporal_repair_processor_mode2_32_sse2(
+  BYTE* dp,
+  const BYTE* previous, const intptr_t pfpitch,
+  const BYTE* sp, const intptr_t ofpitch,
+  const BYTE* next, const intptr_t nfpitch
+)
+{
+  constexpr int pixelsize = sizeof(float);
+
+  __m128 lowermax = _mm_undefined_ps();
+  __m128 uppermax = _mm_undefined_ps();
+  __m128 lower = _mm_undefined_ps();
+  __m128 upper = _mm_undefined_ps();
+  get_lu_32_sse2(lowermax, uppermax, previous - 1 * pfpitch - pixelsize, sp - 1 * ofpitch - pixelsize, next - 1 * nfpitch - pixelsize);
+  get_lu_32_sse2(lower, upper, previous - 1 * pfpitch + 0, sp - 1 * ofpitch + 0, next - 1 * nfpitch + 0);
+  uppermax = _mm_max_ps(uppermax, upper);
+  lowermax = _mm_max_ps(lowermax, lower);
+  get_lu_32_sse2(lower, upper, previous - 1 * pfpitch + pixelsize, sp - 1 * ofpitch + pixelsize, next - 1 * nfpitch + pixelsize);
+  uppermax = _mm_max_ps(uppermax, upper);
+  lowermax = _mm_max_ps(lowermax, lower);
+  get_lu_32_sse2(lower, upper, previous + 1 * pfpitch - pixelsize, sp + 1 * ofpitch - pixelsize, next + 1 * nfpitch - pixelsize);
+  uppermax = _mm_max_ps(uppermax, upper);
+  lowermax = _mm_max_ps(lowermax, lower);
+  get_lu_32_sse2(lower, upper, previous + 1 * pfpitch + 0, sp + 1 * ofpitch + 0, next + 1 * nfpitch + 0);
+  uppermax = _mm_max_ps(uppermax, upper);
+  lowermax = _mm_max_ps(lowermax, lower);
+  get_lu_32_sse2(lower, upper, previous + 1 * pfpitch + pixelsize, sp + 1 * ofpitch + pixelsize, next + 1 * nfpitch + pixelsize);
+  uppermax = _mm_max_ps(uppermax, upper);
+  lowermax = _mm_max_ps(lowermax, lower);
+  get_lu_32_sse2(lower, upper, previous + 0 * pfpitch - pixelsize, sp + 0 * ofpitch - pixelsize, next + 0 * nfpitch - pixelsize);
+  uppermax = _mm_max_ps(uppermax, upper);
+  lowermax = _mm_max_ps(lowermax, lower);
+  get_lu_32_sse2(lower, upper, previous + 0 * pfpitch + pixelsize, sp + 0 * ofpitch + pixelsize, next + 0 * nfpitch + pixelsize);
+  uppermax = _mm_max_ps(uppermax, upper);
+  lowermax = _mm_max_ps(lowermax, lower);
+  return _mm_castps_si128(SmoothTRepair2_32_sse2<chroma>(dp, lowermax, uppermax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0)); // dp points to the center already
+}
+
+RG_FORCEINLINE __m128i temporal_repair_processor_mode3_8_sse2(
   BYTE* dp,
   const BYTE* previous, const intptr_t pfpitch,
   const BYTE* sp, const intptr_t ofpitch,
@@ -986,35 +1482,116 @@ RG_FORCEINLINE __m128i temporal_repair_processor_mode3_sse2(
   __m128i ndiffmax = _mm_undefined_si128();
   __m128i pdiff = _mm_undefined_si128();
   __m128i ndiff = _mm_undefined_si128();
-  get2diff(pdiffmax, ndiffmax, previous - 1 * pfpitch - 1, sp - 1 * ofpitch - 1, next - 1 * nfpitch - 1);
-  get2diff(pdiff, ndiff, previous - 1 * pfpitch + 0, sp - 1 * ofpitch + 0, next - 1 * nfpitch + 0);
+  get2diff_8_sse2(pdiffmax, ndiffmax, previous - 1 * pfpitch - 1, sp - 1 * ofpitch - 1, next - 1 * nfpitch - 1);
+  get2diff_8_sse2(pdiff, ndiff, previous - 1 * pfpitch + 0, sp - 1 * ofpitch + 0, next - 1 * nfpitch + 0);
   pdiffmax = _mm_max_epu8(pdiffmax, pdiff);
   ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-  get2diff(pdiff, ndiff, previous - 1 * pfpitch + 1, sp - 1 * ofpitch + 1, next - 1 * nfpitch + 1);
+  get2diff_8_sse2(pdiff, ndiff, previous - 1 * pfpitch + 1, sp - 1 * ofpitch + 1, next - 1 * nfpitch + 1);
   pdiffmax = _mm_max_epu8(pdiffmax, pdiff);
   ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-  get2diff(pdiff, ndiff, previous + 1 * pfpitch - 1, sp + 1 * ofpitch - 1, next + 1 * nfpitch - 1);
+  get2diff_8_sse2(pdiff, ndiff, previous + 1 * pfpitch - 1, sp + 1 * ofpitch - 1, next + 1 * nfpitch - 1);
   pdiffmax = _mm_max_epu8(pdiffmax, pdiff);
   ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-  get2diff(pdiff, ndiff, previous + 1 * pfpitch + 0, sp + 1 * ofpitch + 0, next + 1 * nfpitch + 0);
+  get2diff_8_sse2(pdiff, ndiff, previous + 1 * pfpitch + 0, sp + 1 * ofpitch + 0, next + 1 * nfpitch + 0);
   pdiffmax = _mm_max_epu8(pdiffmax, pdiff);
   ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-  get2diff(pdiff, ndiff, previous + 1 * pfpitch + 1, sp + 1 * ofpitch + 1, next + 1 * nfpitch + 1);
+  get2diff_8_sse2(pdiff, ndiff, previous + 1 * pfpitch + 1, sp + 1 * ofpitch + 1, next + 1 * nfpitch + 1);
   pdiffmax = _mm_max_epu8(pdiffmax, pdiff);
   ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-  get2diff(pdiff, ndiff, previous + 0 * pfpitch - 1, sp + 0 * ofpitch - 1, next + 0 * nfpitch - 1);
+  get2diff_8_sse2(pdiff, ndiff, previous + 0 * pfpitch - 1, sp + 0 * ofpitch - 1, next + 0 * nfpitch - 1);
   pdiffmax = _mm_max_epu8(pdiffmax, pdiff);
   ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-  get2diff(pdiff, ndiff, previous + 0 * pfpitch + 1, sp + 0 * ofpitch + 1, next + 0 * nfpitch + 1);
+  get2diff_8_sse2(pdiff, ndiff, previous + 0 * pfpitch + 1, sp + 0 * ofpitch + 1, next + 0 * nfpitch + 1);
   pdiffmax = _mm_max_epu8(pdiffmax, pdiff);
   ndiffmax = _mm_max_epu8(ndiffmax, ndiff);
-  return SmoothTRepair3(dp, pdiffmax, ndiffmax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0); // dp points to the center already
+  return SmoothTRepair3_8_sse2(dp, pdiffmax, ndiffmax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0); // dp points to the center already
+}
+
+template<int bits_per_pixel>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE __m128i temporal_repair_processor_mode3_16_sse41(
+  BYTE* dp,
+  const BYTE* previous, const intptr_t pfpitch,
+  const BYTE* sp, const intptr_t ofpitch,
+  const BYTE* next, const intptr_t nfpitch
+)
+{
+  constexpr int pixelsize = sizeof(uint16_t);
+
+  __m128i pdiffmax = _mm_undefined_si128();
+  __m128i ndiffmax = _mm_undefined_si128();
+  __m128i pdiff = _mm_undefined_si128();
+  __m128i ndiff = _mm_undefined_si128();
+  get2diff_16_sse2(pdiffmax, ndiffmax, previous - 1 * pfpitch - pixelsize, sp - 1 * ofpitch - pixelsize, next - 1 * nfpitch - pixelsize);
+  get2diff_16_sse2(pdiff, ndiff, previous - 1 * pfpitch + 0, sp - 1 * ofpitch + 0, next - 1 * nfpitch + 0);
+  pdiffmax = _mm_max_epu16(pdiffmax, pdiff);
+  ndiffmax = _mm_max_epu16(ndiffmax, ndiff);
+  get2diff_16_sse2(pdiff, ndiff, previous - 1 * pfpitch + pixelsize, sp - 1 * ofpitch + pixelsize, next - 1 * nfpitch + pixelsize);
+  pdiffmax = _mm_max_epu16(pdiffmax, pdiff);
+  ndiffmax = _mm_max_epu16(ndiffmax, ndiff);
+  get2diff_16_sse2(pdiff, ndiff, previous + 1 * pfpitch - pixelsize, sp + 1 * ofpitch - pixelsize, next + 1 * nfpitch - pixelsize);
+  pdiffmax = _mm_max_epu16(pdiffmax, pdiff);
+  ndiffmax = _mm_max_epu16(ndiffmax, ndiff);
+  get2diff_16_sse2(pdiff, ndiff, previous + 1 * pfpitch + 0, sp + 1 * ofpitch + 0, next + 1 * nfpitch + 0);
+  pdiffmax = _mm_max_epu16(pdiffmax, pdiff);
+  ndiffmax = _mm_max_epu16(ndiffmax, ndiff);
+  get2diff_16_sse2(pdiff, ndiff, previous + 1 * pfpitch + pixelsize, sp + 1 * ofpitch + pixelsize, next + 1 * nfpitch + pixelsize);
+  pdiffmax = _mm_max_epu16(pdiffmax, pdiff);
+  ndiffmax = _mm_max_epu16(ndiffmax, ndiff);
+  get2diff_16_sse2(pdiff, ndiff, previous + 0 * pfpitch - pixelsize, sp + 0 * ofpitch - pixelsize, next + 0 * nfpitch - pixelsize);
+  pdiffmax = _mm_max_epu16(pdiffmax, pdiff);
+  ndiffmax = _mm_max_epu16(ndiffmax, ndiff);
+  get2diff_16_sse2(pdiff, ndiff, previous + 0 * pfpitch + pixelsize, sp + 0 * ofpitch + pixelsize, next + 0 * nfpitch + pixelsize);
+  pdiffmax = _mm_max_epu16(pdiffmax, pdiff);
+  ndiffmax = _mm_max_epu16(ndiffmax, ndiff);
+  return SmoothTRepair3_16_sse41<bits_per_pixel>(dp, pdiffmax, ndiffmax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0); // dp points to the center already
+}
+
+template<bool chroma>
+RG_FORCEINLINE __m128i temporal_repair_processor_mode3_32_sse2(
+  BYTE* dp,
+  const BYTE* previous, const intptr_t pfpitch,
+  const BYTE* sp, const intptr_t ofpitch,
+  const BYTE* next, const intptr_t nfpitch
+)
+{
+  constexpr int pixelsize = sizeof(float);
+
+  __m128 pdiffmax = _mm_undefined_ps();
+  __m128 ndiffmax = _mm_undefined_ps();
+  __m128 pdiff = _mm_undefined_ps();
+  __m128 ndiff = _mm_undefined_ps();
+  get2diff_32_sse2(pdiffmax, ndiffmax, previous - 1 * pfpitch - pixelsize, sp - 1 * ofpitch - pixelsize, next - 1 * nfpitch - pixelsize);
+  get2diff_32_sse2(pdiff, ndiff, previous - 1 * pfpitch + 0, sp - 1 * ofpitch + 0, next - 1 * nfpitch + 0);
+  pdiffmax = _mm_max_ps(pdiffmax, pdiff);
+  ndiffmax = _mm_max_ps(ndiffmax, ndiff);
+  get2diff_32_sse2(pdiff, ndiff, previous - 1 * pfpitch + pixelsize, sp - 1 * ofpitch + pixelsize, next - 1 * nfpitch + pixelsize);
+  pdiffmax = _mm_max_ps(pdiffmax, pdiff);
+  ndiffmax = _mm_max_ps(ndiffmax, ndiff);
+  get2diff_32_sse2(pdiff, ndiff, previous + 1 * pfpitch - pixelsize, sp + 1 * ofpitch - pixelsize, next + 1 * nfpitch - pixelsize);
+  pdiffmax = _mm_max_ps(pdiffmax, pdiff);
+  ndiffmax = _mm_max_ps(ndiffmax, ndiff);
+  get2diff_32_sse2(pdiff, ndiff, previous + 1 * pfpitch + 0, sp + 1 * ofpitch + 0, next + 1 * nfpitch + 0);
+  pdiffmax = _mm_max_ps(pdiffmax, pdiff);
+  ndiffmax = _mm_max_ps(ndiffmax, ndiff);
+  get2diff_32_sse2(pdiff, ndiff, previous + 1 * pfpitch + pixelsize, sp + 1 * ofpitch + pixelsize, next + 1 * nfpitch + pixelsize);
+  pdiffmax = _mm_max_ps(pdiffmax, pdiff);
+  ndiffmax = _mm_max_ps(ndiffmax, ndiff);
+  get2diff_32_sse2(pdiff, ndiff, previous + 0 * pfpitch - pixelsize, sp + 0 * ofpitch - pixelsize, next + 0 * nfpitch - pixelsize);
+  pdiffmax = _mm_max_ps(pdiffmax, pdiff);
+  ndiffmax = _mm_max_ps(ndiffmax, ndiff);
+  get2diff_32_sse2(pdiff, ndiff, previous + 0 * pfpitch + pixelsize, sp + 0 * ofpitch + pixelsize, next + 0 * nfpitch + pixelsize);
+  pdiffmax = _mm_max_ps(pdiffmax, pdiff);
+  ndiffmax = _mm_max_ps(ndiffmax, ndiff);
+  return _mm_castps_si128(SmoothTRepair3_32_sse2<chroma>(dp, pdiffmax, ndiffmax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0)); // dp points to the center already
 }
 
 // unaligned, aligned
 // FIXME: no difference at the moment
 template<typename pixel_t, smooth_temporal_repair_processor_simd processor, smooth_temporal_repair_processor_simd processor_a>
-void smooth_temporal_repair_mode1to3_sse2(BYTE* dp8, const BYTE* previous8, const BYTE* sp8, const BYTE* next8, intptr_t* pitches, int width, int height)
+void smooth_temporal_repair_mode1to3_sse2(BYTE* dp, const BYTE* previous, const BYTE* sp, const BYTE* next, intptr_t* pitches, int width, int height)
 {
   // #   X    X
   // X new_dp X
@@ -1023,16 +1600,12 @@ void smooth_temporal_repair_mode1to3_sse2(BYTE* dp8, const BYTE* previous8, cons
   // memo: const intptr_t pitches[4] = { dppitch, pfpitch, ofpitch, nfpitch };
 
   // #: original_dp, previous, sp, next
-  const intptr_t dppitch = pitches[0] / sizeof(pixel_t);
-  const intptr_t pfpitch = pitches[1] / sizeof(pixel_t);
-  const intptr_t ofpitch = pitches[2] / sizeof(pixel_t);
-  const intptr_t nfpitch = pitches[3] / sizeof(pixel_t);
+  const intptr_t dppitch = pitches[0];
+  const intptr_t pfpitch = pitches[1];
+  const intptr_t ofpitch = pitches[2];
+  const intptr_t nfpitch = pitches[3];
 
-  pixel_t* dp = reinterpret_cast<pixel_t*>(dp8);
-  const pixel_t* previous = reinterpret_cast<const pixel_t*>(previous8);
-  const pixel_t* sp = reinterpret_cast<const pixel_t*>(sp8);
-  const pixel_t* next = reinterpret_cast<const pixel_t*>(next8);
-
+  constexpr int pixelsize = sizeof(pixel_t);
   const int pixels_at_a_time = 16 / sizeof(pixel_t);
 
   dp += dppitch;
@@ -1048,19 +1621,19 @@ void smooth_temporal_repair_mode1to3_sse2(BYTE* dp8, const BYTE* previous8, cons
     // pDst[0] = pSrc[0]; done by full frame copy
 
     // unaligned first 16 bytes, last pixel overlaps with the next aligned loop
-    __m128i result = processor((uint8_t*)(dp + 1), (uint8_t*)(previous + 1), pfpitch, (uint8_t*)(sp + 1), ofpitch, (uint8_t*)(next + 1), nfpitch);
-    _mm_storeu_si128(reinterpret_cast<__m128i*>(dp + 1), result);
+    __m128i result = processor(dp + 1 * pixelsize, previous + 1 * pixelsize, pfpitch, sp + 1 * pixelsize, ofpitch, next + 1 * pixelsize, nfpitch);
+    _mm_storeu_si128(reinterpret_cast<__m128i*>(dp + 1 * pixelsize), result);
 
     // aligned
     for (int x = pixels_at_a_time; x < mod_width - 1; x += pixels_at_a_time) {
-      __m128i result = processor_a((uint8_t*)(dp + x), (uint8_t*)(previous + x), pfpitch, (uint8_t*)(sp + x), ofpitch, (uint8_t*)(next + x), nfpitch);
-      _mm_store_si128(reinterpret_cast<__m128i*>(dp + x), result);
+      __m128i result = processor_a(dp + x * pixelsize, previous + x * pixelsize, pfpitch, sp + x * pixelsize, ofpitch, next + x * pixelsize, nfpitch);
+      _mm_store_si128(reinterpret_cast<__m128i*>(dp + x * pixelsize), result);
     }
 
     if (mod_width != width) {
       const int xx = width - 1 - pixels_at_a_time;
-      __m128i result = processor((uint8_t*)(dp + xx), (uint8_t*)(previous + xx), pfpitch, (uint8_t*)(sp + xx), ofpitch, (uint8_t*)(next + xx), nfpitch);
-      _mm_storeu_si128(reinterpret_cast<__m128i*>(dp + xx), result);
+      __m128i result = processor(dp + xx * pixelsize, previous + xx * pixelsize, pfpitch, sp + xx * pixelsize, ofpitch, next + xx * pixelsize, nfpitch);
+      _mm_storeu_si128(reinterpret_cast<__m128i*>(dp + xx * pixelsize), result);
     }
 
     // pDst[width - 1] = pSrc[width - 1]; done by full frame copy
@@ -1074,7 +1647,70 @@ void smooth_temporal_repair_mode1to3_sse2(BYTE* dp8, const BYTE* previous8, cons
 
 }
 
-RG_FORCEINLINE int temporal_repair_processor_mode1_c(
+// same as SSE2. Different because of target attribute
+// unaligned, aligned
+// FIXME: no difference at the moment
+template<typename pixel_t, smooth_temporal_repair_processor_simd processor, smooth_temporal_repair_processor_simd processor_a>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+void smooth_temporal_repair_mode1to3_sse41(BYTE* dp, const BYTE* previous, const BYTE* sp, const BYTE* next, intptr_t* pitches, int width, int height)
+{
+  // #   X    X
+  // X new_dp X
+  // X   X    X
+
+  // memo: const intptr_t pitches[4] = { dppitch, pfpitch, ofpitch, nfpitch };
+
+  // #: original_dp, previous, sp, next
+  const intptr_t dppitch = pitches[0];
+  const intptr_t pfpitch = pitches[1];
+  const intptr_t ofpitch = pitches[2];
+  const intptr_t nfpitch = pitches[3];
+
+  constexpr int pixelsize = sizeof(pixel_t);
+  const int pixels_at_a_time = 16 / sizeof(pixel_t);
+
+  dp += dppitch;
+  previous += pfpitch;
+  sp += ofpitch;
+  next += nfpitch;
+
+  int mod_width = width / pixels_at_a_time * pixels_at_a_time;
+
+  // top line copy: done by full frame copy 
+
+  for (int y = 1; y < height - 1; ++y) {
+    // pDst[0] = pSrc[0]; done by full frame copy
+
+    // unaligned first 16 bytes, last pixel overlaps with the next aligned loop
+    __m128i result = processor(dp + 1 * pixelsize, previous + 1 * pixelsize, pfpitch, sp + 1 * pixelsize, ofpitch, next + 1 * pixelsize, nfpitch);
+    _mm_storeu_si128(reinterpret_cast<__m128i*>(dp + 1 * pixelsize), result);
+
+    // aligned
+    for (int x = pixels_at_a_time; x < mod_width - 1; x += pixels_at_a_time) {
+      __m128i result = processor_a(dp + x * pixelsize, previous + x * pixelsize, pfpitch, sp + x * pixelsize, ofpitch, next + x * pixelsize, nfpitch);
+      _mm_store_si128(reinterpret_cast<__m128i*>(dp + x * pixelsize), result);
+    }
+
+    if (mod_width != width) {
+      const int xx = width - 1 - pixels_at_a_time;
+      __m128i result = processor(dp + xx * pixelsize, previous + xx * pixelsize, pfpitch, sp + xx * pixelsize, ofpitch, next + xx * pixelsize, nfpitch);
+      _mm_storeu_si128(reinterpret_cast<__m128i*>(dp + xx * pixelsize), result);
+    }
+
+    // pDst[width - 1] = pSrc[width - 1]; done by full frame copy
+
+    dp += dppitch;
+    previous += pfpitch;
+    sp += ofpitch;
+    next += nfpitch;
+  }
+  // bottom line copy: done by full frame copy 
+
+}
+
+RG_FORCEINLINE int temporal_repair_processor_mode1_8_c(
   BYTE* dp,
   const BYTE* previous, const intptr_t pfpitch,
   const BYTE* sp, const intptr_t ofpitch,
@@ -1108,7 +1744,141 @@ RG_FORCEINLINE int temporal_repair_processor_mode1_c(
   return SmoothTRepair1_c(dp[0], lowermax, uppermax, previous[0 * pfpitch + 0], sp[0 * ofpitch + 0], next[0 * nfpitch + 0]);
 }
 
-RG_FORCEINLINE int temporal_repair_processor_mode2_c(
+template<int bits_per_pixel>
+RG_FORCEINLINE int temporal_repair_processor_mode1_16_c(
+  BYTE* dp,
+  const BYTE* previous, const intptr_t pfpitch,
+  const BYTE* sp, const intptr_t ofpitch,
+  const BYTE* next, const intptr_t nfpitch
+)
+{
+  using pixel_t = uint16_t;
+  constexpr int pixelsize = sizeof(pixel_t);
+
+  int lowermax, uppermax;
+  int lower, upper;
+  get_lu_16_c(lowermax, uppermax, 
+    *(pixel_t*)& previous[-1 * pfpitch - pixelsize], 
+    *(pixel_t*)& sp[-1 * ofpitch - pixelsize], 
+    *(pixel_t*)& next[-1 * nfpitch - pixelsize]);
+  get_lu_16_c(lower, upper, 
+    *(pixel_t*)& previous[-1 * pfpitch + 0], 
+    *(pixel_t*)& sp[-1 * ofpitch + 0], 
+    *(pixel_t*)& next[-1 * nfpitch + 0]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_16_c(lower, upper, 
+    *(pixel_t*)& previous[-1 * pfpitch + pixelsize], 
+    *(pixel_t*)& sp[-1 * ofpitch + pixelsize], 
+    *(pixel_t*)& next[-1 * nfpitch + pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_16_c(lower, upper, 
+    *(pixel_t*)& previous[1 * pfpitch - pixelsize], 
+    *(pixel_t*)& sp[1 * ofpitch - pixelsize],
+    *(pixel_t*)& next[1 * nfpitch - pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_16_c(lower, upper, 
+    *(pixel_t*)& previous[1 * pfpitch + 0], 
+    *(pixel_t*)& sp[1 * ofpitch + 0], 
+    *(pixel_t*)& next[1 * nfpitch + 0]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_16_c(lower, upper, 
+    *(pixel_t*)& previous[1 * pfpitch + pixelsize], 
+    *(pixel_t*)& sp[1 * ofpitch + pixelsize], 
+    *(pixel_t*)& next[1 * nfpitch + pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_16_c(lower, upper, 
+    *(pixel_t*)& previous[0 * pfpitch - pixelsize], 
+    *(pixel_t*)& sp[0 * ofpitch - pixelsize], 
+    *(pixel_t*)& next[0 * nfpitch - pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_16_c(lower, upper, 
+    *(pixel_t*)& previous[0 * pfpitch + pixelsize], 
+    *(pixel_t*)& sp[0 * ofpitch + pixelsize], 
+    *(pixel_t*)& next[0 * nfpitch + pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  return SmoothTRepair1_16_c<bits_per_pixel>(
+    *(pixel_t*)& dp[0], 
+    lowermax, uppermax,
+    *(pixel_t*)& previous[0 * pfpitch + 0], 
+    *(pixel_t*)& sp[0 * ofpitch + 0], 
+    *(pixel_t*)& next[0 * nfpitch + 0]);
+}
+
+template<bool chroma>
+RG_FORCEINLINE float temporal_repair_processor_mode1_32_c(
+  BYTE* dp,
+  const BYTE* previous, const intptr_t pfpitch,
+  const BYTE* sp, const intptr_t ofpitch,
+  const BYTE* next, const intptr_t nfpitch
+)
+{
+  using pixel_t = float;
+  constexpr int pixelsize = sizeof(pixel_t);
+
+  float lowermax, uppermax;
+  float lower, upper;
+  get_lu_32_c(lowermax, uppermax, 
+    *(pixel_t*)& previous[-1 * pfpitch - pixelsize], 
+    *(pixel_t*)& sp[-1 * ofpitch - pixelsize], 
+    *(pixel_t*)& next[-1 * nfpitch - pixelsize]);
+  get_lu_32_c(lower, upper, 
+    *(pixel_t*)& previous[-1 * pfpitch + 0], 
+    *(pixel_t*)& sp[-1 * ofpitch + 0], 
+    *(pixel_t*)& next[-1 * nfpitch + 0]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_32_c(lower, upper, 
+    *(pixel_t*)& previous[-1 * pfpitch + pixelsize], 
+    *(pixel_t*)& sp[-1 * ofpitch + pixelsize], 
+    *(pixel_t*)& next[-1 * nfpitch + pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_32_c(lower, upper, 
+    *(pixel_t*)& previous[1 * pfpitch - pixelsize], 
+    *(pixel_t*)& sp[1 * ofpitch - pixelsize], 
+    *(pixel_t*)& next[1 * nfpitch - pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_32_c(lower, upper, 
+    *(pixel_t*)& previous[1 * pfpitch + 0], 
+    *(pixel_t*)& sp[1 * ofpitch + 0], 
+    *(pixel_t*)& next[1 * nfpitch + 0]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_32_c(lower, upper, 
+    *(pixel_t*)& previous[1 * pfpitch + pixelsize], 
+    *(pixel_t*)& sp[1 * ofpitch + pixelsize], 
+    *(pixel_t*)& next[1 * nfpitch + pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_32_c(lower, upper, 
+    *(pixel_t*)& previous[0 * pfpitch - pixelsize], 
+    *(pixel_t*)& sp[0 * ofpitch - pixelsize], 
+    *(pixel_t*)& next[0 * nfpitch - pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_32_c(lower, upper, 
+    *(pixel_t*)& previous[0 * pfpitch + pixelsize], 
+    *(pixel_t*)& sp[0 * ofpitch + pixelsize], 
+    *(pixel_t*)& next[0 * nfpitch + pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  return SmoothTRepair1_32_c<chroma>(
+    *(pixel_t*)& dp[0], 
+    lowermax, uppermax, 
+    *(pixel_t*)& previous[0 * pfpitch + 0], 
+    *(pixel_t*)& sp[0 * ofpitch + 0], 
+    *(pixel_t*)& next[0 * nfpitch + 0]);
+}
+
+RG_FORCEINLINE int temporal_repair_processor_mode2_8_c(
   BYTE* dp,
   const BYTE* previous, const intptr_t pfpitch,
   const BYTE* sp, const intptr_t ofpitch,
@@ -1139,10 +1909,144 @@ RG_FORCEINLINE int temporal_repair_processor_mode2_c(
   get_lu_c(lower, upper, previous[0 * pfpitch + 1], sp[0 * ofpitch + 1], next[0 * nfpitch + 1]);
   uppermax = std::max(uppermax, upper);
   lowermax = std::max(lowermax, lower);
-  return SmoothTRepair2_c(dp[0], lowermax, uppermax, previous[0 * pfpitch + 0], sp[0 * ofpitch + 0], next[0 * nfpitch + 0]);
+  return SmoothTRepair2_8_c(dp[0], lowermax, uppermax, previous[0 * pfpitch + 0], sp[0 * ofpitch + 0], next[0 * nfpitch + 0]);
 }
 
-RG_FORCEINLINE int temporal_repair_processor_mode3_c(
+template<int bits_per_pixel>
+RG_FORCEINLINE int temporal_repair_processor_mode2_16_c(
+  BYTE* dp,
+  const BYTE* previous, const intptr_t pfpitch,
+  const BYTE* sp, const intptr_t ofpitch,
+  const BYTE* next, const intptr_t nfpitch
+)
+{
+  using pixel_t = uint16_t;
+  constexpr int pixelsize = sizeof(pixel_t);
+
+  int lowermax, uppermax;
+  int lower, upper;
+  get_lu_16_c(lowermax, uppermax, 
+    *(pixel_t*)& previous[-1 * pfpitch - pixelsize],
+    *(pixel_t*)& sp[-1 * ofpitch - pixelsize],
+    *(pixel_t*)& next[-1 * nfpitch - pixelsize]);
+  get_lu_16_c(lower, upper, 
+    *(pixel_t*)& previous[-1 * pfpitch + 0], 
+    *(pixel_t*)& sp[-1 * ofpitch + 0], 
+    *(pixel_t*)& next[-1 * nfpitch + 0]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_16_c(lower, upper, 
+    *(pixel_t*)& previous[-1 * pfpitch + pixelsize],
+    *(pixel_t*)& sp[-1 * ofpitch + pixelsize],
+    *(pixel_t*)& next[-1 * nfpitch + pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_16_c(lower, upper, 
+    *(pixel_t*)& previous[1 * pfpitch - pixelsize],
+    *(pixel_t*)& sp[1 * ofpitch - pixelsize],
+    *(pixel_t*)& next[1 * nfpitch - pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_16_c(lower, upper, 
+    *(pixel_t*)& previous[1 * pfpitch + 0], 
+    *(pixel_t*)& sp[1 * ofpitch + 0], 
+    *(pixel_t*)& next[1 * nfpitch + 0]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_16_c(lower, upper, 
+    *(pixel_t*)& previous[1 * pfpitch + pixelsize],
+    *(pixel_t*)& sp[1 * ofpitch + pixelsize],
+    *(pixel_t*)& next[1 * nfpitch + pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_16_c(lower, upper, 
+    *(pixel_t*)& previous[0 * pfpitch - pixelsize],
+    *(pixel_t*)& sp[0 * ofpitch - pixelsize],
+    *(pixel_t*)& next[0 * nfpitch - pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_16_c(lower, upper, 
+    *(pixel_t*)& previous[0 * pfpitch + pixelsize],
+    *(pixel_t*)& sp[0 * ofpitch + pixelsize],
+    *(pixel_t*)& next[0 * nfpitch + pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  return SmoothTRepair2_16_c<bits_per_pixel>(
+    *(pixel_t*)& dp[0], 
+    lowermax, uppermax, 
+    *(pixel_t*)& previous[0 * pfpitch + 0], 
+    *(pixel_t*)& sp[0 * ofpitch + 0], 
+    *(pixel_t*)& next[0 * nfpitch + 0]);
+}
+
+template<bool chroma>
+RG_FORCEINLINE float temporal_repair_processor_mode2_32_c(
+  BYTE* dp,
+  const BYTE* previous, const intptr_t pfpitch,
+  const BYTE* sp, const intptr_t ofpitch,
+  const BYTE* next, const intptr_t nfpitch
+)
+{
+  using pixel_t = float;
+  constexpr int pixelsize = sizeof(pixel_t);
+
+  float lowermax, uppermax;
+  float lower, upper;
+  get_lu_32_c(lowermax, uppermax, 
+    *(pixel_t*)& previous[-1 * pfpitch - pixelsize], 
+    *(pixel_t*)& sp[-1 * ofpitch - pixelsize], 
+    *(pixel_t*)& next[-1 * nfpitch - pixelsize]);
+  get_lu_32_c(lower, upper, 
+    *(pixel_t*)& previous[-1 * pfpitch + 0], 
+    *(pixel_t*)& sp[-1 * ofpitch + 0], 
+    *(pixel_t*)& next[-1 * nfpitch + 0]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_32_c(lower, upper, 
+    *(pixel_t*)& previous[-1 * pfpitch + pixelsize], 
+    *(pixel_t*)& sp[-1 * ofpitch + pixelsize], 
+    *(pixel_t*)& next[-1 * nfpitch + pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_32_c(lower, upper, 
+    *(pixel_t*)& previous[1 * pfpitch - pixelsize], 
+    *(pixel_t*)& sp[1 * ofpitch - pixelsize], 
+    *(pixel_t*)& next[1 * nfpitch - pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_32_c(lower, upper, 
+    *(pixel_t*)& previous[1 * pfpitch + 0], 
+    *(pixel_t*)& sp[1 * ofpitch + 0], 
+    *(pixel_t*)& next[1 * nfpitch + 0]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_32_c(lower, upper, 
+    *(pixel_t*)& previous[1 * pfpitch + pixelsize], 
+    *(pixel_t*)& sp[1 * ofpitch + pixelsize], 
+    *(pixel_t*)& next[1 * nfpitch + pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_32_c(lower, upper, 
+    *(pixel_t*)& previous[0 * pfpitch - pixelsize], 
+    *(pixel_t*)& sp[0 * ofpitch - pixelsize], 
+    *(pixel_t*)& next[0 * nfpitch - pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  get_lu_32_c(lower, upper, 
+    *(pixel_t*)& previous[0 * pfpitch + pixelsize], 
+    *(pixel_t*)& sp[0 * ofpitch + pixelsize], 
+    *(pixel_t*)& next[0 * nfpitch + pixelsize]);
+  uppermax = std::max(uppermax, upper);
+  lowermax = std::max(lowermax, lower);
+  return SmoothTRepair2_32_c<chroma>(
+    *(pixel_t*)& dp[0], 
+    lowermax, uppermax, 
+    *(pixel_t*)& previous[0 * pfpitch + 0], 
+    *(pixel_t*)& sp[0 * ofpitch + 0], 
+    *(pixel_t*)& next[0 * nfpitch + 0]);
+}
+
+RG_FORCEINLINE int temporal_repair_processor_mode3_8_c(
   BYTE* dp,
   const BYTE* previous, const intptr_t pfpitch,
   const BYTE* sp, const intptr_t ofpitch,
@@ -1153,45 +2057,180 @@ RG_FORCEINLINE int temporal_repair_processor_mode3_c(
   int ndiffmax;
   int pdiff;
   int ndiff;
-  get2diff_c(pdiffmax, ndiffmax, previous[-1 * pfpitch - 1], sp[-1 * ofpitch - 1], next[-1 * nfpitch - 1]);
-  get2diff_c(pdiff, ndiff, previous[-1 * pfpitch + 0], sp[-1 * ofpitch + 0], next[-1 * nfpitch + 0]);
+  get2diff_8_c(pdiffmax, ndiffmax, previous[-1 * pfpitch - 1], sp[-1 * ofpitch - 1], next[-1 * nfpitch - 1]);
+  get2diff_8_c(pdiff, ndiff, previous[-1 * pfpitch + 0], sp[-1 * ofpitch + 0], next[-1 * nfpitch + 0]);
   pdiffmax = std::max(pdiffmax, pdiff);
   ndiffmax = std::max(ndiffmax, ndiff);
-  get2diff_c(pdiff, ndiff, previous[-1 * pfpitch + 1], sp[-1 * ofpitch + 1], next[-1 * nfpitch + 1]);
+  get2diff_8_c(pdiff, ndiff, previous[-1 * pfpitch + 1], sp[-1 * ofpitch + 1], next[-1 * nfpitch + 1]);
   pdiffmax = std::max(pdiffmax, pdiff);
   ndiffmax = std::max(ndiffmax, ndiff);
-  get2diff_c(pdiff, ndiff, previous[1 * pfpitch - 1], sp[1 * ofpitch - 1], next[1 * nfpitch - 1]);
+  get2diff_8_c(pdiff, ndiff, previous[1 * pfpitch - 1], sp[1 * ofpitch - 1], next[1 * nfpitch - 1]);
   pdiffmax = std::max(pdiffmax, pdiff);
   ndiffmax = std::max(ndiffmax, ndiff);
-  get2diff_c(pdiff, ndiff, previous[1 * pfpitch + 0], sp[1 * ofpitch + 0], next[1 * nfpitch + 0]);
+  get2diff_8_c(pdiff, ndiff, previous[1 * pfpitch + 0], sp[1 * ofpitch + 0], next[1 * nfpitch + 0]);
   pdiffmax = std::max(pdiffmax, pdiff);
   ndiffmax = std::max(ndiffmax, ndiff);
-  get2diff_c(pdiff, ndiff, previous[1 * pfpitch + 1], sp[1 * ofpitch + 1], next[1 * nfpitch + 1]);
+  get2diff_8_c(pdiff, ndiff, previous[1 * pfpitch + 1], sp[1 * ofpitch + 1], next[1 * nfpitch + 1]);
   pdiffmax = std::max(pdiffmax, pdiff);
   ndiffmax = std::max(ndiffmax, ndiff);
-  get2diff_c(pdiff, ndiff, previous[0 * pfpitch - 1], sp[0 * ofpitch - 1], next[0 * nfpitch - 1]);
+  get2diff_8_c(pdiff, ndiff, previous[0 * pfpitch - 1], sp[0 * ofpitch - 1], next[0 * nfpitch - 1]);
   pdiffmax = std::max(pdiffmax, pdiff);
   ndiffmax = std::max(ndiffmax, ndiff);
-  get2diff_c(pdiff, ndiff, previous[0 * pfpitch + 1], sp[0 * ofpitch + 1], next[0 * nfpitch + 1]);
+  get2diff_8_c(pdiff, ndiff, previous[0 * pfpitch + 1], sp[0 * ofpitch + 1], next[0 * nfpitch + 1]);
   pdiffmax = std::max(pdiffmax, pdiff);
   ndiffmax = std::max(ndiffmax, ndiff);
   return SmoothTRepair3_c(dp[0], pdiffmax, ndiffmax, previous[0 * pfpitch + 0], sp[0 * ofpitch + 0], next[0 * nfpitch + 0]);
 }
 
+template<int bits_per_pixel>
+RG_FORCEINLINE int temporal_repair_processor_mode3_16_c(
+  BYTE* dp,
+  const BYTE* previous, const intptr_t pfpitch,
+  const BYTE* sp, const intptr_t ofpitch,
+  const BYTE* next, const intptr_t nfpitch
+)
+{
+  using pixel_t = uint16_t;
+  constexpr int pixelsize = sizeof(pixel_t);
 
+  int pdiffmax;
+  int ndiffmax;
+  int pdiff;
+  int ndiff;
+  get2diff_16_c(pdiffmax, ndiffmax, 
+    *(pixel_t*)& previous[-1 * pfpitch - pixelsize], 
+    *(pixel_t*)& sp[-1 * ofpitch - pixelsize], 
+    *(pixel_t*)& next[-1 * nfpitch - pixelsize]);
+  get2diff_16_c(pdiff, ndiff, 
+    *(pixel_t*)& previous[-1 * pfpitch + 0], 
+    *(pixel_t*)& sp[-1 * ofpitch + 0], 
+    *(pixel_t*)& next[-1 * nfpitch + 0]);
+  pdiffmax = std::max(pdiffmax, pdiff);
+  ndiffmax = std::max(ndiffmax, ndiff);
+  get2diff_16_c(pdiff, ndiff, 
+    *(pixel_t*)& previous[-1 * pfpitch + pixelsize], 
+    *(pixel_t*)& sp[-1 * ofpitch + pixelsize], 
+    *(pixel_t*)& next[-1 * nfpitch + pixelsize]);
+  pdiffmax = std::max(pdiffmax, pdiff);
+  ndiffmax = std::max(ndiffmax, ndiff);
+  get2diff_16_c(pdiff, ndiff, 
+    *(pixel_t*)& previous[1 * pfpitch - pixelsize], 
+    *(pixel_t*)& sp[1 * ofpitch - pixelsize], 
+    *(pixel_t*)& next[1 * nfpitch - pixelsize]);
+  pdiffmax = std::max(pdiffmax, pdiff);
+  ndiffmax = std::max(ndiffmax, ndiff);
+  get2diff_16_c(pdiff, ndiff, 
+    *(pixel_t*)& previous[1 * pfpitch + 0], 
+    *(pixel_t*)& sp[1 * ofpitch + 0], 
+    *(pixel_t*)& next[1 * nfpitch + 0]);
+  pdiffmax = std::max(pdiffmax, pdiff);
+  ndiffmax = std::max(ndiffmax, ndiff);
+  get2diff_16_c(pdiff, ndiff, 
+    *(pixel_t*)& previous[1 * pfpitch + pixelsize], 
+    *(pixel_t*)& sp[1 * ofpitch + pixelsize], 
+    *(pixel_t*)& next[1 * nfpitch + pixelsize]);
+  pdiffmax = std::max(pdiffmax, pdiff);
+  ndiffmax = std::max(ndiffmax, ndiff);
+  get2diff_16_c(pdiff, ndiff, 
+    *(pixel_t*)& previous[0 * pfpitch - pixelsize], 
+    *(pixel_t*)& sp[0 * ofpitch - pixelsize], 
+    *(pixel_t*)& next[0 * nfpitch - pixelsize]);
+  pdiffmax = std::max(pdiffmax, pdiff);
+  ndiffmax = std::max(ndiffmax, ndiff);
+  get2diff_16_c(pdiff, ndiff, 
+    *(pixel_t*)& previous[0 * pfpitch + pixelsize], 
+    *(pixel_t*)& sp[0 * ofpitch + pixelsize], 
+    *(pixel_t*)& next[0 * nfpitch + pixelsize]);
+  pdiffmax = std::max(pdiffmax, pdiff);
+  ndiffmax = std::max(ndiffmax, ndiff);
+  return SmoothTRepair3_16_c<bits_per_pixel>(
+    *(pixel_t*)& dp[0], 
+    pdiffmax, ndiffmax, 
+    *(pixel_t*)& previous[0 * pfpitch + 0], 
+    *(pixel_t*)& sp[0 * ofpitch + 0], 
+    *(pixel_t*)& next[0 * nfpitch + 0]);
+}
+
+template<bool chroma>
+RG_FORCEINLINE float temporal_repair_processor_mode3_32_c(
+  BYTE* dp,
+  const BYTE* previous, const intptr_t pfpitch,
+  const BYTE* sp, const intptr_t ofpitch,
+  const BYTE* next, const intptr_t nfpitch
+)
+{
+  using pixel_t = float;
+  constexpr int pixelsize = sizeof(pixel_t);
+
+  float pdiffmax;
+  float ndiffmax;
+  float pdiff;
+  float ndiff;
+  get2diff_32_c(pdiffmax, ndiffmax, 
+    *(pixel_t*)& previous[-1 * pfpitch - pixelsize], 
+    *(pixel_t*)& sp[-1 * ofpitch - pixelsize], 
+    *(pixel_t*)& next[-1 * nfpitch - pixelsize]);
+  get2diff_32_c(pdiff, ndiff, 
+    *(pixel_t*)& previous[-1 * pfpitch + 0], 
+    *(pixel_t*)& sp[-1 * ofpitch + 0], 
+    *(pixel_t*)& next[-1 * nfpitch + 0]);
+  pdiffmax = std::max(pdiffmax, pdiff);
+  ndiffmax = std::max(ndiffmax, ndiff);
+  get2diff_32_c(pdiff, ndiff, 
+    *(pixel_t*)& previous[-1 * pfpitch + pixelsize], 
+    *(pixel_t*)& sp[-1 * ofpitch + pixelsize], 
+    *(pixel_t*)& next[-1 * nfpitch + pixelsize]);
+  pdiffmax = std::max(pdiffmax, pdiff);
+  ndiffmax = std::max(ndiffmax, ndiff);
+  get2diff_32_c(pdiff, ndiff, 
+    *(pixel_t*)& previous[1 * pfpitch - pixelsize], 
+    *(pixel_t*)& sp[1 * ofpitch - pixelsize], 
+    *(pixel_t*)& next[1 * nfpitch - pixelsize]);
+  pdiffmax = std::max(pdiffmax, pdiff);
+  ndiffmax = std::max(ndiffmax, ndiff);
+  get2diff_32_c(pdiff, ndiff, 
+    *(pixel_t*)& previous[1 * pfpitch + 0], 
+    *(pixel_t*)& sp[1 * ofpitch + 0], 
+    *(pixel_t*)& next[1 * nfpitch + 0]);
+  pdiffmax = std::max(pdiffmax, pdiff);
+  ndiffmax = std::max(ndiffmax, ndiff);
+  get2diff_32_c(pdiff, ndiff, 
+    *(pixel_t*)& previous[1 * pfpitch + pixelsize], 
+    *(pixel_t*)& sp[1 * ofpitch + pixelsize], 
+    *(pixel_t*)& next[1 * nfpitch + pixelsize]);
+  pdiffmax = std::max(pdiffmax, pdiff);
+  ndiffmax = std::max(ndiffmax, ndiff);
+  get2diff_32_c(pdiff, ndiff, 
+    *(pixel_t*)& previous[0 * pfpitch - pixelsize], 
+    *(pixel_t*)& sp[0 * ofpitch - pixelsize], 
+    *(pixel_t*)& next[0 * nfpitch - pixelsize]);
+  pdiffmax = std::max(pdiffmax, pdiff);
+  ndiffmax = std::max(ndiffmax, ndiff);
+  get2diff_32_c(pdiff, ndiff, 
+    *(pixel_t*)& previous[0 * pfpitch + pixelsize], 
+    *(pixel_t*)& sp[0 * ofpitch + pixelsize], 
+    *(pixel_t*)& next[0 * nfpitch + pixelsize]);
+  pdiffmax = std::max(pdiffmax, pdiff);
+  ndiffmax = std::max(ndiffmax, ndiff);
+  return SmoothTRepair3_32_c<chroma>(
+    *(pixel_t*)& dp[0], 
+    pdiffmax, ndiffmax, 
+    *(pixel_t*)& previous[0 * pfpitch + 0], 
+    *(pixel_t*)& sp[0 * ofpitch + 0], 
+    *(pixel_t*)& next[0 * nfpitch + 0]);
+}
+
+// for all integer 8-16 bits
 template<typename pixel_t, smooth_temporal_repair_processor_c processor>
-void smooth_temporal_repair_mode1to3_c(BYTE* dp8, const BYTE* previous8, const BYTE* sp8, const BYTE* next8, intptr_t* pitches, int width, int height)
+void smooth_temporal_repair_mode1to3_c(BYTE* dp, const BYTE* previous, const BYTE* sp, const BYTE* next, intptr_t* pitches, int width, int height)
 {
   // #: original_dp, previous, sp, next
-  const intptr_t dppitch = pitches[0] / sizeof(pixel_t);
-  const intptr_t pfpitch = pitches[1] / sizeof(pixel_t);
-  const intptr_t ofpitch = pitches[2] / sizeof(pixel_t);
-  const intptr_t nfpitch = pitches[3] / sizeof(pixel_t);
+  const intptr_t dppitch = pitches[0];
+  const intptr_t pfpitch = pitches[1];
+  const intptr_t ofpitch = pitches[2];
+  const intptr_t nfpitch = pitches[3];
 
-  pixel_t* dp = reinterpret_cast<pixel_t*>(dp8);
-  const pixel_t* previous = reinterpret_cast<const pixel_t*>(previous8);
-  const pixel_t* sp = reinterpret_cast<const pixel_t*>(sp8);
-  const pixel_t* next = reinterpret_cast<const pixel_t*>(next8);
+  constexpr int pixelsize = sizeof(pixel_t);
 
   dp += dppitch;
   previous += pfpitch;
@@ -1202,7 +2241,40 @@ void smooth_temporal_repair_mode1to3_c(BYTE* dp8, const BYTE* previous8, const B
   {
     for (int x = 1; x < width - 1; x++)
     {
-      dp[x] = processor(&dp[x], &previous[x], pfpitch, &sp[x], ofpitch, &next[x], nfpitch);
+      *(pixel_t *)(dp + x * pixelsize) = processor(dp + x * pixelsize, previous + x * pixelsize, pfpitch, sp + x * pixelsize, ofpitch, next + x * pixelsize, nfpitch);
+    }
+
+    dp += pitches[0];
+    previous += pitches[1];
+    sp += pitches[2];
+    next += pitches[3];
+  }
+}
+
+// specially for 32 bit float
+template<smooth_temporal_repair_processor_32_c processor>
+void smooth_temporal_repair_mode1to3_32_c(BYTE* dp, const BYTE* previous, const BYTE* sp, const BYTE* next, intptr_t* pitches, int width, int height)
+{
+  using pixel_t = float;
+
+  // #: original_dp, previous, sp, next
+  const intptr_t dppitch = pitches[0];
+  const intptr_t pfpitch = pitches[1];
+  const intptr_t ofpitch = pitches[2];
+  const intptr_t nfpitch = pitches[3];
+
+  constexpr int pixelsize = sizeof(pixel_t);
+
+  dp += dppitch;
+  previous += pfpitch;
+  sp += ofpitch;
+  next += nfpitch;
+
+  for (int y = 1; y < height - 1; y++)
+  {
+    for (int x = 1; x < width - 1; x++)
+    {
+      *(pixel_t*)(dp + x * pixelsize) = processor(dp + x * pixelsize, previous + x * pixelsize, pfpitch, sp + x * pixelsize, ofpitch, next + x * pixelsize, nfpitch);
     }
 
     dp += pitches[0];
@@ -1214,16 +2286,60 @@ void smooth_temporal_repair_mode1to3_c(BYTE* dp8, const BYTE* previous8, const B
 
 static PlaneProcessor_st* st_sse2_functions[] = {
     nullptr,
-    smooth_temporal_repair_mode1to3_sse2<uint8_t, temporal_repair_processor_mode1_sse2, temporal_repair_processor_mode1_sse2>,
-    smooth_temporal_repair_mode1to3_sse2<uint8_t, temporal_repair_processor_mode2_sse2, temporal_repair_processor_mode2_sse2>,
-    smooth_temporal_repair_mode1to3_sse2<uint8_t, temporal_repair_processor_mode3_sse2, temporal_repair_processor_mode3_sse2>
+    smooth_temporal_repair_mode1to3_sse2<uint8_t, temporal_repair_processor_mode1_8_sse2, temporal_repair_processor_mode1_8_sse2>,
+    smooth_temporal_repair_mode1to3_sse2<uint8_t, temporal_repair_processor_mode2_8_sse2, temporal_repair_processor_mode2_8_sse2>,
+    smooth_temporal_repair_mode1to3_sse2<uint8_t, temporal_repair_processor_mode3_8_sse2, temporal_repair_processor_mode3_8_sse2>
+};
+
+static PlaneProcessor_st* st_sse41_functions_16[] = {
+    nullptr,
+    smooth_temporal_repair_mode1to3_sse41<uint16_t, temporal_repair_processor_mode1_16_sse41<16>, temporal_repair_processor_mode1_16_sse41<16>>,
+    smooth_temporal_repair_mode1to3_sse41<uint16_t, temporal_repair_processor_mode2_16_sse41<16>, temporal_repair_processor_mode2_16_sse41<16>>,
+    smooth_temporal_repair_mode1to3_sse41<uint16_t, temporal_repair_processor_mode3_16_sse41<16>, temporal_repair_processor_mode3_16_sse41<16>>
+};
+
+static PlaneProcessor_st* st_sse2_functions_32[] = {
+    nullptr,
+    smooth_temporal_repair_mode1to3_sse2<float, temporal_repair_processor_mode1_32_sse2<false>, temporal_repair_processor_mode1_32_sse2<false>>,
+    smooth_temporal_repair_mode1to3_sse2<float, temporal_repair_processor_mode2_32_sse2<false>, temporal_repair_processor_mode2_32_sse2<false>>,
+    smooth_temporal_repair_mode1to3_sse2<float, temporal_repair_processor_mode3_32_sse2<false>, temporal_repair_processor_mode3_32_sse2<false>>
+};
+
+static PlaneProcessor_st* st_sse2_functions_chroma_32[] = {
+    nullptr,
+    smooth_temporal_repair_mode1to3_sse2<float, temporal_repair_processor_mode1_32_sse2<true>, temporal_repair_processor_mode1_32_sse2<true>>,
+    smooth_temporal_repair_mode1to3_sse2<float, temporal_repair_processor_mode2_32_sse2<true>, temporal_repair_processor_mode2_32_sse2<true>>,
+    smooth_temporal_repair_mode1to3_sse2<float, temporal_repair_processor_mode3_32_sse2<true>, temporal_repair_processor_mode3_32_sse2<true>>
 };
 
 static PlaneProcessor_st* st_c_functions[] = {
     nullptr,
-    smooth_temporal_repair_mode1to3_c<uint8_t, temporal_repair_processor_mode1_c>,
-    smooth_temporal_repair_mode1to3_c<uint8_t, temporal_repair_processor_mode2_c>,
-    smooth_temporal_repair_mode1to3_c<uint8_t, temporal_repair_processor_mode3_c>
+    smooth_temporal_repair_mode1to3_c<uint8_t, temporal_repair_processor_mode1_8_c>,
+    smooth_temporal_repair_mode1to3_c<uint8_t, temporal_repair_processor_mode2_8_c>,
+    smooth_temporal_repair_mode1to3_c<uint8_t, temporal_repair_processor_mode3_8_c>
+};
+
+static PlaneProcessor_st* st_c_functions_16[] = {
+    nullptr,
+    smooth_temporal_repair_mode1to3_c<uint16_t, temporal_repair_processor_mode1_16_c<16>>,
+    smooth_temporal_repair_mode1to3_c<uint16_t, temporal_repair_processor_mode2_16_c<16>>,
+    smooth_temporal_repair_mode1to3_c<uint16_t, temporal_repair_processor_mode3_16_c<16>>
+};
+
+// 32 bit float luma
+static PlaneProcessor_st* st_c_functions_32[] = {
+    nullptr,
+    smooth_temporal_repair_mode1to3_32_c<temporal_repair_processor_mode1_32_c<false>>,
+    smooth_temporal_repair_mode1to3_32_c<temporal_repair_processor_mode2_32_c<false>>,
+    smooth_temporal_repair_mode1to3_32_c<temporal_repair_processor_mode3_32_c<false>>
+};
+
+// 32 bit float chroma
+static PlaneProcessor_st* st_c_functions_chroma_32[] = {
+    nullptr,
+    smooth_temporal_repair_mode1to3_32_c<temporal_repair_processor_mode1_32_c<true>>,
+    smooth_temporal_repair_mode1to3_32_c<temporal_repair_processor_mode2_32_c<true>>,
+    smooth_temporal_repair_mode1to3_32_c<temporal_repair_processor_mode3_32_c<true>>
 };
 
 class SmoothTemporalRepair : public GenericVideoFilter
@@ -1231,7 +2347,9 @@ class SmoothTemporalRepair : public GenericVideoFilter
   PClip oclip;
 
   PlaneProcessor_st* processor_st_repair;
+  PlaneProcessor_st* processor_st_repair_chroma;
   PlaneProcessor_st* processor_st_repair_c;
+  PlaneProcessor_st* processor_st_repair_chroma_c;
 
   int last_frame;
   bool grey;
@@ -1256,6 +2374,9 @@ class SmoothTemporalRepair : public GenericVideoFilter
     const int* planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
 
     const int planecount = grey ? 1 : std::min(vi.NumComponents(), 3); // no Alpha plane processing
+
+    const int pixelsize = vi.ComponentSize(); // 1, 2, 4 bytes
+
     for (int p = 0; p < planecount; ++p) {
       const int plane = planes[p];
 
@@ -1270,17 +2391,28 @@ class SmoothTemporalRepair : public GenericVideoFilter
 
       intptr_t pitches[4] = { dppitch, pfpitch, ofpitch, nfpitch };
 
-      if (df->GetRowSize(plane) < 18)
-        processor_st_repair_c(dp, pf->GetReadPtr(plane), of->GetReadPtr(plane), nf->GetReadPtr(plane),
-          pitches, // pitch array
-          df->GetRowSize(plane) / vi.ComponentSize(),
-          df->GetHeight(plane));
-      else
-        // Spatial: Edge rows/columns are unhandled: -2 pixels less
-        processor_st_repair(dp, pf->GetReadPtr(plane), of->GetReadPtr(plane), nf->GetReadPtr(plane),
-          pitches, // pitch array
-          df->GetRowSize(plane) / vi.ComponentSize(),
-          df->GetHeight(plane));
+      const bool chroma = plane == PLANAR_U || plane == PLANAR_V;
+
+      PlaneProcessor_st* actual_processor;
+
+      // minimum byte size for simd
+      if (sf->GetRowSize(plane) < pixelsize + 16 + pixelsize) {
+        if (chroma)
+          actual_processor = processor_st_repair_chroma_c;
+        else
+          actual_processor = processor_st_repair_c;
+      }
+      else {
+        if (chroma)
+          actual_processor = processor_st_repair_chroma;
+        else
+          actual_processor = processor_st_repair;
+      }
+      actual_processor(
+        dp, pf->GetReadPtr(plane), of->GetReadPtr(plane), nf->GetReadPtr(plane),
+        pitches, // pitch array
+        df->GetRowSize(plane) / vi.ComponentSize(),
+        df->GetHeight(plane));
     }
 
     if (vi.NumComponents() == 4)
@@ -1292,26 +2424,78 @@ public:
   SmoothTemporalRepair(PClip clip, PClip _oclip, int mode, bool grey, bool planar, int opt, IScriptEnvironment* env) : 
     GenericVideoFilter(clip), 
     oclip(_oclip),
-    grey(grey)
+    grey(grey),
+    processor_st_repair(nullptr),
+    processor_st_repair_chroma(nullptr),
+    processor_st_repair_c(nullptr),
+    processor_st_repair_chroma_c(nullptr)
   {
     if (!planar && !vi.IsPlanar())
       env->ThrowError("TemporalRepair: only planar color spaces are supported");
 
     CompareVideoInfo(vi, _oclip->GetVideoInfo(), "TemporalRepair", env);
 
-    if (vi.BitsPerComponent() > 8)
-      env->ThrowError("TemporalRepair: only 8 bit color spaces are supported for this mode");
-
     if (vi.IsY())
       grey = true;
 
     // only mode 1, 2 and 3
-    processor_st_repair_c = st_c_functions[mode];
+    switch (vi.BitsPerComponent()) {
+    case 8:
+      processor_st_repair_c = st_c_functions[mode];
+      processor_st_repair_chroma_c = processor_st_repair_c;
+      break;
+    case 10: case 12: case 14: case 16:
+      // FIXME: different templates (different max saturation values)
+      processor_st_repair_c = st_c_functions_16[mode];
+      processor_st_repair_chroma_c = processor_st_repair_c;
+      break;
+    case 32:
+      processor_st_repair_c = st_c_functions_32[mode];
+      processor_st_repair_chroma_c = st_c_functions_chroma_32[mode]; // float: special
+      break;
+    }
 
-    if (opt == 0)
+    bool sse2 = (env->GetCPUFlags() & CPUF_SSE2) == CPUF_SSE2;
+    bool sse41 = (env->GetCPUFlags() & CPUF_SSE4_1) == CPUF_SSE4_1;
+
+    // disable by opt
+    if (opt >= 0) {
+      if (opt < 1) sse2 = false;
+      if (opt < 2) sse41 = false;
+    }
+
+    if (opt == 0) { // 0: C
       processor_st_repair = processor_st_repair_c;
-    else
-      processor_st_repair = st_sse2_functions[mode];
+      processor_st_repair_chroma = processor_st_repair_chroma_c;
+    }
+    else {
+      switch (vi.BitsPerComponent()) {
+      case 8:
+        if (sse2)
+          processor_st_repair = st_sse2_functions[mode];
+        else
+          processor_st_repair = processor_st_repair_c;
+        processor_st_repair_chroma = processor_st_repair;
+        break;
+      case 10: case 12: case 14: case 16:
+        if (sse41)
+          processor_st_repair = st_sse41_functions_16[mode];
+        else
+          processor_st_repair = processor_st_repair_c;
+        processor_st_repair_chroma = processor_st_repair;
+        break;
+      case 32:
+        if (sse2) {
+          processor_st_repair = st_sse2_functions_32[mode];
+          processor_st_repair_chroma = st_sse2_functions_chroma_32[mode];
+        }
+        else {
+          processor_st_repair = processor_st_repair_c;
+          processor_st_repair_chroma = processor_st_repair_chroma_c;
+        }
+        break;
+      }
+    }
 
     last_frame = vi.num_frames >= 2 ? vi.num_frames - 2 : 0;
 

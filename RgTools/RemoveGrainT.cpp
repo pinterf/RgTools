@@ -3,21 +3,7 @@
 // An Avisynth plugin for removing grain from progressive video
 //
 // 2007 By Rainer Wittmann <gorw@gmx.de>
-// 2019 Additional work by Ferenc Pintér
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// To get a copy of the GNU General Public License write to the Free Software
-// Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA, or visit
-// http://www.gnu.org/copyleft/gpl.html .
+// 2019 Rewrite and additional work by Ferenc Pintér
 
 #include "RemoveGrainT.h"
 #include "common.h"
@@ -2518,10 +2504,6 @@ AVSValue __cdecl Create_TemporalRepair(AVSValue args, void* user_data, IScriptEn
     env->ThrowError("TemporalRepair: illegal mode %i", mode);
   bool planar = args[PLANAR].AsBool(false);
   int opt = args[OPT].AsInt(-1);
-  /*
-  if (clip->GetVideoInfo().BitsPerComponent() > 8)
-    env->ThrowError("TemporalRepair: only 8 bit colorspaces are supported");
-    */
   bool spatial[MAXTMODE + 1] = { false, true, true, true, false };
 
   return spatial[mode] ? (AVSValue) new SmoothTemporalRepair(clip, oclip, mode, grey, planar, opt, env)

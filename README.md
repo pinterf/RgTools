@@ -1,20 +1,21 @@
 ## RgTools
 
-RgTools is a modern rewrite of RemoveGrain, Repair, BackwardClense, Clense, ForwardClense and VerticalCleaner in a single plugin. RgTools is mostly backward compatible to the original plugins.
+RgTools is a modern rewrite of RemoveGrain, Repair, BackwardClense, Clense, ForwardClense, VerticalCleaner and TemporalRepair in a single plugin. RgTools is mostly backward compatible to the original plugins.
 
 Some routines might be slightly less efficient than original, some are faster. Output of a few RemoveGrain modes is not exactly identical to the original due to some minor rounding differences which you shouldn't care about. Other functions should be identical.
 
 This plugin is written from scratch and licensed under the [MIT license][1]. Some modes of RemoveGrain and Repair were taken from the Firesledge's Dither package.
 
-v0.98 (20190509) - work in progress, not released
-- Include TemporalRepair filter from RemoveGrainT (rewritten C and SIMD intrinsics from pure inline asm)
+v0.98 (20190814)
+- Include "TemporalRepair" filter from old RemoveGrainT package (rewritten C and SIMD intrinsics from pure inline asm)
   Add Y8, YV16, YV24 besides YV12, drop YUY2 support.
   Add 10-32 bit support for Y, YUV and planar RGB formats
+  Add int "opt" parameter (mainly for debug: 0=C 1=SSE2 2=SSE4.1) for testing specific code paths
 - Codes for different processor targets (SSSE3 and SSE4.1) are now separated and are compiled using function attributes (clang, gcc).
 - Other source changes for errorless gcc and clang build
-- LLVM 8.0 support, see howto in RgTools.txt
-  Note: not yet recommended (as of 20190509) due to a current clang compiler bug (_mm_avg_epu8 related, fixed on April 14 2019) it's up-to 1/3 slower than the Microsoft build.
-  or you can try latest snapshot builds from https://llvm.org/builds/ (Note: 15 April 2019 build is still not good)
+- LLVM support, see howto in RgTools.txt
+  Note: use at least LLVM 9.0 build 21 June 2019 due to a clang compiler bug (_mm_avg_epu8 related, fixed on April 14 2019) older versions are up-to 1/3 slower than the Microsoft build.
+  See latest snapshot builds at https://llvm.org/builds/
 - GCC 8.3 support, CMakeFiles.txt, see howto in RgTools.txt
 - RemoveGrain/Repair different code paths for SSE2/SSE4.1/AVX2 instead of SSE2/SSE3/AVX2.
 - Add documentation (from old docs, new part: gcc/clang howto)
@@ -63,25 +64,33 @@ Clense(clip c, clip "previous", clip "next", bool "grey", bool "reduceflicker", 
 Temporal median of three frames. Identical to `MedianBlurTemporal(0,0,0,1)` but a lot faster. Can be used as a building block for [many][3] [fancy][4] [medians][5].
 If reduceflicker is true, the (n-1)th source frame is reused from the previous "clensed" frame, that the filter stored internally. 
 This works however only if Clense is getting frame requests sequentally.
-Parameters "planar" and "cache" are dummy, they exist for compatibility reasons
+Parameters "planar" and "cache" are dummy, they exist for compatibility reasons.
 
 ```
 ForwardClense(clip c, bool "grey", bool "planar", int "cache")
 ```
 Modified version of Clense that works on current and next frames.
-Parameters "planar" and "cache" are dummy, they exist for compatibility reasons
+Parameters "planar" and "cache" are dummy, they exist for compatibility reasons.
 
 ```
 BackwardClense(clip c, bool "grey", bool "planar", int "cache")
 ```
 Modified version of Clense that works on current and previous frames.
-Parameters "planar" and "cache" are dummy, they exist for compatibility reasons
+Parameters "planar" and "cache" are dummy, they exist for compatibility reasons.
 
 ```
 VerticalCleaner(clip c, int "mode", int "modeU", int "modeV", bool "planar")
 ```
 Very fast vertical median filter. Has only two modes.
+Parameter "planar" is dummy, exists for compatibility reasons.
 
+```
+TemporalRepair(clip c, clip c, int "mode", int "smooth", bool "grey", bool "planar", int "opt")
+```
+In the same way as Repair is derived from RemoveGrain, TemporalRepair is derived from Clense.
+While Repair is a spatial filter most suitable for removing artifacts of temporal filters like Clense, TemporalRepair is a temporal filter,
+primarily useful for restoring static (non moving) details of spatial filters like RemoveGrain. 
+Parameter "planar" is dummy, exists for compatibility reasons.
 
   [1]: http://opensource.org/licenses/MIT
   [2]: https://github.com/tp7/RgTools/wiki/RemoveGrain

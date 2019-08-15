@@ -13,6 +13,8 @@ Global
 		Release LLVM WithDebug|x64 = Release LLVM WithDebug|x64
 		Release LLVM|Win32 = Release LLVM|Win32
 		Release LLVM|x64 = Release LLVM|x64
+		Release XP|Win32 = Release XP|Win32
+		Release XP|x64 = Release XP|x64
 		Release|Win32 = Release|Win32
 		Release|x64 = Release|x64
 		ReleaseWithDebug|Win32 = ReleaseWithDebug|Win32
@@ -31,6 +33,10 @@ Global
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release LLVM|Win32.Build.0 = Release LLVM|Win32
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release LLVM|x64.ActiveCfg = Release LLVM|x64
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release LLVM|x64.Build.0 = Release LLVM|x64
+		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release XP|Win32.ActiveCfg = Release XP|Win32
+		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release XP|Win32.Build.0 = Release XP|Win32
+		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release XP|x64.ActiveCfg = Release XP|x64
+		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release XP|x64.Build.0 = Release XP|x64
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release|Win32.ActiveCfg = Release|Win32
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release|Win32.Build.0 = Release|Win32
 		{07F7D803-BD01-4620-AF0B-18803F302E86}.Release|x64.ActiveCfg = Release|x64

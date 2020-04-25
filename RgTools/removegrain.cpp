@@ -340,6 +340,7 @@ static PlaneProcessor* sse2_functions[] = {
     process_plane_sse<uint8_t, rg_mode22_sse2<false>, rg_mode22_sse2<true>>,
     process_plane_sse<uint8_t, rg_mode23_sse2<false>, rg_mode23_sse2<true>>,
     process_plane_sse<uint8_t, rg_mode24_sse2<false>, rg_mode24_sse2<true>>,
+    process_plane_sse<uint8_t, rg_mode25_sse2<false>, rg_mode25_sse2<true>>,
 };
 
 static PlaneProcessor* sse4_functions[] = {
@@ -369,6 +370,7 @@ static PlaneProcessor* sse4_functions[] = {
     process_plane_sse41<uint8_t, rg_mode22_sse<false>, rg_mode22_sse<true>>,
     process_plane_sse41<uint8_t, rg_mode23_sse<false>, rg_mode23_sse<true>>,
     process_plane_sse41<uint8_t, rg_mode24_sse<false>, rg_mode24_sse<true>>,
+    process_plane_sse41<uint8_t, rg_mode25_sse2<false>, rg_mode25_sse2<true>>,
 };
 
 static PlaneProcessor* sse4_functions_16_10[] = {
@@ -707,8 +709,8 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
         env->ThrowError("RemoveGrain works only with planar colorspaces");
     }
 
-    if (mode <= UNDEFINED_MODE || mode_ > 24 || modeU_ > 24 || modeV_ > 24) {
-        env->ThrowError("RemoveGrain mode should be between -1 and 24!");
+    if (mode <= UNDEFINED_MODE || mode_ > 25 || modeU_ > 25 || modeV_ > 25) {
+        env->ThrowError("RemoveGrain mode should be between -1 and 25!");
     }
 
     bool isPlanarRGB = vi.IsPlanarRGB() || vi.IsPlanarRGBA();

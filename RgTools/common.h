@@ -219,6 +219,118 @@ static RG_FORCEINLINE __m128 select_on_equal_32(const __m128 &cmp1, const __m128
   return blend_32(eq, desired, current);
 }
 
+/*
+in / out  in     in    tmp  tmp
+#define	sharpen(center, minus, plus, reg1, reg2)\
+__asm	SSE_RMOVE	reg1,				minus			\
+__asm	SSE_RMOVE	reg2,				plus			\
+__asm	psubusb		reg1,				plus			\
+__asm	psubusb		reg2,				minus			\
+__asm	psrlw		plus,				1				\
+__asm	psrlw		minus,				1				\
+__asm	pand		plus,				shift_mask		\
+__asm	pand		minus,				shift_mask		\
+__asm	pminub		plus,				reg1			\
+__asm	pminub		minus,				reg2			\
+__asm	paddusb		center,				plus			\
+__asm	psubusb		center,				minus
+*/
+
+static RG_FORCEINLINE __m128i _MM_SRLI_EPI8(const __m128i& v, int imm) {
+  return _mm_and_si128(_mm_set1_epi8(0xFF >> imm), _mm_srli_epi32(v, imm));
+}
+// only in parameters
+static RG_FORCEINLINE __m128i sharpen(const __m128i& center, const __m128i& minus, const __m128i& plus) {
+  auto mp_diff = _mm_subs_epu8(minus, plus);
+  auto pm_diff = _mm_subs_epu8(plus, minus);
+  auto m_per2 = _MM_SRLI_EPI8(minus, 1);
+  auto p_per2 = _MM_SRLI_EPI8(plus, 1);
+  auto min_1 = _mm_min_epu8(p_per2, mp_diff);
+  auto min_2 = _mm_min_epu8(m_per2, pm_diff);
+  return _mm_subs_epu8(_mm_adds_epu8(center, min_1), min_2);
+}
+/*
+                       out    out     out    in        in         in
+#define neighbourdiff(minus, plus, center1_as_centerNext, center2, neighbour, nullreg)	\
+__asm	SSE_RMOVE	center1,			center2		\
+__asm	psubusb		center2,			neighbour	\
+__asm	psubusb		neighbour,			center1		\
+__asm	SSE_RMOVE	minus,				center2		\
+__asm	SSE_RMOVE	plus,				neighbour	\
+__asm	pcmpeqb		center2,			nullreg		\
+__asm	pcmpeqb		neighbour,			nullreg		\
+__asm	por			minus,				center2		\
+__asm	pand		center2,			neighbour	\
+__asm	por			plus,				neighbour	\
+__asm	psubusb		minus,				center2		\
+__asm	psubusb		plus,				center2
+
+  // c2 = 9 2 5 1
+  // n  = 4 3 5 255
+                                                c2            n            minus           plus
+__asm	SSE_RMOVE	center1,			center2		\      9 2 5 1     4 3 5 255
+__asm	psubusb		center2,			neighbour	\      5 0 0 0    
+__asm	psubusb		neighbour,			center1		\                0 1 0 254
+__asm	SSE_RMOVE	minus,				center2		\                                 5 0 0 0  
+__asm	SSE_RMOVE	plus,				neighbour	\                                                  0 1 0 254 
+__asm	pcmpeqb		center2,			nullreg		\      00 FF FF FF   
+__asm	pcmpeqb		neighbour,			nullreg		\               FF 00 FF 00
+__asm	por			minus,				center2		\                                   5 FF FF FF
+__asm	pand		center2,			neighbour	\        00 00 FF 00
+__asm	por			plus,				neighbour	\                                                    FF 1 FF 254
+__asm	psubusb		minus,				center2		\                                 5 FF 00 FF
+__asm	psubusb		plus,				center2                                                      FF 1 00 254
+
+*/
+// center1 and center2 are changing during consecutive calls
+// helper for mode 25_mode24
+static RG_FORCEINLINE void neighbourdiff_orig(__m128i& minus, __m128i& plus, __m128i& center_next, __m128i center2, __m128i neighbour, const __m128i& zero) {
+  center_next = center2; // save
+  // c2 = 9 2 5 1
+  // n  = 4 3 5 255
+  auto cn_diff = _mm_subs_epu8(center2, neighbour); // 5 0 0 0
+  auto nc_diff = _mm_subs_epu8(neighbour, center2); // 0 1 0 254
+
+  auto cndiff_masked = _mm_cmpeq_epi8(cn_diff, zero); // FF where c <= n     00 FF FF FF
+  auto ncdiff_masked = _mm_cmpeq_epi8(nc_diff, zero); // FF where n <= c     FF 00 FF 00
+  auto cn_equal = _mm_and_si128(cndiff_masked, ncdiff_masked); // FF where c == n   00 00 FF 00
+
+  minus = _mm_or_si128(cn_diff, cndiff_masked); // 5 FF FF FF
+  plus = _mm_or_si128(nc_diff, ncdiff_masked);  // FF 1  FF 254
+
+  minus = _mm_subs_epu8(minus, cn_equal); // 5 FF 00 FF 
+  plus = _mm_subs_epu8(plus, cn_equal);   // FF 1 00 254
+  // When called for pixel pairs, minimum values of all minuses and all pluses are collected
+  // min of cn_diff or 00 if there was any equality
+  // min of nc_diff or 00 if there was any equality
+  // Note: on equality both minus and plus will be zero, sharpen will do nothing
+  // these values will be passed to the "sharpen"
+}
+
+// center1 and center2 are changing during consecutive calls
+// helper for mode 25_mode24
+static RG_FORCEINLINE void neighbourdiff(__m128i& minus, __m128i& plus, __m128i center, __m128i neighbour, const __m128i& zero) {
+  // c2 = 9 2 5 1
+  // n  = 4 3 5 255
+  auto cn_diff = _mm_subs_epu8(center, neighbour); // 5 0 0 0
+  auto nc_diff = _mm_subs_epu8(neighbour, center); // 0 1 0 254
+
+  auto cndiff_masked = _mm_cmpeq_epi8(cn_diff, zero); // FF where c <= n     00 FF FF FF
+  auto ncdiff_masked = _mm_cmpeq_epi8(nc_diff, zero); // FF where n <= c     FF 00 FF 00
+  auto cn_equal = _mm_and_si128(cndiff_masked, ncdiff_masked); // FF where c == n   00 00 FF 00
+
+  minus = _mm_or_si128(cn_diff, cndiff_masked); // 5 FF FF FF
+  plus = _mm_or_si128(nc_diff, ncdiff_masked);  // FF 1  FF 254
+
+  minus = _mm_subs_epu8(minus, cn_equal); // 5 FF 00 FF 
+  plus = _mm_subs_epu8(plus, cn_equal);   // FF 1 00 254
+  // When called for pixel pairs, minimum values of all minuses and all pluses are collected
+  // min of cn_diff or 00 if there was any equality
+  // min of nc_diff or 00 if there was any equality
+  // Note: on equality both minus and plus will be zero, sharpen will do nothing
+  // these values will be passed to the "sharpen"
+}
+
 // center column as aligned
 #define LOAD_SQUARE_SSE_0(ptr, pitch, pixelsize, aligned) \
 __m128i a1, a2, a3, a4, a5, a6, a7, a8, c; \

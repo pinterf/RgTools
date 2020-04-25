@@ -1,6 +1,11 @@
 #ifndef __RG_FUNCTIONS_SSE_H__
 #define __RG_FUNCTIONS_SSE_H__
 
+// note: 8 bit functions are duplicated
+// one for pure sse2 the other (_sse suffix) for generic sse4.1
+// latter because of gcc and clang which need sse platform set
+// as function attributes
+
 #include "common.h"
 
 typedef __m128i (SseModeProcessor)(const Byte*, int);
@@ -2891,6 +2896,7 @@ RG_FORCEINLINE __m128i rg_mode24_sse2(const Byte* pSrc, int srcPitch) {
     return _mm_adds_epu8(_mm_subs_epu8(c, u), d);
 }
 
+
 template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
@@ -3043,5 +3049,255 @@ RG_FORCEINLINE __m128i rg_mode24_sse_32(const Byte* pSrc, int srcPitch) {
 
   return _mm_castps_si128(_mm_adds_ps(_mm_subs_ps(c, u), d)); // FIXME: use chroma aware sat add sat sub
 }
+
+/*
+Finally mode 25 is the minimal sharpening mode.
+In this mode the neighbours n1,n2 are selected such that n1 <= c <= n2 and such that there
+exists no further neighbour n with n1 < n < n2. If c is larger than all neighbours,
+then n2 doesn't exist. In this case, we simply replace n2 by 255.
+Similarily, if c is smaller than all neighbours, then n1 doesn't exist and n1 is replaced
+by the value 0. Finally c is sharpened as described in the section Sharpening between two points.
+*/
+template<bool aligned>
+RG_FORCEINLINE __m128i rg_mode25_sse2(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
+  /*
+  a1 a2 a3
+  a4 c  a5
+  a6 a7 a8
+  */
+  __m128i SSE4, SSE5; // SSE4_minus, SSE5_plus; // global collectors
+  __m128i SSE6, SSE7; // SSE6_actual_minus, SSE7_actual_plus the actual results
+  const __m128i zero = _mm_setzero_si128();
+
+  neighbourdiff(SSE4, SSE5, c, a4, zero); // out out out in in in
+  // first result fill into collectors SSE4 and SSE5, no comparison
+
+  neighbourdiff(SSE6, SSE7, c, a5, zero);
+  SSE4 = _mm_min_epu8(SSE4, SSE6);
+  SSE5 = _mm_min_epu8(SSE5, SSE7);
+
+  neighbourdiff(SSE6, SSE7, c, a1, zero);
+  SSE4 = _mm_min_epu8(SSE4, SSE6);
+  SSE5 = _mm_min_epu8(SSE5, SSE7);
+
+  neighbourdiff(SSE6, SSE7, c, a2, zero);
+  SSE4 = _mm_min_epu8(SSE4, SSE6);
+  SSE5 = _mm_min_epu8(SSE5, SSE7);
+
+  neighbourdiff(SSE6, SSE7, c, a3, zero);
+  SSE4 = _mm_min_epu8(SSE4, SSE6);
+  SSE5 = _mm_min_epu8(SSE5, SSE7);
+
+  neighbourdiff(SSE6, SSE7, c, a6, zero);
+  SSE4 = _mm_min_epu8(SSE4, SSE6);
+  SSE5 = _mm_min_epu8(SSE5, SSE7);
+
+  neighbourdiff(SSE6, SSE7, c, a7, zero);
+  SSE4 = _mm_min_epu8(SSE4, SSE6);
+  SSE5 = _mm_min_epu8(SSE5, SSE7);
+
+  neighbourdiff(SSE6, SSE7, c, a8, zero);
+  SSE4 = _mm_min_epu8(SSE4, SSE6);
+  SSE5 = _mm_min_epu8(SSE5, SSE7);
+
+  auto result = sharpen(c, SSE4, SSE5);
+  return result;
+}
+
+#if 0
+void	nondestructivesharpen(const Byte* pSrc, int srcPitch, BYTE* dp, int dpitch, const BYTE* _sp, int spitch, int hblocks, int remainder, int incpitch, int height)
+{
+  int eax, ebx, edx;
+  const BYTE* esi;
+  BYTE* edi;
+  // integrated into later eax = hblocks; // __asm	mov			eax,				hblocks
+  ebx = spitch; // __asm	mov			ebx, spitch
+  edx = remainder; //  __asm	mov			edx, remainder
+  auto sse0 = _mm_setzero_si128(); // __asm	pxor		SSE0, SSE0
+  // integrated into later eax = eax * 2; //  __asm	add			eax, eax
+  // integrated esi = _sp; //  __asm	mov			esi, _sp
+  eax = hblocks * 16 + edx + 15; // __asm	lea			eax, [eax * 8 + edx + SSE_INCREMENT + 1]
+  esi = _sp - ebx; // esi: PREV //  __asm	sub			esi, ebx
+  dpitch -= eax; // __asm	sub			dpitch,				eax
+  // integrated later eax = -eax; //  __asm	neg			eax
+  edi = dp; // edi: DEST PTR //  __asm	mov			edi, dp
+  eax = -eax + spitch + 1; // EAX //  __asm	lea			eax, [ebx + eax + 1]
+
+  // __asm	align		16
+  // __asm	column_loop:
+  /*
+  __asm	SSE3_MOVE	SSE1,				[esi + ebx + 1]
+  __asm	SSE3_MOVE	SSE3,				[esi + ebx]
+      neighbourdiff_w(SSE4, SSE5, SSE2, SSE1, [edi], SSE3, SSE0, movd)
+
+  __asm	SSE3_MOVE	SSE3,				[esi + ebx + 2]
+      neighbourdiff(SSE6, SSE7, SSE1, SSE2, SSE3, SSE0)
+  __asm	pminub		SSE4,				SSE6
+  __asm	pminub		SSE5,				SSE7
+
+  __asm	SSE3_MOVE	SSE3,				[esi]
+      neighbourdiff(SSE6, SSE7, SSE2, SSE1, SSE3, SSE0)
+  __asm	pminub		SSE4,				SSE6
+  __asm	pminub		SSE5,				SSE7
+
+  __asm	SSE3_MOVE	SSE3,				[esi + 1]
+      neighbourdiff(SSE6, SSE7, SSE1, SSE2, SSE3, SSE0)
+  __asm	pminub		SSE4,				SSE6
+  __asm	pminub		SSE5,				SSE7
+
+  __asm	SSE3_MOVE	SSE3,				[esi + 2]
+      neighbourdiff(SSE6, SSE7, SSE2, SSE1, SSE3, SSE0)
+  __asm	pminub		SSE4,				SSE6
+  __asm	pminub		SSE5,				SSE7
+
+  __asm	SSE3_MOVE	SSE3,				[esi + 2*ebx]
+      neighbourdiff(SSE6, SSE7, SSE1, SSE2, SSE3, SSE0)
+  __asm	pminub		SSE4,				SSE6
+  __asm	pminub		SSE5,				SSE7
+
+  __asm	SSE3_MOVE	SSE3,				[esi + 2*ebx + 1]
+      neighbourdiff(SSE6, SSE7, SSE2, SSE1, SSE3, SSE0)
+  __asm	pminub		SSE4,				SSE6
+  __asm	pminub		SSE5,				SSE7
+
+  __asm	SSE3_MOVE	SSE3,				[esi + 2*ebx + 2]
+      neighbourdiff(SSE6, SSE7, SSE1, SSE2, SSE3, SSE0)
+  __asm	pminub		SSE4,				SSE6
+  __asm	pminub		SSE5,				SSE7
+      sharpen(SSE1, SSE4, SSE5, SSE6, SSE7)
+  __asm	SSE_MOVE	[edi + 1],			SSE1
+  */
+  /*
+  original:
+  out    out     out    in        in         in
+  #define neighbourdiff(minus, plus, center1_as_centerNext, center2, neighbour, nullreg)	\
+
+  // center1 and center2 are changing during consecutive calls
+  // helper for mode 25_mode24
+  static RG_FORCEINLINE void neighbourdiff(__m128i & minus, __m128i & plus, __m128i & center_next, __m128i center2, __m128i neighbour, const __m128i & zero) {
+  */
+  LOAD_SQUARE_SSE_UA(pSrc, srcPitch /*, aligned*/, true);
+  /*
+  a1 a2 a3
+  a4 c  a5
+  a6 a7 a8
+  */
+  __m128i SSE1, SSE2, SSE3;
+  __m128i SSE4, SSE5; // SSE4_minus, SSE5_plus; // global collectors
+  __m128i SSE6, SSE7; // SSE6_actual_minus, SSE7_actual_plus the actual results
+  __m128i SSE0 = _mm_setzero_si128();
+  /*
+    // now the pixels in the middle
+  __asm	add			esi,				SSE_INCREMENT
+  __asm	add			edi,				SSE_INCREMENT + 1
+  __asm	mov			ecx,				hblocks
+  __asm	align		16
+  __asm	middle_loop:
+  */
+  SSE1 = c; // center middle __asm	SSE3_MOVE	SSE1, [esi + ebx + 1] // +ebx: NEXT
+  SSE3 = a4; // center left__asm	SSE3_MOVE	SSE3, [esi + ebx]
+
+  neighbourdiff(SSE4, SSE5, SSE2, SSE1, SSE3, SSE0); // out out out in in in
+  // first result fill into collectors SSE4 and SSE5, no comparison
+  SSE3 = a5; // center right _asm	SSE3_MOVE	SSE3,				[esi + ebx + 2]
+  // SSE1 and SSE2 a changing SSE2,SSE1, then SSE1, SSE2, then SSE2,SSE1, internal asm optimization
+  neighbourdiff(SSE4, SSE5, SSE1, SSE2, SSE3, SSE0); //  neighbourdiff(SSE6, SSE7, SSE1, SSE2, SSE3, SSE0)
+  SSE4 = _mm_min_epu8(SSE4, SSE6); // __asm	pminub		SSE4, SSE6
+  SSE5 = _mm_min_epu8(SSE5, SSE7); //__asm	pminub		SSE5,				SSE7
+
+  SSE3 = a1; // top left  __asm	SSE3_MOVE	SSE3, [esi]
+  neighbourdiff(SSE6, SSE7, SSE2, SSE1, SSE3, SSE0); //    neighbourdiff(SSE6, SSE7, SSE2, SSE1, SSE3, SSE0)
+  SSE4 = _mm_min_epu8(SSE4, SSE6); // __asm	pminub		SSE4, SSE6
+  SSE5 = _mm_min_epu8(SSE5, SSE7); //__asm	pminub		SSE5,				SSE7
+
+  SSE3 = a2; // top center  __asm	SSE3_MOVE	SSE3, [esi + 1]
+  neighbourdiff(SSE6, SSE7, SSE1, SSE2, SSE3, SSE0);
+  SSE4 = _mm_min_epu8(SSE4, SSE6); // __asm	pminub		SSE4, SSE6
+  SSE5 = _mm_min_epu8(SSE5, SSE7); //__asm	pminub		SSE5,				SSE7
+
+  SSE3 = a3; // top right  __asm	SSE3_MOVE	SSE3, [esi + 2]
+  neighbourdiff(SSE6, SSE7, SSE2, SSE1, SSE3, SSE0);
+  SSE4 = _mm_min_epu8(SSE4, SSE6); // __asm	pminub		SSE4, SSE6
+  SSE5 = _mm_min_epu8(SSE5, SSE7); //__asm	pminub		SSE5,				SSE7
+
+  SSE3 = a6; // bottom left  __asm	SSE3_MOVE	SSE3, [esi + 2 * ebx]
+  neighbourdiff(SSE6, SSE7, SSE1, SSE2, SSE3, SSE0);
+  SSE4 = _mm_min_epu8(SSE4, SSE6); // __asm	pminub		SSE4, SSE6
+  SSE5 = _mm_min_epu8(SSE5, SSE7); //__asm	pminub		SSE5,				SSE7
+
+  SSE3 = a7; // bottom center __asm	SSE3_MOVE	SSE3, [esi + 2 * ebx + 1]
+  neighbourdiff(SSE6, SSE7, SSE2, SSE1, SSE3, SSE0);
+  SSE4 = _mm_min_epu8(SSE4, SSE6); // __asm	pminub		SSE4, SSE6
+  SSE5 = _mm_min_epu8(SSE5, SSE7); //__asm	pminub		SSE5,				SSE7
+
+  SSE3 = a8; // bottom right  __asm	SSE3_MOVE	SSE3, [esi + 2 * ebx + 2]
+  neighbourdiff(SSE6, SSE7, SSE1, SSE2, SSE3, SSE0);
+  SSE4 = _mm_min_epu8(SSE4, SSE6); // __asm	pminub		SSE4, SSE6
+  SSE5 = _mm_min_epu8(SSE5, SSE7); //__asm	pminub		SSE5,				SSE7
+
+  //__asm	add			esi,				SSE_INCREMENT
+  /*
+  in / out  in     in    tmp  tmp
+  #define	sharpen(center, minus, plus, reg1, reg2)\
+  //omit tmp, compiler solves it
+  static RG_FORCEINLINE __m128i sharpen(const __m128i& center, const __m128i& minus, const __m128i& plus) {
+  */
+  sharpen(SSE1, SSE4, SSE5); // in/out, in in tmp tmp
+  __asm	SSE_MOVE[edi], SSE1
+  __asm	add			edi, SSE_INCREMENT
+  __asm	dec			ecx
+  __asm	jnz			middle_loop
+
+  // the last pixels
+  __asm	add			esi, edx
+  __asm	add			edi, edx
+  __asm	SSE3_MOVE	SSE1, [esi + ebx + 1]
+    __asm	SSE3_MOVE	SSE3, [esi + ebx]
+    neighbourdiff(SSE4, SSE5, SSE2, SSE1, SSE3, SSE0)
+
+    __asm	SSE3_MOVE	SSE3, [esi + ebx + 2]
+    neighbourdiff_w(SSE6, SSE7, SSE1, SSE2, [edi + 1], SSE3, SSE0, SSE_MOVE)
+    __asm	pminub		SSE4, SSE6
+  __asm	pminub		SSE5, SSE7
+
+  __asm	SSE3_MOVE	SSE3, [esi]
+    neighbourdiff(SSE6, SSE7, SSE2, SSE1, SSE3, SSE0)
+    __asm	pminub		SSE4, SSE6
+  __asm	pminub		SSE5, SSE7
+
+  __asm	SSE3_MOVE	SSE3, [esi + 1]
+    neighbourdiff(SSE6, SSE7, SSE1, SSE2, SSE3, SSE0)
+    __asm	pminub		SSE4, SSE6
+  __asm	pminub		SSE5, SSE7
+
+  __asm	SSE3_MOVE	SSE3, [esi + 2]
+    neighbourdiff(SSE6, SSE7, SSE2, SSE1, SSE3, SSE0)
+    __asm	pminub		SSE4, SSE6
+  __asm	pminub		SSE5, SSE7
+
+  __asm	SSE3_MOVE	SSE3, [esi + 2 * ebx]
+    neighbourdiff(SSE6, SSE7, SSE1, SSE2, SSE3, SSE0)
+    __asm	pminub		SSE4, SSE6
+  __asm	pminub		SSE5, SSE7
+
+  __asm	SSE3_MOVE	SSE3, [esi + 2 * ebx + 1]
+    neighbourdiff(SSE6, SSE7, SSE2, SSE1, SSE3, SSE0)
+    __asm	pminub		SSE4, SSE6
+  __asm	pminub		SSE5, SSE7
+
+  __asm	SSE3_MOVE	SSE3, [esi + 2 * ebx + 2]
+    neighbourdiff(SSE6, SSE7, SSE1, SSE2, SSE3, SSE0)
+    __asm	pminub		SSE4, SSE6
+  __asm	pminub		SSE5, SSE7
+  __asm	add			esi, eax
+  sharpen(SSE1, SSE4, SSE5, SSE6, SSE7)
+    __asm	SSE_MOVE[edi], SSE1
+  __asm	add			edi, dpitch
+  __asm	dec			height
+  __asm	jnz			column_loop
+}
+*/
+#endif // 0
 
 #endif

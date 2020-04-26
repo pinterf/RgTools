@@ -11,7 +11,7 @@ class Repair : public GenericVideoFilter {
 public:
     Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip_cs_check, IScriptEnvironment* env);
 
-    PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
+    PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override;
 
     int __stdcall SetCacheHints(int cachehints, int frame_range) override {
       return cachehints == CACHE_GET_MTMODE ? MT_NICE_FILTER : 0;
@@ -20,10 +20,11 @@ public:
     const static int UNDEFINED_MODE = -2;
 
 private:
+    PClip ref_;
+
     int mode_;
     int modeU_;
     int modeV_;
-    PClip ref_;
 
     int pixelsize;
     int bits_per_pixel;

@@ -11,7 +11,7 @@ class RemoveGrain : public GenericVideoFilter {
 public:
     RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_cs_check, int opt, IScriptEnvironment* env);
 
-    PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
+    PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override;
 
     int __stdcall SetCacheHints(int cachehints, int frame_range) override {
       return cachehints == CACHE_GET_MTMODE ? MT_NICE_FILTER : 0;

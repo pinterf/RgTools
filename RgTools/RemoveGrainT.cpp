@@ -572,7 +572,7 @@ class	TemporalRepair : public GenericVideoFilter
     return cachehints == CACHE_GET_MTMODE ? MT_NICE_FILTER : 0;
   }
 
-  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env)
+  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override
   {
     if (n <= 0 || n - 1 >= last_frame)
       return child->GetFrame(n, env);
@@ -2290,7 +2290,7 @@ class SmoothTemporalRepair : public GenericVideoFilter
     return cachehints == CACHE_GET_MTMODE ? MT_NICE_FILTER : 0;
   }
 
-  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env)
+  PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override
   {
     if (n <= 0 || n - 1 >= last_frame)
       return child->GetFrame(n, env);
@@ -2355,11 +2355,11 @@ public:
   SmoothTemporalRepair(PClip clip, PClip _oclip, int mode, bool grey, bool planar, int opt, IScriptEnvironment* env) : 
     GenericVideoFilter(clip), 
     oclip(_oclip),
-    grey(grey),
     processor_st_repair(nullptr),
     processor_st_repair_chroma(nullptr),
     processor_st_repair_c(nullptr),
-    processor_st_repair_chroma_c(nullptr)
+    processor_st_repair_chroma_c(nullptr),
+    grey(grey)
   {
     if (!planar && !vi.IsPlanar())
       env->ThrowError("TemporalRepair: only planar color spaces are supported");

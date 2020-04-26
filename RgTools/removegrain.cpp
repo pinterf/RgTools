@@ -800,6 +800,10 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
         modeV_ = modeU_;
     }
 
+    int worst_case_width = vi.width;
+    if (vi.IsYUV() && vi.NumComponents() >= 3)
+      worst_case_width >>= vi.GetPlaneWidthSubsampling(PLANAR_U);
+
     pixelsize = vi.ComponentSize();
     bits_per_pixel = vi.BitsPerComponent();
 
@@ -824,15 +828,15 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
       else
         functions = c_functions;
 
-      if (vi.width < 32 + 1 && use_avx2) { //not enough for YMM, try SSE4
+      if (worst_case_width < 32 + 1 && use_avx2) { //not enough for YMM, try SSE4
         functions = sse4_functions;
       }
-      if (vi.width < 16+1) { //not enough for XMM
+      if (worst_case_width < 16+1) { //not enough for XMM
         functions = c_functions;
       }
     }
     else if (pixelsize == 2) {
-      if (use_avx2 && vi.width >= (32 / sizeof(uint16_t) + 1)) {
+      if (use_avx2 && worst_case_width >= (32 / sizeof(uint16_t) + 1)) {
         // mode 6 and 8 bitdepth clamp specific
         switch (bits_per_pixel) {
         case 10: functions = avx2_functions_16_10; break;
@@ -842,7 +846,7 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
         default: env->ThrowError("Illegal bit-depth: %d!", bits_per_pixel);
         }
       }
-      else if (use_sse41 && vi.width >= (16/sizeof(uint16_t) + 1)) {
+      else if (use_sse41 && worst_case_width >= (16/sizeof(uint16_t) + 1)) {
         // mode 6 and 8 bitdepth clamp specific
         switch (bits_per_pixel) {
         case 10: functions = sse4_functions_16_10; break;
@@ -863,11 +867,11 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
       }
     }
     else {// if (pixelsize == 4) 
-      if (use_avx2 && vi.width >= (32 / sizeof(float) + 1)) {
+      if (use_avx2 && worst_case_width >= (32 / sizeof(float) + 1)) {
         functions = avx2_functions_32_luma;
         functions_chroma = avx2_functions_32_chroma;
       }
-      else if (use_sse41 && vi.width >= (16 / sizeof(float) + 1)) {
+      else if (use_sse41 && worst_case_width >= (16 / sizeof(float) + 1)) {
         functions = sse4_functions_32_luma;
         functions_chroma = sse4_functions_32_chroma;
       }

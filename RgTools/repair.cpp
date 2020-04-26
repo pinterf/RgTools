@@ -649,6 +649,10 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
   pixelsize = vi.ComponentSize();
   bits_per_pixel = vi.BitsPerComponent();
 
+  int worst_case_width = vi.width;
+  if (vi.IsYUV() && vi.NumComponents() >= 3)
+    worst_case_width >>= vi.GetPlaneWidthSubsampling(PLANAR_U);
+
   functions_chroma = nullptr;
 
   if (pixelsize == 1) {
@@ -657,12 +661,12 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
       : (env->GetCPUFlags() & CPUF_SSE2) ? sse2_functions
       : c_functions;
 
-    if (vi.width < 17) { //not enough for XMM
+    if (worst_case_width < 17) { //not enough for XMM
       functions = c_functions;
     }
   }
   else if (pixelsize == 2) {
-    if ((env->GetCPUFlags() & CPUF_SSE4) && vi.width >= (16 / sizeof(uint16_t) + 1)) {
+    if ((env->GetCPUFlags() & CPUF_SSE4) && worst_case_width >= (16 / sizeof(uint16_t) + 1)) {
       switch (bits_per_pixel) {
       case 10: functions = sse4_functions_16_10; break;
       case 12: functions = sse4_functions_16_12; break;
@@ -683,7 +687,7 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
   }
   else {// if (pixelsize == 4) 
 
-    if ((env->GetCPUFlags() & CPUF_SSE4) && vi.width >= (16 / sizeof(float) + 1)) {
+    if ((env->GetCPUFlags() & CPUF_SSE4) && worst_case_width >= (16 / sizeof(float) + 1)) {
       functions = sse4_functions_32;
       functions_chroma = sse4_functions_32_chroma;
     }

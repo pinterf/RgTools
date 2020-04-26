@@ -66,10 +66,10 @@
     <ClInclude Include="common_avx2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RemoveGrainT.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="info.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RemoveGrainT.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -83,12 +83,6 @@
     <ClCompile Include="avs2x.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="rg_functions_c.h">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="rg_functions_sse.h">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="repair.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -100,6 +94,12 @@
     </ClCompile>
     <ClCompile Include="RemoveGrainT.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="rg_functions_sse.h">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="rg_functions_c.h">
+      <Filter>Header Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

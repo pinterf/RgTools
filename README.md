@@ -6,6 +6,20 @@ Some routines might be slightly less efficient than original, some are faster. O
 
 This plugin is written from scratch and licensed under the [MIT license][1]. Some modes of RemoveGrain and Repair were taken from the Firesledge's Dither package.
 
+v0.99 (20200426)
+- RemoveGrain mode 25 ("nondestructivesharpen") finally reverse engineered 
+  and ported from the original RemoveGrain package. (no-no, Repair has still 24 modes)
+  Plus: 10-32 bits, Plus: sse4.1, avx2
+- RemoveGrain: More correct 32 bit float in mode 6,7,8,9,15,16,23,24 
+  (proper clamping, chroma part specially treated)
+- General: make C reference more similar to actual SIMD code
+- fix: width<32 (or 16) with horizontal subsampling would use AVX2 (SSE2) on chroma
+- (noticed: RemoveGrain: mode 11 and 12 SSE is simply avaraging
+   instead of really do 1/4 1/2 1/4 kernel blur like C (todo).
+   This is written in docs but even very old RemoveGrainSSE2 acts like this)
+- Avisynth+ V8 header, frame property copy support
+- opt debug parameter to RemoveGrain. 0:auto, 1:c 2:SSE2 3:SSE4.1 4:AVX2
+
 v0.98 (20190814)
 - Include "TemporalRepair" filter from old RemoveGrainT package (rewritten C and SIMD intrinsics from pure inline asm)
   Add Y8, YV16, YV24 besides YV12, drop YUY2 support.

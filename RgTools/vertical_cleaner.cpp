@@ -210,6 +210,7 @@ static void vcleaner_relaxed_median_sse4_uint16(Byte* pDst8, const Byte *pSrc8, 
   env->BitBlt((uint8_t *)pDst, dstPitch*sizeof(uint16_t), (uint8_t *)pSrc, srcPitch*sizeof(uint16_t), rowsize, 2);
 }
 
+template<bool chroma>
 static void vcleaner_relaxed_median_sse_32(Byte* pDst8, const Byte *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {
   env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 2);
 
@@ -235,8 +236,8 @@ static void vcleaner_relaxed_median_sse_32(Byte* pDst8, const Byte *pSrc8, int d
       __m128 pdiff = _mm_subs_ps_for_diff(p1, p2);
       __m128 ndiff = _mm_subs_ps_for_diff(n1, n2);
 
-      __m128 pt = _mm_adds_ps<false>(pdiff, p1); // FIXME: chroma aware adds
-      __m128 nt = _mm_adds_ps<false>(ndiff, n1);
+      __m128 pt = _mm_adds_ps<chroma>(pdiff, p1);
+      __m128 nt = _mm_adds_ps<chroma>(ndiff, n1);
 
       // no max_pixel_value clamp for float
 
@@ -247,8 +248,8 @@ static void vcleaner_relaxed_median_sse_32(Byte* pDst8, const Byte *pSrc8, int d
       pdiff = _mm_subs_ps_for_diff(p2, p1);
       ndiff = _mm_subs_ps_for_diff(n2, n1);
 
-      pt = _mm_subs_ps<false>(p1, pdiff); // FIXME: chroma aware subs
-      nt = _mm_subs_ps<false>(n1, ndiff);
+      pt = _mm_subs_ps<chroma>(p1, pdiff);
+      nt = _mm_subs_ps<chroma>(n1, ndiff);
 
       __m128 minpn1 = _mm_min_ps(p1, n1);
 
@@ -382,6 +383,7 @@ static void vcleaner_relaxed_median_c_16(Byte* pDst8, const Byte *pSrc8, int dst
     env->BitBlt((uint8_t *)pDst, dstPitch*sizeof(uint16_t), (uint8_t *)pSrc, srcPitch*sizeof(uint16_t), rowsize, 2);
 }
 
+template<bool chroma>
 static void vcleaner_relaxed_median_c_32(Byte* pDst8, const Byte *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {
   env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 2);
 
@@ -404,8 +406,12 @@ static void vcleaner_relaxed_median_c_32(Byte* pDst8, const Byte *pSrc8, int dst
       float n1 = pSrc[x+srcPitch];
       float n2 = pSrc[x+srcPitch*2];
 
-      float upper = std::max(std::max(std::min(satb_32(satb_32(p1-p2) + p1), satb_32(satb_32(n1-n2) + n1)), p1), n1);
-      float lower = std::min(std::min(p1, n1), std::max(satb_32(p1 - satb_32(p2-p1)), satb_32(n1 - satb_32(n2-n1))));
+      float upper = std::max(std::max(std::min(
+        adds_32_c<chroma>(subs_32_c_for_diff(p1, p2), p1),
+        adds_32_c<chroma>(subs_32_c_for_diff(n1, n2), n1)), p1), n1);
+      float lower = std::min(std::min(p1, n1), std::max(
+        subs_32_c<chroma>(p1, subs_32_c_for_diff(p2, p1)), 
+        subs_32_c<chroma>(n1, subs_32_c_for_diff(n2, n1))));
 
       pDst[x] = clip_32(c, lower, upper);
     }
@@ -458,7 +464,14 @@ static VCleanerProcessor* sse2_functions_32[] = {
   do_nothing,
   copy_plane,
   vcleaner_median_sse2_float,
-  vcleaner_relaxed_median_sse_32
+  vcleaner_relaxed_median_sse_32<false>
+};
+
+static VCleanerProcessor* sse2_functions_32_chroma[] = {
+  do_nothing,
+  copy_plane,
+  vcleaner_median_sse2_float,
+  vcleaner_relaxed_median_sse_32<true>
 };
 
 static VCleanerProcessor* sse2_functions[] = {
@@ -508,10 +521,17 @@ static VCleanerProcessor* c_functions_32[] = {
   do_nothing,
   copy_plane,
   vcleaner_median_c<float>,
-  vcleaner_relaxed_median_c_32
+  vcleaner_relaxed_median_c_32<false>
 };
 
-static void dispatch_median(int mode, Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int pixelsize, int bits_per_pixel, IScriptEnvironment *env) {
+static VCleanerProcessor* c_functions_32_chroma[] = {
+  do_nothing,
+  copy_plane,
+  vcleaner_median_c<float>,
+  vcleaner_relaxed_median_c_32<true>
+};
+
+static void dispatch_median(int mode, Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int pixelsize, int bits_per_pixel, bool chroma, IScriptEnvironment *env) {
   if (pixelsize == 1) {
     if ((env->GetCPUFlags() & CPUF_SSE2) && rowsize >= 16 && is_16byte_aligned(pSrc)) {
       sse2_functions[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env);
@@ -540,9 +560,15 @@ static void dispatch_median(int mode, Byte* pDst, const Byte *pSrc, int dstPitch
   }
   else { // if (pixelsize == 4
     if ((env->GetCPUFlags() & CPUF_SSE2) && rowsize >= 16 && is_16byte_aligned(pSrc))
-      sse2_functions_32[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env);
+      if(chroma)
+      sse2_functions_32_chroma[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env);
+      else
+    sse2_functions_32[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env);
+      else
+      if(chroma)
+      c_functions_32_chroma[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env);
     else
-      c_functions_32[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env);
+        c_functions_32[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env);
   }
 
 }
@@ -583,23 +609,25 @@ PVideoFrame VerticalCleaner::GetFrame(int n, IScriptEnvironment* env) {
     auto dstFrame = has_at_least_v8 ? env->NewVideoFrameP(vi, &srcFrame) : env->NewVideoFrame(vi);
 
     if (vi.IsPlanarRGB() || vi.IsPlanarRGBA()) {
+      const bool chroma = false;
       dispatch_median(mode_, dstFrame->GetWritePtr(PLANAR_G), srcFrame->GetReadPtr(PLANAR_G), dstFrame->GetPitch(PLANAR_G), srcFrame->GetPitch(PLANAR_G),
-        srcFrame->GetRowSize(PLANAR_G), srcFrame->GetHeight(PLANAR_G), pixelsize, bits_per_pixel, env);
+        srcFrame->GetRowSize(PLANAR_G), srcFrame->GetHeight(PLANAR_G), pixelsize, bits_per_pixel, chroma, env);
       dispatch_median(mode_, dstFrame->GetWritePtr(PLANAR_B), srcFrame->GetReadPtr(PLANAR_B), dstFrame->GetPitch(PLANAR_B), srcFrame->GetPitch(PLANAR_B),
-        srcFrame->GetRowSize(PLANAR_B), srcFrame->GetHeight(PLANAR_B), pixelsize, bits_per_pixel, env);
+        srcFrame->GetRowSize(PLANAR_B), srcFrame->GetHeight(PLANAR_B), pixelsize, bits_per_pixel, chroma, env);
       dispatch_median(mode_, dstFrame->GetWritePtr(PLANAR_R), srcFrame->GetReadPtr(PLANAR_R), dstFrame->GetPitch(PLANAR_R), srcFrame->GetPitch(PLANAR_R),
-        srcFrame->GetRowSize(PLANAR_R), srcFrame->GetHeight(PLANAR_R), pixelsize, bits_per_pixel, env);
+        srcFrame->GetRowSize(PLANAR_R), srcFrame->GetHeight(PLANAR_R), pixelsize, bits_per_pixel, chroma, env);
     }
     else {
       dispatch_median(mode_, dstFrame->GetWritePtr(PLANAR_Y), srcFrame->GetReadPtr(PLANAR_Y), dstFrame->GetPitch(PLANAR_Y), srcFrame->GetPitch(PLANAR_Y),
-        srcFrame->GetRowSize(PLANAR_Y), srcFrame->GetHeight(PLANAR_Y), pixelsize, bits_per_pixel, env);
+        srcFrame->GetRowSize(PLANAR_Y), srcFrame->GetHeight(PLANAR_Y), pixelsize, bits_per_pixel, false, env);
 
       if (!vi.IsY()) {
+        // chroma planes
         dispatch_median(modeU_, dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetReadPtr(PLANAR_U), dstFrame->GetPitch(PLANAR_U), srcFrame->GetPitch(PLANAR_U),
-          srcFrame->GetRowSize(PLANAR_U), srcFrame->GetHeight(PLANAR_U), pixelsize, bits_per_pixel, env);
+          srcFrame->GetRowSize(PLANAR_U), srcFrame->GetHeight(PLANAR_U), pixelsize, bits_per_pixel, true, env);
 
         dispatch_median(modeV_, dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetReadPtr(PLANAR_V), dstFrame->GetPitch(PLANAR_V), srcFrame->GetPitch(PLANAR_V),
-          srcFrame->GetRowSize(PLANAR_V), srcFrame->GetHeight(PLANAR_V), pixelsize, bits_per_pixel, env);
+          srcFrame->GetRowSize(PLANAR_V), srcFrame->GetHeight(PLANAR_V), pixelsize, bits_per_pixel, true, env);
       }
     }
     if (vi.IsYUVA() || vi.IsPlanarRGBA())

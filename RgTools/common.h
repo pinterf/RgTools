@@ -27,6 +27,71 @@ typedef uint8_t Byte;
 
 #define USE_MOVPS
 
+static RG_FORCEINLINE int subs_c(int x, int y) {
+  return std::max(0, x - y);
+}
+
+static RG_FORCEINLINE int subs_16_c(int x, int y) {
+  return std::max(0, x - y);
+}
+
+template<bool chroma>
+static RG_FORCEINLINE float subs_32_c(float x, float y) {
+  constexpr float pixel_min = chroma ? -0.5f : 0.0f;
+  return std::max(pixel_min, x - y);
+}
+
+static RG_FORCEINLINE float subs_32_c_for_diff(float x, float y) {
+  constexpr float pixel_min = 0.0f;
+  return std::max(pixel_min, x - y);
+}
+
+static RG_FORCEINLINE int adds_c(int x, int y) {
+  constexpr int pixel_max = 255;
+  return std::min(pixel_max, x + y);
+}
+
+template<int bits_per_pixel>
+RG_FORCEINLINE int adds_16_c(int x, int y) {
+  constexpr int pixel_max = (1 << bits_per_pixel) - 1;
+  return std::min(pixel_max, x + y);
+}
+
+template<bool chroma>
+RG_FORCEINLINE float adds_32_c(float x, float y) {
+  constexpr float pixel_max = chroma ? 0.5f : 1.0f;
+  return std::min(pixel_max, x + y);
+}
+
+RG_FORCEINLINE float adds_32_c_for_diff(float x, float y) {
+  constexpr float pixel_max = 1.0f;
+  return std::min(pixel_max, x + y);
+}
+
+template<bool chroma>
+static RG_FORCEINLINE __m128 _mm_subs_ps(__m128 a, __m128 b) {
+  const __m128 pixel_min = chroma ? _mm_set1_ps(-0.5f) : _mm_set1_ps(0.0f);
+  return _mm_max_ps(_mm_sub_ps(a, b), pixel_min);
+}
+
+// for use case: diff = pixel1 - pixel2, saturates to zero
+static RG_FORCEINLINE __m128 _mm_subs_ps_for_diff(__m128 a, __m128 b) {
+  const __m128 pixel_min = _mm_set1_ps(0.0f);
+  return _mm_max_ps(_mm_sub_ps(a, b), pixel_min);
+}
+
+template<bool chroma>
+static RG_FORCEINLINE __m128 _mm_adds_ps(__m128 a, __m128 b) {
+  const __m128 pixel_max = chroma ? _mm_set1_ps(0.5f) : _mm_set1_ps(1.0f);
+  return _mm_min_ps(_mm_add_ps(a, b), pixel_max);
+}
+
+static RG_FORCEINLINE __m128 _mm_adds_ps_for_diff(__m128 a, __m128 b) {
+  const __m128 pixel_max = _mm_set1_ps(1.0f);
+  return _mm_min_ps(_mm_add_ps(a, b), pixel_max);
+}
+
+
 template<typename T>
 static RG_FORCEINLINE Byte clip(T val, T minimum, T maximum) {
     return std::max(std::min(val, maximum), minimum);
@@ -157,32 +222,6 @@ static RG_FORCEINLINE __m128 abs_diff_32(__m128 a, __m128 b) {
   return _mm_and_ps(_mm_sub_ps(a, b), absmask);
 }
 
-// PF until I find out better
-// Todo: Separate use cases for getting just a difference (diff = pixel - pixel) which saturates to 0 
-// or chroma aware subtract (pixel = pixel - diff) which saturates to 0.0 (luma) or -0.5 (chroma)
-// latter clamp is subject to consideration
-// Check for modes: 6 7 8 9 15 16 23 24
-
-static RG_FORCEINLINE __m128 _mm_subs_ps(__m128 a, __m128 b) {
-#if 0
-const __m128 zero = _mm_setzero_ps();
-return _mm_max_ps(_mm_sub_ps(a, b), zero);
-#else
-  // no float clamp
-  return _mm_sub_ps(a, b);
-#endif
-}
-
-// PF until I find out better
-static RG_FORCEINLINE __m128 _mm_adds_ps(__m128 a, __m128 b) {
-#if 0
-  const __m128 one = _mm_set1_ps(1.0f);
-  return _mm_min_ps(_mm_add_ps(a, b), one);
-#else
-  // no float clamp
-  return _mm_add_ps(a, b);
-#endif
-}
 
 // PF until I find out better
 static RG_FORCEINLINE __m128 _mm_avg_ps(__m128 a, __m128 b) {
@@ -236,10 +275,24 @@ __asm	paddusb		center,				plus			\
 __asm	psubusb		center,				minus
 */
 
+// sharpen, neighbourdiff: helpers for mode 25
+
+// good for all integer
+template<int bits_per_pixel>
+static RG_FORCEINLINE int sharpen_c(const int& center, const int& minus, const int& plus) {
+  auto mp_diff = subs_16_c(minus, plus);
+  auto pm_diff = subs_16_c(plus, minus);
+  auto m_per2 = minus >> 1;
+  auto p_per2 = plus >> 1;
+  auto min_1 = std::min(p_per2, mp_diff);
+  auto min_2 = std::min(m_per2, pm_diff);
+  return subs_16_c(adds_16_c<bits_per_pixel>(center, min_1), min_2);
+}
+
 static RG_FORCEINLINE __m128i _MM_SRLI_EPI8(const __m128i& v, int imm) {
   return _mm_and_si128(_mm_set1_epi8(0xFF >> imm), _mm_srli_epi32(v, imm));
 }
-// only in parameters
+
 static RG_FORCEINLINE __m128i sharpen(const __m128i& center, const __m128i& minus, const __m128i& plus) {
   auto mp_diff = _mm_subs_epu8(minus, plus);
   auto pm_diff = _mm_subs_epu8(plus, minus);
@@ -249,6 +302,52 @@ static RG_FORCEINLINE __m128i sharpen(const __m128i& center, const __m128i& minu
   auto min_2 = _mm_min_epu8(m_per2, pm_diff);
   return _mm_subs_epu8(_mm_adds_epu8(center, min_1), min_2);
 }
+
+template<int bits_per_pixel>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+static RG_FORCEINLINE __m128i sharpen_16(const __m128i& center, const __m128i& minus, const __m128i& plus) {
+  auto mp_diff = _mm_subs_epu16(minus, plus);
+  auto pm_diff = _mm_subs_epu16(plus, minus);
+  auto m_per2 = _mm_srli_epi16(minus, 1);
+  auto p_per2 = _mm_srli_epi16(plus, 1);
+  auto min_1 = _mm_min_epu16(p_per2, mp_diff);
+  auto min_2 = _mm_min_epu16(m_per2, pm_diff);
+  auto result1 = _mm_adds_epu16(center, min_1);
+  if constexpr (bits_per_pixel < 16) {
+    const auto max_pixel_value = _mm_set1_epi16((1 << bits_per_pixel) - 1);
+    result1 = _mm_min_epi16(result1, max_pixel_value);
+  }
+  auto result = _mm_subs_epu16(result1, min_2);
+  return result;
+}
+
+
+template<bool chroma>
+static RG_FORCEINLINE float sharpen_32_c(const float& center, const float& minus, const float& plus) {
+  auto mp_diff = subs_32_c_for_diff(minus, plus);
+  auto pm_diff = subs_32_c_for_diff(plus, minus);
+  auto m_per2 = minus * 0.5f;
+  auto p_per2 = plus * 0.5f;
+  auto min_1 = std::min(p_per2, mp_diff);
+  auto min_2 = std::min(m_per2, pm_diff);
+  return subs_32_c<chroma>(adds_32_c<chroma>(center, min_1), min_2);
+}
+
+template<bool chroma>
+static RG_FORCEINLINE __m128 sharpen_32(const __m128& center, const __m128& minus, const __m128& plus) {
+  auto mp_diff = _mm_subs_ps_for_diff(minus, plus); // for diff: like luma (template false) 0..1
+  auto pm_diff = _mm_subs_ps_for_diff(plus, minus);
+  const auto half = _mm_set1_ps(0.5f);
+  auto m_per2 = _mm_mul_ps(minus, half);
+  auto p_per2 = _mm_mul_ps(plus, half);
+  auto min_1 = _mm_min_ps(p_per2, mp_diff);
+  auto min_2 = _mm_min_ps(m_per2, pm_diff);
+  return  _mm_subs_ps<chroma>(_mm_adds_ps<chroma>(center, min_1), min_2);
+}
+
+
 /*
                        out    out     out    in        in         in
 #define neighbourdiff(minus, plus, center1_as_centerNext, center2, neighbour, nullreg)	\
@@ -307,8 +406,93 @@ static RG_FORCEINLINE void neighbourdiff_orig(__m128i& minus, __m128i& plus, __m
   // these values will be passed to the "sharpen"
 }
 
-// center1 and center2 are changing during consecutive calls
-// helper for mode 25_mode24
+// helper for mode 25
+template<int bits_per_pixel>
+static RG_FORCEINLINE void neighbourdiff_c(int& minus, int& plus, int center, int neighbour) {
+  bool n_ge_c = center <= neighbour;
+  bool c_ge_n = neighbour <= center;
+  bool equ = center == neighbour;
+
+  constexpr int max_mask = (1 << bits_per_pixel) - 1;
+  // an appropriately big number to use for testing max 
+  // in sharpen
+
+  if (equ) {
+    minus = 0; // min_mask
+    plus = 0; // min_mask
+  }
+  else {
+    if (n_ge_c)
+      minus = max_mask;
+    else
+      minus = center - neighbour;
+    if (c_ge_n)
+      plus = max_mask;
+    else
+      plus = neighbour - center;
+  }
+
+  /*
+  // fixme: to less SIMD-like (it was reverse engineered from asm)
+  // c2 = 9 2 5 1
+  // n  = 4 3 5 255
+  auto cn_diff = subs_c(center, neighbour); // 5 0 0 0
+  auto nc_diff = subs_c(neighbour, center); // 0 1 0 254
+
+  constexpr int max_mask = (1 << bits_per_pixel) - 1; // or just enough to use a very big common number? 
+  // plus and minus is used in sharpen, see there
+
+  auto cndiff_masked = cn_diff == 0 ? max_mask : 0; // FF where c <= n     00 FF FF FF
+  auto ncdiff_masked = nc_diff == 0 ? max_mask : 0;; // FF where n <= c     FF 00 FF 00
+  auto cn_equal = cndiff_masked & ncdiff_masked; // FF where c == n   00 00 FF 00
+
+  minus = cn_diff | cndiff_masked; // 5 FF FF FF
+  plus =  nc_diff | ncdiff_masked;  // FF 1  FF 254
+
+  minus = subs_c(minus, cn_equal); // 5 FF 00 FF 
+  plus = subs_c(plus, cn_equal);   // FF 1 00 254
+  // When called for pixel pairs, minimum values of all minuses and all pluses are collected
+  // min of cn_diff or 00 if there was any equality
+  // min of nc_diff or 00 if there was any equality
+  // Note: on equality both minus and plus will be zero, sharpen will do nothing
+  // these values will be passed to the "sharpen"
+  */
+}
+
+// helper for mode 25
+// differences are chroma or luma independent
+static RG_FORCEINLINE void neighbourdiff_32_c(float& minus, float& plus, float center, float neighbour) {
+  bool n_ge_c = center <= neighbour;
+  bool c_ge_n = neighbour <= center;
+  bool equ = center == neighbour;
+
+  constexpr float max_mask = 1.0f;
+  // an appropriately big number to use for testing max 
+  // in sharpen
+
+  if (equ) {
+    minus = 0; // min_mask
+    plus = 0; // min_mask
+  }
+  else {
+    if (n_ge_c)
+      minus = max_mask;
+    else
+      minus = center - neighbour;
+    if (c_ge_n)
+      plus = max_mask;
+    else
+      plus = neighbour - center;
+  }
+
+  // When called for pixel pairs, minimum values of all minuses and all pluses are collected
+  // min of cn_diff or 00 if there was any equality
+  // min of nc_diff or 00 if there was any equality
+  // Note: on equality both minus and plus will be zero, sharpen will do nothing
+  // these values will be passed to the "sharpen"
+}
+
+// helper for mode 25
 static RG_FORCEINLINE void neighbourdiff(__m128i& minus, __m128i& plus, __m128i center, __m128i neighbour, const __m128i& zero) {
   // c2 = 9 2 5 1
   // n  = 4 3 5 255
@@ -330,6 +514,65 @@ static RG_FORCEINLINE void neighbourdiff(__m128i& minus, __m128i& plus, __m128i 
   // Note: on equality both minus and plus will be zero, sharpen will do nothing
   // these values will be passed to the "sharpen"
 }
+
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+static RG_FORCEINLINE void neighbourdiff_16(__m128i& minus, __m128i& plus, __m128i center, __m128i neighbour, const __m128i& zero) {
+  // c2 = 9 2 5 1
+  // n  = 4 3 5 255
+  // no bits_per_pixel template, mask FFFF is big enough for sharpen to subs saturate
+  auto cn_diff = _mm_subs_epu16(center, neighbour); // 5 0 0 0
+  auto nc_diff = _mm_subs_epu16(neighbour, center); // 0 1 0 254
+
+  auto cndiff_masked = _mm_cmpeq_epi16(cn_diff, zero); // FF where c <= n     00 FF FF FF
+  auto ncdiff_masked = _mm_cmpeq_epi16(nc_diff, zero); // FF where n <= c     FF 00 FF 00
+  auto cn_equal = _mm_and_si128(cndiff_masked, ncdiff_masked); // FF where c == n   00 00 FF 00
+
+  minus = _mm_or_si128(cn_diff, cndiff_masked); // 5 FF FF FF
+  plus = _mm_or_si128(nc_diff, ncdiff_masked);  // FF 1  FF 254
+
+  minus = _mm_subs_epu16(minus, cn_equal); // 5 FF 00 FF 
+  plus = _mm_subs_epu16(plus, cn_equal);   // FF 1 00 254
+  // When called for pixel pairs, minimum values of all minuses and all pluses are collected
+  // min of cn_diff or 00 if there was any equality
+  // min of nc_diff or 00 if there was any equality
+  // Note: on equality both minus and plus will be zero, sharpen will do nothing
+  // these values will be passed to the "sharpen"
+}
+
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+static RG_FORCEINLINE void neighbourdiff_32(__m128& minus, __m128& plus, __m128 center, __m128 neighbour, const __m128& zero) {
+  // c2 = 9 2 5 1
+  // n  = 4 3 5 255
+  // FF in integer, max_mask=1.0 in float
+  // for diffs: subs must clamp at 0
+  auto cn_diff = _mm_subs_ps_for_diff(center, neighbour); // 5 0 0 0
+  auto nc_diff = _mm_subs_ps_for_diff(neighbour, center); // 0 1 0 254
+
+  auto cndiff_masked = _mm_cmpeq_ps(cn_diff, zero); // FF where c <= n     00 FF FF FF
+  auto ncdiff_masked = _mm_cmpeq_ps(nc_diff, zero); // FF where n <= c     FF 00 FF 00
+  auto cn_equal = _mm_and_ps(cndiff_masked, ncdiff_masked); // FF where c == n   00 00 FF 00
+
+  // max_mask where <=
+  // min_mask (0) where =
+  const auto max_mask = _mm_set1_ps(1.0f);
+  // a, b, mask. If mask then b else a
+  minus = _mm_blendv_ps(cn_diff, max_mask, cndiff_masked); // 5 FF FF FF
+  plus = _mm_blendv_ps(nc_diff, max_mask, ncdiff_masked);  // FF 1  FF 254
+
+  minus = _mm_blendv_ps(minus, zero, cn_equal); // 5 FF 00 FF 
+  plus = _mm_blendv_ps(plus, zero, cn_equal);   // FF 1 00 254
+  // When called for pixel pairs, minimum values of all minuses and all pluses are collected
+  // min of cn_diff or 00 if there was any equality
+  // min of nc_diff or 00 if there was any equality
+  // Note: on equality both minus and plus will be zero, sharpen will do nothing
+  // these values will be passed to the "sharpen"
+}
+
+// end of mode 25 helpers
 
 // center column as aligned
 #define LOAD_SQUARE_SSE_0(ptr, pitch, pixelsize, aligned) \

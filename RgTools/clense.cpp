@@ -33,29 +33,20 @@ RG_FORCEINLINE uint16_t sclense_process_pixel_c_16(uint16_t src, uint16_t ref1, 
   uint16_t minref = std::min(ref1, ref2);
   uint16_t maxref = std::max(ref1, ref2);
 
-  const int pixel_max = (1 << bits_per_pixel) - 1;
-  return clip_16(src, (uint16_t)std::max(minref*2 - ref2, 0), (uint16_t)std::min(maxref*2-ref2, pixel_max));
+  uint16_t mi = subs_16_c(adds_16_c<bits_per_pixel>(minref, minref), ref2);
+  uint16_t ma = subs_16_c(adds_16_c<bits_per_pixel>(maxref, maxref), ref2);
+
+  return clip_16(src, mi, ma);
 }
 
-//template<bool chroma>
+template<bool chroma>
 RG_FORCEINLINE float sclense_process_pixel_c_32(float src, float ref1, float ref2) {
   float minref = std::min(ref1, ref2);
   float maxref = std::max(ref1, ref2);
 
-#if 0
-  // no max_pixel_value clamp for float
-#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
-  const float pixel_min = 0.0f;
-  const float pixel_max = 1.0f;
-#else
-  const float pixel_min = chroma ? -0.5f : 0.0f;
-  const float pixel_max = chroma ? 0.5f : 1.0f;
-#endif
-#endif
-  float mi = minref * 2 - ref2;
-  float ma = maxref * 2 - ref2;
-  // mi = std::max(mi, pixel_min);
-  // ma = std::min(ma, pixel_max)
+  float mi = subs_32_c<chroma>(adds_32_c<chroma>(minref, minref), ref2);
+  float ma = subs_32_c<chroma>(adds_32_c<chroma>(maxref, maxref), ref2);
+
   return clip_32(src, mi, ma);
 }
 
@@ -170,20 +161,8 @@ RG_FORCEINLINE void sclense_process_line_sse4_16(Byte* pDst, const Byte *pSrc, c
   }
 }
 
-//template<bool chroma>
+template<bool chroma>
 RG_FORCEINLINE void sclense_process_line_sse2_32(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize) {
-#if 0
-  // no max_pixel_value clamp for float
-#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
-  const float pixel_min = 0.0f;
-  const float pixel_max = 1.0f;
-#else
-  const float pixel_min = chroma ? -0.5f : 0.0f;
-  const float pixel_max = chroma ? 0.5f : 1.0f;
-#endif
-  const __m128 pixel_min_128 = _mm_set1_ps(pixel_min);
-  const __m128 pixel_max_128 = _mm_set1_ps(pixel_max);
-#endif
   for (int x = 0; x < rowsize; x+=16) {
     auto src = _mm_load_ps(reinterpret_cast<const float*>(pSrc+x));
     auto ref1 = _mm_load_ps(reinterpret_cast<const float*>(pRef1+x));
@@ -192,12 +171,11 @@ RG_FORCEINLINE void sclense_process_line_sse2_32(Byte* pDst, const Byte *pSrc, c
     auto minref = _mm_min_ps(ref1, ref2);
     auto maxref = _mm_max_ps(ref1, ref2);
 
-    auto mi = _mm_sub_ps(_mm_add_ps(minref, minref), ref2);
-    auto ma = _mm_sub_ps(_mm_add_ps(maxref, maxref), ref2);
+    auto ma = _mm_subs_ps_for_diff(maxref, ref2);
+    auto mi = _mm_subs_ps_for_diff(ref2, minref);
 
-    // no max_pixel_value clamp for float
-    //mi = _mm_max_ps(mi, pixel_min_128);
-    //ma = _mm_max_ps(ma, pixel_max_128);
+    ma = _mm_adds_ps<chroma>(ma, maxref);
+    mi = _mm_subs_ps<chroma>(minref, mi);
 
     auto dst = simd_clip_32(src, mi, ma);
 
@@ -269,8 +247,13 @@ Clense::Clense(PClip child, PClip previous, PClip next, bool grey, bool reducefl
     if (next_ != nullptr) {
         check_if_match(vi, next_->GetVideoInfo(), env);
     }
-    sse2_ = vi.width > 16 && (env->GetCPUFlags() & CPUF_SSE2);
-    sse4_ = vi.width > 16 && (env->GetCPUFlags() & CPUF_SSE4);
+
+    int worst_case_width = vi.width;
+    if (vi.IsYUV() && vi.NumComponents() >= 3)
+      worst_case_width >>= vi.GetPlaneWidthSubsampling(PLANAR_U);
+
+    sse2_ = worst_case_width > 16 && (env->GetCPUFlags() & CPUF_SSE2);
+    sse4_ = worst_case_width > 16 && (env->GetCPUFlags() & CPUF_SSE4);
 
     if (pixelsize == 1) {
       processor_ = (mode_ == ClenseMode::BOTH)
@@ -302,7 +285,10 @@ Clense::Clense(PClip child, PClip previous, PClip next, bool grey, bool reducefl
     else { // pixelsize == 4
       processor_ = (mode_ == ClenseMode::BOTH)
         ? (sse2_ ? process_plane_sse<clense_process_line_sse2_32> : process_plane_c<float, clense_process_pixel_c_32>)
-        : (sse2_ ? process_plane_sse<sclense_process_line_sse2_32> : process_plane_c<float, sclense_process_pixel_c_32>);
+        : (sse2_ ? process_plane_sse<sclense_process_line_sse2_32<false>> : process_plane_c<float, sclense_process_pixel_c_32<false>>);
+      processor_chroma_ = (mode_ == ClenseMode::BOTH)
+        ? (sse2_ ? process_plane_sse<clense_process_line_sse2_32> : process_plane_c<float, clense_process_pixel_c_32>)
+        : (sse2_ ? process_plane_sse<sclense_process_line_sse2_32<true>> : process_plane_c<float, sclense_process_pixel_c_32<true>>);
     }
 }
 

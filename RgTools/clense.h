@@ -45,6 +45,7 @@ private:
     typedef void (ClenseProcessor)(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int width, int height, IScriptEnvironment *env);
 
     ClenseProcessor* processor_;
+    ClenseProcessor* processor_chroma_; // for 32 bit
 };
 
 

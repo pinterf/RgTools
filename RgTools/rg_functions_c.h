@@ -110,11 +110,11 @@ RG_FORCEINLINE uint16_t rg_mode3_cpp_16(const Byte* pSrc, int srcPitch) {
 RG_FORCEINLINE float rg_mode3_cpp_32(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
-  float	a [8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
+  float a[8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
 
-  std::sort (&a [0], (&a [7]) + 1);
+  std::sort(&a[0], (&a[7]) + 1);
 
-  return clip_32(c, a [3-1], a [6-1]);
+  return clip_32(c, a[3 - 1], a[6 - 1]);
 }
 
 // ------------
@@ -122,21 +122,21 @@ RG_FORCEINLINE float rg_mode3_cpp_32(const Byte* pSrc, int srcPitch) {
 RG_FORCEINLINE Byte rg_mode4_cpp(const Byte* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    Byte	a [8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
+    Byte a[8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
 
-    std::sort (&a [0], (&a [7]) + 1);
+    std::sort(&a[0], (&a[7]) + 1);
 
-    return clip(c, a [4-1], a [5-1]);
+    return clip(c, a[4 - 1], a[5 - 1]);
 }
 
 RG_FORCEINLINE uint16_t rg_mode4_cpp_16(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
-  uint16_t	a [8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
+  uint16_t a[8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
 
-  std::sort (&a [0], (&a [7]) + 1);
+  std::sort(&a[0], (&a[7]) + 1);
 
-  return clip_16(c, a [4-1], a [5-1]);
+  return clip_16(c, a[4 - 1], a[5 - 1]);
 }
 
 RG_FORCEINLINE float rg_mode4_cpp_32(const Byte* pSrc, int srcPitch) {
@@ -144,9 +144,9 @@ RG_FORCEINLINE float rg_mode4_cpp_32(const Byte* pSrc, int srcPitch) {
 
   float	a [8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
 
-  std::sort (&a [0], (&a [7]) + 1);
+  std::sort(&a[0], (&a[7]) + 1);
 
-  return clip_32(c, a [4-1], a [5-1]);
+  return clip_32(c, a[4 - 1], a[5 - 1]);
 }
 
 // ------------
@@ -252,20 +252,20 @@ RG_FORCEINLINE Byte rg_mode6_cpp(const Byte* pSrc, int srcPitch) {
   auto mal4 = std::max(a4, a5);
   auto mil4 = std::min(a4, a5);
 
-  int d1 = mal1 - mil1;
-  int d2 = mal2 - mil2;
-  int d3 = mal3 - mil3;
-  int d4 = mal4 - mil4;
+  int d1 = subs_c(mal1, mil1);
+  int d2 = subs_c(mal2, mil2);
+  int d3 = subs_c(mal3, mil3);
+  int d4 = subs_c(mal4, mil4);
 
   Byte clipped1 = clip(c, mil1, mal1);
   Byte clipped2 = clip(c, mil2, mal2);
   Byte clipped3 = clip(c, mil3, mal3);
   Byte clipped4 = clip(c, mil4, mal4);
 
-  int c1 = clip((std::abs(c-clipped1)<<1)+d1, 0, 255);
-  int c2 = clip((std::abs(c-clipped2)<<1)+d2, 0, 255);
-  int c3 = clip((std::abs(c-clipped3)<<1)+d3, 0, 255);
-  int c4 = clip((std::abs(c-clipped4)<<1)+d4, 0, 255);
+  int c1 = adds_c((std::abs(c-clipped1)<<1), d1);
+  int c2 = adds_c((std::abs(c-clipped2)<<1), d2);
+  int c3 = adds_c((std::abs(c-clipped3)<<1), d3);
+  int c4 = adds_c((std::abs(c-clipped4)<<1), d4);
 
   int mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
 
@@ -291,22 +291,20 @@ RG_FORCEINLINE uint16_t rg_mode6_cpp_16(const Byte* pSrc, int srcPitch) {
     auto mal4 = std::max(a4, a5);
     auto mil4 = std::min(a4, a5);
 
-    int d1 = mal1 - mil1;
-    int d2 = mal2 - mil2;
-    int d3 = mal3 - mil3;
-    int d4 = mal4 - mil4;
+    int d1 = subs_16_c(mal1, mil1);
+    int d2 = subs_16_c(mal2, mil2);
+    int d3 = subs_16_c(mal3, mil3);
+    int d4 = subs_16_c(mal4, mil4);
 
     uint16_t clipped1 = clip_16(c, mil1, mal1);
     uint16_t clipped2 = clip_16(c, mil2, mal2);
     uint16_t clipped3 = clip_16(c, mil3, mal3);
     uint16_t clipped4 = clip_16(c, mil4, mal4);
 
-    const int pixel_max = (1 << bits_per_pixel) - 1;
-
-    int c1 = clip_16((std::abs(c-clipped1)<<1)+d1, 0, pixel_max);
-    int c2 = clip_16((std::abs(c-clipped2)<<1)+d2, 0, pixel_max);
-    int c3 = clip_16((std::abs(c-clipped3)<<1)+d3, 0, pixel_max);
-    int c4 = clip_16((std::abs(c-clipped4)<<1)+d4, 0, pixel_max);
+    int c1 = adds_16_c<bits_per_pixel>(std::abs(c-clipped1)<<1, d1);
+    int c2 = adds_16_c<bits_per_pixel>(std::abs(c-clipped2)<<1, d2);
+    int c3 = adds_16_c<bits_per_pixel>(std::abs(c-clipped3)<<1, d3);
+    int c4 = adds_16_c<bits_per_pixel>(std::abs(c-clipped4)<<1, d4);
 
     int mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
 
@@ -332,36 +330,20 @@ RG_FORCEINLINE float rg_mode6_cpp_32(const Byte* pSrc, int srcPitch) {
   auto mal4 = std::max(a4, a5);
   auto mil4 = std::min(a4, a5);
 
-  float d1 = mal1 - mil1;
-  float d2 = mal2 - mil2;
-  float d3 = mal3 - mil3;
-  float d4 = mal4 - mil4;
+  float d1 = subs_32_c_for_diff(mal1, mil1);
+  float d2 = subs_32_c_for_diff(mal2, mil2);
+  float d3 = subs_32_c_for_diff(mal3, mil3);
+  float d4 = subs_32_c_for_diff(mal4, mil4);
 
   float clipped1 = clip_32(c, mil1, mal1);
   float clipped2 = clip_32(c, mil2, mal2);
   float clipped3 = clip_32(c, mil3, mal3);
   float clipped4 = clip_32(c, mil4, mal4);
 
-  float c1 = (std::abs(c - clipped1) * 2) + d1;
-  float c2 = (std::abs(c - clipped2) * 2) + d2;
-  float c3 = (std::abs(c - clipped3) * 2) + d3;
-  float c4 = (std::abs(c - clipped4) * 2) + d4;
-
-#if 0
-  // no max_pixel_value clamp for float
-#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
-  const float pixel_min = 0.0f;
-  const float pixel_max = 1.0f;
-#else
-  const float pixel_min = chroma ? -0.5f : 0.0f;
-  const float pixel_max = chroma ? 0.5f : 1.0f;
-#endif
-  // special case, in this mode we allow clipping to a valid range
-  c1 = clip_32(c1, pixel_min, pixel_max);
-  c2 = clip_32(c2, pixel_min, pixel_max);
-  c3 = clip_32(c3, pixel_min, pixel_max);
-  c4 = clip_32(c4, pixel_min, pixel_max);
-#endif
+  float c1 = adds_32_c_for_diff(std::abs(c - clipped1) * 2, d1);
+  float c2 = adds_32_c_for_diff(std::abs(c - clipped2) * 2, d2);
+  float c3 = adds_32_c_for_diff(std::abs(c - clipped3) * 2, d3);
+  float c4 = adds_32_c_for_diff(std::abs(c - clipped4) * 2, d4);
 
   float mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
 
@@ -389,20 +371,20 @@ RG_FORCEINLINE Byte rg_mode7_cpp(const Byte* pSrc, int srcPitch) {
     auto mal4 = std::max(a4, a5);
     auto mil4 = std::min(a4, a5);
 
-    auto d1 = mal1 - mil1;
-    auto d2 = mal2 - mil2;
-    auto d3 = mal3 - mil3;
-    auto d4 = mal4 - mil4;
+    auto d1 = subs_c(mal1, mil1);
+    auto d2 = subs_c(mal2, mil2);
+    auto d3 = subs_c(mal3, mil3);
+    auto d4 = subs_c(mal4, mil4);
 
     auto clipped1 = clip(c, mil1, mal1);
     auto clipped2 = clip(c, mil2, mal2);
     auto clipped3 = clip(c, mil3, mal3);
     auto clipped4 = clip(c, mil4, mal4);
 
-    int c1 = std::abs(c-clipped1)+d1;
-    int c2 = std::abs(c-clipped2)+d2;
-    int c3 = std::abs(c-clipped3)+d3;
-    int c4 = std::abs(c-clipped4)+d4;
+    int c1 = adds_c(std::abs(c-clipped1), d1);
+    int c2 = adds_c(std::abs(c-clipped2), d2);
+    int c3 = adds_c(std::abs(c-clipped3), d3);
+    int c4 = adds_c(std::abs(c-clipped4), d4);
 
     auto mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
 
@@ -427,20 +409,20 @@ RG_FORCEINLINE uint16_t rg_mode7_cpp_16(const Byte* pSrc, int srcPitch) {
   auto mal4 = std::max(a4, a5);
   auto mil4 = std::min(a4, a5);
 
-  auto d1 = mal1 - mil1;
-  auto d2 = mal2 - mil2;
-  auto d3 = mal3 - mil3;
-  auto d4 = mal4 - mil4;
+  auto d1 = subs_16_c(mal1, mil1);
+  auto d2 = subs_16_c(mal2, mil2);
+  auto d3 = subs_16_c(mal3, mil3);
+  auto d4 = subs_16_c(mal4, mil4);
 
   auto clipped1 = clip_16(c, mil1, mal1);
   auto clipped2 = clip_16(c, mil2, mal2);
   auto clipped3 = clip_16(c, mil3, mal3);
   auto clipped4 = clip_16(c, mil4, mal4);
 
-  int c1 = std::abs(c-clipped1)+d1;
-  int c2 = std::abs(c-clipped2)+d2;
-  int c3 = std::abs(c-clipped3)+d3;
-  int c4 = std::abs(c-clipped4)+d4;
+  int c1 = adds_16_c<16>(std::abs(c-clipped1), d1);
+  int c2 = adds_16_c<16>(std::abs(c-clipped2), d2);
+  int c3 = adds_16_c<16>(std::abs(c-clipped3), d3);
+  int c4 = adds_16_c<16>(std::abs(c-clipped4), d4);
 
   auto mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
 
@@ -465,17 +447,17 @@ RG_FORCEINLINE float rg_mode7_cpp_32(const Byte* pSrc, int srcPitch) {
   auto mal4 = std::max(a4, a5);
   auto mil4 = std::min(a4, a5);
 
-  auto d1 = mal1 - mil1;
-  auto d2 = mal2 - mil2;
-  auto d3 = mal3 - mil3;
-  auto d4 = mal4 - mil4;
+  auto d1 = subs_32_c_for_diff(mal1, mil1);
+  auto d2 = subs_32_c_for_diff(mal2, mil2);
+  auto d3 = subs_32_c_for_diff(mal3, mil3);
+  auto d4 = subs_32_c_for_diff(mal4, mil4);
 
   auto clipped1 = clip_32(c, mil1, mal1);
   auto clipped2 = clip_32(c, mil2, mal2);
   auto clipped3 = clip_32(c, mil3, mal3);
   auto clipped4 = clip_32(c, mil4, mal4);
 
-  float c1 = std::abs(c-clipped1)+d1;
+  float c1 = std::abs(c-clipped1)+d1; // no adds needed
   float c2 = std::abs(c-clipped2)+d2;
   float c3 = std::abs(c-clipped3)+d3;
   float c4 = std::abs(c-clipped4)+d4;
@@ -505,20 +487,20 @@ RG_FORCEINLINE Byte rg_mode8_cpp(const Byte* pSrc, int srcPitch) {
     auto mal4 = std::max(a4, a5);
     auto mil4 = std::min(a4, a5);
 
-    Byte d1 = mal1 - mil1;
-    Byte d2 = mal2 - mil2;
-    Byte d3 = mal3 - mil3;
-    Byte d4 = mal4 - mil4;
+    Byte d1 = subs_c(mal1, mil1);
+    Byte d2 = subs_c(mal2, mil2);
+    Byte d3 = subs_c(mal3, mil3);
+    Byte d4 = subs_c(mal4, mil4);
 
     Byte clipped1 = clip(c, mil1, mal1);
     Byte clipped2 = clip(c, mil2, mal2);
     Byte clipped3 = clip(c, mil3, mal3);
     Byte clipped4 = clip(c, mil4, mal4);
     
-    int c1 = clip(std::abs(c-clipped1)+(d1<<1), 0, 255);
-    int c2 = clip(std::abs(c-clipped2)+(d2<<1), 0, 255);
-    int c3 = clip(std::abs(c-clipped3)+(d3<<1), 0, 255);
-    int c4 = clip(std::abs(c-clipped4)+(d4<<1), 0, 255);
+    int c1 = adds_c(std::abs(c-clipped1), d1<<1);
+    int c2 = adds_c(std::abs(c-clipped2), d2<<1);
+    int c3 = adds_c(std::abs(c-clipped3), d3<<1);
+    int c4 = adds_c(std::abs(c-clipped4), d4<<1);
 
     Byte mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
 
@@ -544,22 +526,20 @@ RG_FORCEINLINE uint16_t rg_mode8_cpp_16(const Byte* pSrc, int srcPitch) {
   auto mal4 = std::max(a4, a5);
   auto mil4 = std::min(a4, a5);
 
-  uint16_t d1 = mal1 - mil1;
-  uint16_t d2 = mal2 - mil2;
-  uint16_t d3 = mal3 - mil3;
-  uint16_t d4 = mal4 - mil4;
+  uint16_t d1 = subs_16_c(mal1, mil1);
+  uint16_t d2 = subs_16_c(mal2, mil2);
+  uint16_t d3 = subs_16_c(mal3, mil3);
+  uint16_t d4 = subs_16_c(mal4, mil4);
 
   uint16_t clipped1 = clip_16(c, mil1, mal1);
   uint16_t clipped2 = clip_16(c, mil2, mal2);
   uint16_t clipped3 = clip_16(c, mil3, mal3);
   uint16_t clipped4 = clip_16(c, mil4, mal4);
 
-  const int pixel_max = (1 << bits_per_pixel) - 1;
-
-  int c1 = clip_16(std::abs(c-clipped1)+(d1<<1), 0, pixel_max);
-  int c2 = clip_16(std::abs(c-clipped2)+(d2<<1), 0, pixel_max);
-  int c3 = clip_16(std::abs(c-clipped3)+(d3<<1), 0, pixel_max);
-  int c4 = clip_16(std::abs(c-clipped4)+(d4<<1), 0, pixel_max);
+  int c1 = adds_16_c<bits_per_pixel>(std::abs(c-clipped1), d1<<1);
+  int c2 = adds_16_c<bits_per_pixel>(std::abs(c-clipped2), d2<<1);
+  int c3 = adds_16_c<bits_per_pixel>(std::abs(c-clipped3), d3<<1);
+  int c4 = adds_16_c<bits_per_pixel>(std::abs(c-clipped4), d4<<1);
 
   uint16_t mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
 
@@ -585,36 +565,20 @@ RG_FORCEINLINE float rg_mode8_cpp_32(const Byte* pSrc, int srcPitch) {
   auto mal4 = std::max(a4, a5);
   auto mil4 = std::min(a4, a5);
 
-  float d1 = mal1 - mil1;
-  float d2 = mal2 - mil2;
-  float d3 = mal3 - mil3;
-  float d4 = mal4 - mil4;
+  float d1 = subs_32_c_for_diff(mal1, mil1);
+  float d2 = subs_32_c_for_diff(mal2, mil2);
+  float d3 = subs_32_c_for_diff(mal3, mil3);
+  float d4 = subs_32_c_for_diff(mal4, mil4);
 
   float clipped1 = clip_32(c, mil1, mal1);
   float clipped2 = clip_32(c, mil2, mal2);
   float clipped3 = clip_32(c, mil3, mal3);
   float clipped4 = clip_32(c, mil4, mal4);
 
-  float c1 = std::abs(c - clipped1) + (d1 * 2);
+  float c1 = std::abs(c - clipped1) + (d1 * 2); // no adds needed
   float c2 = std::abs(c - clipped2) + (d2 * 2);
   float c3 = std::abs(c - clipped3) + (d3 * 2);
   float c4 = std::abs(c - clipped4) + (d4 * 2);
-
-#if 0
-  // no max_pixel_value clamp for float
-#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
-  const float pixel_min = 0.0f;
-  const float pixel_max = 1.0f;
-#else
-  const float pixel_min = chroma ? -0.5f : 0.0f;
-  const float pixel_max = chroma ? 0.5f : 1.0f;
-#endif
-  // special case, in this mode we allow clipping to a valid range
-  c1 = clip_32(c1, 0.0f, pixel_max);
-  c2 = clip_32(c2, 0.0f, pixel_max);
-  c3 = clip_32(c3, 0.0f, pixel_max);
-  c4 = clip_32(c4, 0.0f, pixel_max);
-#endif
 
   float mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
 
@@ -641,10 +605,10 @@ RG_FORCEINLINE Byte rg_mode9_cpp(const Byte* pSrc, int srcPitch) {
     auto mal4 = std::max(a4, a5);
     auto mil4 = std::min(a4, a5);
 
-    auto d1 = mal1 - mil1;
-    auto d2 = mal2 - mil2;
-    auto d3 = mal3 - mil3;
-    auto d4 = mal4 - mil4;
+    auto d1 = subs_c(mal1, mil1);
+    auto d2 = subs_c(mal2, mil2);
+    auto d3 = subs_c(mal3, mil3);
+    auto d4 = subs_c(mal4, mil4);
 
     auto mindiff = std::min(std::min(std::min(d1, d2), d3), d4);
 
@@ -669,10 +633,10 @@ RG_FORCEINLINE uint16_t rg_mode9_cpp_16(const Byte* pSrc, int srcPitch) {
   auto mal4 = std::max(a4, a5);
   auto mil4 = std::min(a4, a5);
 
-  auto d1 = mal1 - mil1;
-  auto d2 = mal2 - mil2;
-  auto d3 = mal3 - mil3;
-  auto d4 = mal4 - mil4;
+  auto d1 = subs_16_c(mal1, mil1);
+  auto d2 = subs_16_c(mal2, mil2);
+  auto d3 = subs_16_c(mal3, mil3);
+  auto d4 = subs_16_c(mal4, mil4);
 
   auto mindiff = std::min(std::min(std::min(d1, d2), d3), d4);
 
@@ -697,10 +661,10 @@ RG_FORCEINLINE float rg_mode9_cpp_32(const Byte* pSrc, int srcPitch) {
   auto mal4 = std::max(a4, a5);
   auto mil4 = std::min(a4, a5);
 
-  auto d1 = mal1 - mil1;
-  auto d2 = mal2 - mil2;
-  auto d3 = mal3 - mil3;
-  auto d4 = mal4 - mil4;
+  auto d1 = subs_32_c_for_diff(mal1, mil1);
+  auto d2 = subs_32_c_for_diff(mal2, mil2);
+  auto d3 = subs_32_c_for_diff(mal3, mil3);
+  auto d4 = subs_32_c_for_diff(mal4, mil4);
 
   auto mindiff = std::min(std::min(std::min(d1, d2), d3), d4);
 
@@ -788,7 +752,7 @@ RG_FORCEINLINE float rg_mode10_cpp_32(const Byte* pSrc, int srcPitch) {
 
 RG_FORCEINLINE Byte rg_mode11_cpp(const Byte* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
-
+    // fixme: SSE does not work like this!
     int	sum = 4 * c + 2 * (a2 + a4 + a5 + a7) + a1 + a3 + a6 + a8;
     int	val = (sum + 8) >> 4;
 
@@ -818,6 +782,7 @@ RG_FORCEINLINE float rg_mode11_cpp_32(const Byte* pSrc, int srcPitch) {
 //rounding does not match
 RG_FORCEINLINE Byte rg_mode12_cpp(const Byte* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
+
 
     int	sum = 4 * c + 2 * (a2 + a4 + a5 + a7) + a1 + a3 + a6 + a8;
     int	val = (sum + 8) >> 4;
@@ -899,7 +864,7 @@ RG_FORCEINLINE Byte rg_mode15_and16_cpp(const Byte* pSrc, int srcPitch) {
 
     auto mindiff = std::min(std::min(d1, d2), d3);
 
-    auto average = (a1 + 2*a2 + a3 + a6 + 2*a7 + a8 + 4) / 8;
+    auto average = (a1 + 2*a2 + a3 + a6 + 2*a7 + a8) / 8;
 
     if (mindiff == d2) return clip(average, (int)std::min(a2, a7), (int)std::max(a2, a7));
     if (mindiff == d3) return clip(average, (int)std::min(a3, a6), (int)std::max(a3, a6));
@@ -931,7 +896,7 @@ RG_FORCEINLINE float rg_mode15_and16_cpp_32(const Byte* pSrc, int srcPitch) {
 
   auto mindiff = std::min(std::min(d1, d2), d3);
 
-  auto average = (a1 + 2*a2 + a3 + a6 + 2*a7 + a8 + 4) / 8.0f;
+  auto average = (a1 + 2*a2 + a3 + a6 + 2*a7 + a8) / 8.0f;
 
   if (mindiff == d2) return clip_32(average, std::min(a2, a7), std::max(a2, a7));
   if (mindiff == d3) return clip_32(average, std::min(a3, a6), std::max(a3, a6));
@@ -1082,10 +1047,7 @@ RG_FORCEINLINE uint16_t rg_mode19_cpp_16(const Byte* pSrc, int srcPitch) {
 
 RG_FORCEINLINE float rg_mode19_cpp_32(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
-  //this one is faster but rounded a bit differently. It's not like anyone will be using C anyway
-  //int sum = a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8;
-  //int val = (sum + 4) >> 3;
-  // for float, no integer rounding tricks
+
   float	val = (a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8) / 8.0f;
 
   return val;
@@ -1209,7 +1171,7 @@ RG_FORCEINLINE uint16_t rg_mode22_cpp_16(const Byte* pSrc, int srcPitch) {
 RG_FORCEINLINE float rg_mode22_cpp_32(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
-  // float: no integer tricks, same like 21
+  // float: no integer tricks, same as 21
   float l1 = (a1 + a8) / 2.0f;
   float l2 = (a2 + a7) / 2.0f;
   float l3 = (a3 + a6) / 2.0f;
@@ -1238,26 +1200,27 @@ RG_FORCEINLINE Byte rg_mode23_cpp(const Byte* pSrc, int srcPitch) {
     auto mal4 = std::max(a4, a5);
     auto mil4 = std::min(a4, a5);
 
-    auto linediff1 = mal1 - mil1;
-    auto linediff2 = mal2 - mil2;
-    auto linediff3 = mal3 - mil3;
-    auto linediff4 = mal4 - mil4;
+    auto linediff1 = subs_c(mal1, mil1);
+    auto linediff2 = subs_c(mal2, mil2);
+    auto linediff3 = subs_c(mal3, mil3);
+    auto linediff4 = subs_c(mal4, mil4);
 
-    auto u1 = std::min(c - mal1, linediff1);
-    auto u2 = std::min(c - mal2, linediff2);
-    auto u3 = std::min(c - mal3, linediff3);
-    auto u4 = std::min(c - mal4, linediff4);
-    auto u =  std::max(std::max(std::max(std::max(u1, u2), u3), u4), 0);
+    auto u1 = std::min(subs_c(c, mal1), linediff1);
+    auto u2 = std::min(subs_c(c, mal2), linediff2);
+    auto u3 = std::min(subs_c(c, mal3), linediff3);
+    auto u4 = std::min(subs_c(c, mal4), linediff4);
+    auto u =  std::max(std::max(std::max(u1, u2), u3), u4);
 
-    auto d1 = std::min(mil1 - c, linediff1);
-    auto d2 = std::min(mil2 - c, linediff2);
-    auto d3 = std::min(mil3 - c, linediff3);
-    auto d4 = std::min(mil4 - c, linediff4);
-    auto d = std::max(std::max(std::max(std::max(d1, d2), d3), d4), 0);
+    auto d1 = std::min(subs_c(mil1, c), linediff1);
+    auto d2 = std::min(subs_c(mil2, c), linediff2);
+    auto d3 = std::min(subs_c(mil3, c), linediff3);
+    auto d4 = std::min(subs_c(mil4, c), linediff4);
+    auto d = std::max(std::max(std::max(d1, d2), d3), d4);
 
-    return c - u + d; // this probably will never overflow.
+    return adds_c(subs_c(c, u), d);
 }
 
+template<int bits_per_pixel>
 RG_FORCEINLINE uint16_t rg_mode23_cpp_16(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
@@ -1273,26 +1236,27 @@ RG_FORCEINLINE uint16_t rg_mode23_cpp_16(const Byte* pSrc, int srcPitch) {
   auto mal4 = std::max(a4, a5);
   auto mil4 = std::min(a4, a5);
 
-  auto linediff1 = mal1 - mil1;
-  auto linediff2 = mal2 - mil2;
-  auto linediff3 = mal3 - mil3;
-  auto linediff4 = mal4 - mil4;
+  auto linediff1 = subs_16_c(mal1, mil1);
+  auto linediff2 = subs_16_c(mal2, mil2);
+  auto linediff3 = subs_16_c(mal3, mil3);
+  auto linediff4 = subs_16_c(mal4, mil4);
 
-  auto u1 = std::min(c - mal1, linediff1);
-  auto u2 = std::min(c - mal2, linediff2);
-  auto u3 = std::min(c - mal3, linediff3);
-  auto u4 = std::min(c - mal4, linediff4);
+  auto u1 = std::min(subs_16_c(c, mal1), linediff1);
+  auto u2 = std::min(subs_16_c(c, mal2), linediff2);
+  auto u3 = std::min(subs_16_c(c, mal3), linediff3);
+  auto u4 = std::min(subs_16_c(c, mal4), linediff4);
   auto u =  std::max(std::max(std::max(std::max(u1, u2), u3), u4), 0);
 
-  auto d1 = std::min(mil1 - c, linediff1);
-  auto d2 = std::min(mil2 - c, linediff2);
-  auto d3 = std::min(mil3 - c, linediff3);
-  auto d4 = std::min(mil4 - c, linediff4);
+  auto d1 = std::min(subs_16_c(mil1, c), linediff1);
+  auto d2 = std::min(subs_16_c(mil2, c), linediff2);
+  auto d3 = std::min(subs_16_c(mil3, c), linediff3);
+  auto d4 = std::min(subs_16_c(mil4, c), linediff4);
   auto d = std::max(std::max(std::max(std::max(d1, d2), d3), d4), 0);
 
-  return c - u + d; // this probably will never overflow.
+  return adds_16_c<bits_per_pixel>(subs_16_c(c, u), d);
 }
 
+template<bool chroma>
 RG_FORCEINLINE float rg_mode23_cpp_32(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
@@ -1308,28 +1272,27 @@ RG_FORCEINLINE float rg_mode23_cpp_32(const Byte* pSrc, int srcPitch) {
   auto mal4 = std::max(a4, a5);
   auto mil4 = std::min(a4, a5);
 
-  auto linediff1 = mal1 - mil1;
-  auto linediff2 = mal2 - mil2;
-  auto linediff3 = mal3 - mil3;
-  auto linediff4 = mal4 - mil4;
+  auto linediff1 = subs_32_c_for_diff(mal1, mil1);
+  auto linediff2 = subs_32_c_for_diff(mal2, mil2);
+  auto linediff3 = subs_32_c_for_diff(mal3, mil3);
+  auto linediff4 = subs_32_c_for_diff(mal4, mil4);
 
-  auto u1 = std::min(c - mal1, linediff1);
-  auto u2 = std::min(c - mal2, linediff2);
-  auto u3 = std::min(c - mal3, linediff3);
-  auto u4 = std::min(c - mal4, linediff4);
+  auto u1 = std::min(subs_32_c_for_diff(c, mal1), linediff1);
+  auto u2 = std::min(subs_32_c_for_diff(c, mal2), linediff2);
+  auto u3 = std::min(subs_32_c_for_diff(c, mal3), linediff3);
+  auto u4 = std::min(subs_32_c_for_diff(c, mal4), linediff4);
   auto u =  std::max(std::max(std::max(std::max(u1, u2), u3), u4), 0.0f);
 
-  auto d1 = std::min(mil1 - c, linediff1);
-  auto d2 = std::min(mil2 - c, linediff2);
-  auto d3 = std::min(mil3 - c, linediff3);
-  auto d4 = std::min(mil4 - c, linediff4);
+  auto d1 = std::min(subs_32_c_for_diff(mil1, c), linediff1);
+  auto d2 = std::min(subs_32_c_for_diff(mil2, c), linediff2);
+  auto d3 = std::min(subs_32_c_for_diff(mil3, c), linediff3);
+  auto d4 = std::min(subs_32_c_for_diff(mil4, c), linediff4);
   auto d = std::max(std::max(std::max(std::max(d1, d2), d3), d4), 0.0f);
 
-  return c - u + d; // this probably will never overflow.
+  return adds_32_c<chroma>(subs_32_c<chroma>(c, u), d);
 }
 
 // ------------
-
 RG_FORCEINLINE Byte rg_mode24_cpp(const Byte* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
@@ -1345,36 +1308,37 @@ RG_FORCEINLINE Byte rg_mode24_cpp(const Byte* pSrc, int srcPitch) {
     auto mal4 = std::max(a4, a5);
     auto mil4 = std::min(a4, a5);
 
-    auto linediff1 = mal1 - mil1;
-    auto linediff2 = mal2 - mil2;
-    auto linediff3 = mal3 - mil3;
-    auto linediff4 = mal4 - mil4;
+    auto linediff1 = subs_c(mal1, mil1);
+    auto linediff2 = subs_c(mal2, mil2);
+    auto linediff3 = subs_c(mal3, mil3);
+    auto linediff4 = subs_c(mal4, mil4);
 
-    auto t1 = c - mal1;
-    auto t2 = c - mal2;
-    auto t3 = c - mal3;
-    auto t4 = c - mal4;
+    auto t1 = subs_c(c, mal1);
+    auto t2 = subs_c(c, mal2);
+    auto t3 = subs_c(c, mal3);
+    auto t4 = subs_c(c, mal4);
 
-    auto u1 = std::min(t1, linediff1 - t1);
-    auto u2 = std::min(t2, linediff2 - t2);
-    auto u3 = std::min(t3, linediff3 - t3);
-    auto u4 = std::min(t4, linediff4 - t4);
+    auto u1 = std::min(t1, subs_c(linediff1, t1));
+    auto u2 = std::min(t2, subs_c(linediff2, t2));
+    auto u3 = std::min(t3, subs_c(linediff3, t3));
+    auto u4 = std::min(t4, subs_c(linediff4, t4));
     auto u = std::max(std::max(std::max(std::max(u1, u2), u3), u4), 0);
 
-    t1 = mil1 - c;
-    t2 = mil2 - c;
-    t3 = mil3 - c;
-    t4 = mil4 - c;
+    t1 = subs_c(mil1, c);
+    t2 = subs_c(mil2, c);
+    t3 = subs_c(mil3, c);
+    t4 = subs_c(mil4, c);
 
-    auto d1 = std::min(t1, linediff1 - t1);
-    auto d2 = std::min(t2, linediff2 - t2);
-    auto d3 = std::min(t3, linediff3 - t3);
-    auto d4 = std::min(t4, linediff4 - t4);
+    auto d1 = std::min(t1, subs_c(linediff1, t1));
+    auto d2 = std::min(t2, subs_c(linediff2, t2));
+    auto d3 = std::min(t3, subs_c(linediff3, t3));
+    auto d4 = std::min(t4, subs_c(linediff4, t4));
     auto d = std::max(std::max(std::max(std::max(d1, d2), d3), d4), 0);
 
-    return c - u + d;
+    return adds_c(subs_c(c, u), d);
 }
 
+template<int bits_per_pixel>
 RG_FORCEINLINE uint16_t rg_mode24_cpp_16(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
@@ -1390,36 +1354,37 @@ RG_FORCEINLINE uint16_t rg_mode24_cpp_16(const Byte* pSrc, int srcPitch) {
   auto mal4 = std::max(a4, a5);
   auto mil4 = std::min(a4, a5);
 
-  auto linediff1 = mal1 - mil1;
-  auto linediff2 = mal2 - mil2;
-  auto linediff3 = mal3 - mil3;
-  auto linediff4 = mal4 - mil4;
+  auto linediff1 = subs_16_c(mal1, mil1);
+  auto linediff2 = subs_16_c(mal2, mil2);
+  auto linediff3 = subs_16_c(mal3, mil3);
+  auto linediff4 = subs_16_c(mal4, mil4);
 
-  auto t1 = c - mal1;
-  auto t2 = c - mal2;
-  auto t3 = c - mal3;
-  auto t4 = c - mal4;
+  auto t1 = subs_16_c(c, mal1);
+  auto t2 = subs_16_c(c, mal2);
+  auto t3 = subs_16_c(c, mal3);
+  auto t4 = subs_16_c(c, mal4);
 
-  auto u1 = std::min(t1, linediff1 - t1);
-  auto u2 = std::min(t2, linediff2 - t2);
-  auto u3 = std::min(t3, linediff3 - t3);
-  auto u4 = std::min(t4, linediff4 - t4);
+  auto u1 = std::min(t1, subs_16_c(linediff1, t1));
+  auto u2 = std::min(t2, subs_16_c(linediff2, t2));
+  auto u3 = std::min(t3, subs_16_c(linediff3, t3));
+  auto u4 = std::min(t4, subs_16_c(linediff4, t4));
   auto u = std::max(std::max(std::max(std::max(u1, u2), u3), u4), 0);
 
-  t1 = mil1 - c;
-  t2 = mil2 - c;
-  t3 = mil3 - c;
-  t4 = mil4 - c;
+  t1 = subs_16_c(mil1, c);
+  t2 = subs_16_c(mil2, c);
+  t3 = subs_16_c(mil3, c);
+  t4 = subs_16_c(mil4, c);
 
-  auto d1 = std::min(t1, linediff1 - t1);
-  auto d2 = std::min(t2, linediff2 - t2);
-  auto d3 = std::min(t3, linediff3 - t3);
-  auto d4 = std::min(t4, linediff4 - t4);
+  auto d1 = std::min(t1, subs_16_c(linediff1, t1));
+  auto d2 = std::min(t2, subs_16_c(linediff2, t2));
+  auto d3 = std::min(t3, subs_16_c(linediff3, t3));
+  auto d4 = std::min(t4, subs_16_c(linediff4, t4));
   auto d = std::max(std::max(std::max(std::max(d1, d2), d3), d4), 0);
 
-  return c - u + d;
+  return adds_16_c<bits_per_pixel>(subs_16_c(c, u), d);
 }
 
+template<bool chroma>
 RG_FORCEINLINE float rg_mode24_cpp_32(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
@@ -1435,36 +1400,180 @@ RG_FORCEINLINE float rg_mode24_cpp_32(const Byte* pSrc, int srcPitch) {
   auto mal4 = std::max(a4, a5);
   auto mil4 = std::min(a4, a5);
 
-  auto linediff1 = mal1 - mil1;
-  auto linediff2 = mal2 - mil2;
-  auto linediff3 = mal3 - mil3;
-  auto linediff4 = mal4 - mil4;
+  auto linediff1 = subs_32_c_for_diff(mal1, mil1);
+  auto linediff2 = subs_32_c_for_diff(mal2, mil2);
+  auto linediff3 = subs_32_c_for_diff(mal3, mil3);
+  auto linediff4 = subs_32_c_for_diff(mal4, mil4);
 
-  auto t1 = c - mal1;
-  auto t2 = c - mal2;
-  auto t3 = c - mal3;
-  auto t4 = c - mal4;
+  auto t1 = subs_32_c_for_diff(c, mal1);
+  auto t2 = subs_32_c_for_diff(c, mal2);
+  auto t3 = subs_32_c_for_diff(c, mal3);
+  auto t4 = subs_32_c_for_diff(c, mal4);
 
-  auto u1 = std::min(t1, linediff1 - t1);
-  auto u2 = std::min(t2, linediff2 - t2);
-  auto u3 = std::min(t3, linediff3 - t3);
-  auto u4 = std::min(t4, linediff4 - t4);
+  auto u1 = std::min(t1, subs_32_c_for_diff(linediff1, t1));
+  auto u2 = std::min(t2, subs_32_c_for_diff(linediff2, t2));
+  auto u3 = std::min(t3, subs_32_c_for_diff(linediff3, t3));
+  auto u4 = std::min(t4, subs_32_c_for_diff(linediff4, t4));
   auto u = std::max(std::max(std::max(std::max(u1, u2), u3), u4), 0.0f);
 
-  t1 = mil1 - c;
-  t2 = mil2 - c;
-  t3 = mil3 - c;
-  t4 = mil4 - c;
+  t1 = subs_32_c_for_diff(mil1, c);
+  t2 = subs_32_c_for_diff(mil2, c);
+  t3 = subs_32_c_for_diff(mil3, c);
+  t4 = subs_32_c_for_diff(mil4, c);
 
-  auto d1 = std::min(t1, linediff1 - t1);
-  auto d2 = std::min(t2, linediff2 - t2);
-  auto d3 = std::min(t3, linediff3 - t3);
-  auto d4 = std::min(t4, linediff4 - t4);
+  auto d1 = std::min(t1, subs_32_c_for_diff(linediff1, t1));
+  auto d2 = std::min(t2, subs_32_c_for_diff(linediff2, t2));
+  auto d3 = std::min(t3, subs_32_c_for_diff(linediff3, t3));
+  auto d4 = std::min(t4, subs_32_c_for_diff(linediff4, t4));
   auto d = std::max(std::max(std::max(std::max(d1, d2), d3), d4), 0.0f);
 
-  return c - u + d;
+  return adds_32_c<chroma>(subs_32_c<chroma>(c, u), d);
 }
 
+// ------------
+
+RG_FORCEINLINE Byte rg_mode25_cpp(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_CPP(pSrc, srcPitch);
+
+  /*
+  a1 a2 a3
+  a4 c  a5
+  a6 a7 a8
+  */
+  int SSE4, SSE5; // SSE4_minus, SSE5_plus; // global collectors
+  int SSE6, SSE7; // SSE6_actual_minus, SSE7_actual_plus the actual results
+
+  neighbourdiff_c<8>(SSE4, SSE5, c, a4);
+  // first result fill into collectors SSE4 and SSE5, no comparison
+
+  neighbourdiff_c<8>(SSE6, SSE7, c, a5);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  neighbourdiff_c<8>(SSE6, SSE7, c, a1);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  neighbourdiff_c<8>(SSE6, SSE7, c, a2);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  neighbourdiff_c<8>(SSE6, SSE7, c, a3);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  neighbourdiff_c<8>(SSE6, SSE7, c, a6);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  neighbourdiff_c<8>(SSE6, SSE7, c, a7);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  neighbourdiff_c<8>(SSE6, SSE7, c, a8);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  auto result = sharpen_c<8>(c, SSE4, SSE5);
+
+  return result;
+}
+
+template<int bits_per_pixel>
+RG_FORCEINLINE uint16_t rg_mode25_cpp_16(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_CPP_16(pSrc, srcPitch);
+
+  /*
+  a1 a2 a3
+  a4 c  a5
+  a6 a7 a8
+  */
+  int SSE4, SSE5; // SSE4_minus, SSE5_plus; // global collectors
+  int SSE6, SSE7; // SSE6_actual_minus, SSE7_actual_plus the actual results
+
+  neighbourdiff_c<bits_per_pixel>(SSE4, SSE5, c, a4);
+  // first result fill into collectors SSE4 and SSE5, no comparison
+
+  neighbourdiff_c<bits_per_pixel>(SSE6, SSE7, c, a5);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  neighbourdiff_c<bits_per_pixel>(SSE6, SSE7, c, a1);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  neighbourdiff_c<bits_per_pixel>(SSE6, SSE7, c, a2);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  neighbourdiff_c<bits_per_pixel>(SSE6, SSE7, c, a3);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  neighbourdiff_c<bits_per_pixel>(SSE6, SSE7, c, a6);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  neighbourdiff_c<bits_per_pixel>(SSE6, SSE7, c, a7);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  neighbourdiff_c<bits_per_pixel>(SSE6, SSE7, c, a8);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  auto result = sharpen_c<bits_per_pixel>(c, SSE4, SSE5);
+
+  return result;
+}
+
+template<bool chroma>
+RG_FORCEINLINE float rg_mode25_cpp_32(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_CPP_32(pSrc, srcPitch);
+
+  /*
+  a1 a2 a3
+  a4 c  a5
+  a6 a7 a8
+  */
+  float SSE4, SSE5; // SSE4_minus, SSE5_plus; // global collectors
+  float SSE6, SSE7; // SSE6_actual_minus, SSE7_actual_plus the actual results
+
+  neighbourdiff_32_c(SSE4, SSE5, c, a4);
+  // first result fill into collectors SSE4 and SSE5, no comparison
+
+  neighbourdiff_32_c(SSE6, SSE7, c, a5);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  neighbourdiff_32_c(SSE6, SSE7, c, a1);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  neighbourdiff_32_c(SSE6, SSE7, c, a2);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  neighbourdiff_32_c(SSE6, SSE7, c, a3);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  neighbourdiff_32_c(SSE6, SSE7, c, a6);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  neighbourdiff_32_c(SSE6, SSE7, c, a7);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  neighbourdiff_32_c(SSE6, SSE7, c, a8);
+  SSE4 = std::min(SSE4, SSE6);
+  SSE5 = std::min(SSE5, SSE7);
+
+  auto result = sharpen_32_c<chroma>(c, SSE4, SSE5);
+
+  return result;
+}
 
 #undef LOAD_SQUARE_CPP
 #undef LOAD_SQUARE_CPP_16

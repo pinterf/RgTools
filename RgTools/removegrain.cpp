@@ -370,7 +370,7 @@ static PlaneProcessor* sse4_functions[] = {
     process_plane_sse41<uint8_t, rg_mode22_sse<false>, rg_mode22_sse<true>>,
     process_plane_sse41<uint8_t, rg_mode23_sse<false>, rg_mode23_sse<true>>,
     process_plane_sse41<uint8_t, rg_mode24_sse<false>, rg_mode24_sse<true>>,
-    process_plane_sse41<uint8_t, rg_mode25_sse2<false>, rg_mode25_sse2<true>>,
+    process_plane_sse41<uint8_t, rg_mode25_sse<false>, rg_mode25_sse<true>>,
 };
 
 static PlaneProcessor* sse4_functions_16_10[] = {
@@ -400,6 +400,7 @@ static PlaneProcessor* sse4_functions_16_10[] = {
   process_plane_sse41<uint16_t, rg_mode22_sse_16<false>, rg_mode22_sse_16<true>>,
   process_plane_sse41<uint16_t, rg_mode23_sse_16<false>, rg_mode23_sse_16<true>>,
   process_plane_sse41<uint16_t, rg_mode24_sse_16<false>, rg_mode24_sse_16<true>>,
+  process_plane_sse41<uint16_t, rg_mode25_sse_16<10, false>, rg_mode25_sse_16<10, true>>,
 };
 
 static PlaneProcessor* sse4_functions_16_12[] = {
@@ -429,6 +430,7 @@ static PlaneProcessor* sse4_functions_16_12[] = {
   process_plane_sse41<uint16_t, rg_mode22_sse_16<false>, rg_mode22_sse_16<true>>,
   process_plane_sse41<uint16_t, rg_mode23_sse_16<false>, rg_mode23_sse_16<true>>,
   process_plane_sse41<uint16_t, rg_mode24_sse_16<false>, rg_mode24_sse_16<true>>,
+  process_plane_sse41<uint16_t, rg_mode25_sse_16<12, false>, rg_mode25_sse_16<12, true>>,
 };
 
 static PlaneProcessor* sse4_functions_16_14[] = {
@@ -458,6 +460,7 @@ static PlaneProcessor* sse4_functions_16_14[] = {
   process_plane_sse41<uint16_t, rg_mode22_sse_16<false>, rg_mode22_sse_16<true>>,
   process_plane_sse41<uint16_t, rg_mode23_sse_16<false>, rg_mode23_sse_16<true>>,
   process_plane_sse41<uint16_t, rg_mode24_sse_16<false>, rg_mode24_sse_16<true>>,
+  process_plane_sse41<uint16_t, rg_mode25_sse_16<14, false>, rg_mode25_sse_16<14, true>>,
 };
 
 static PlaneProcessor* sse4_functions_16_16[] = {
@@ -487,11 +490,12 @@ static PlaneProcessor* sse4_functions_16_16[] = {
   process_plane_sse41<uint16_t, rg_mode22_sse_16<false>, rg_mode22_sse_16<true>>,
   process_plane_sse41<uint16_t, rg_mode23_sse_16<false>, rg_mode23_sse_16<true>>,
   process_plane_sse41<uint16_t, rg_mode24_sse_16<false>, rg_mode24_sse_16<true>>,
+  process_plane_sse41<uint16_t, rg_mode25_sse_16<16, false>, rg_mode25_sse_16<16, true>>,
 };
 
 
 
-static PlaneProcessor* sse4_functions_32[] = {
+static PlaneProcessor* sse4_functions_32_luma[] = {
   doNothing,
   copyPlane,
   process_plane_sse41<float, rg_mode1_sse_32<false>, rg_mode1_sse_32<true>>,
@@ -516,8 +520,40 @@ static PlaneProcessor* sse4_functions_32[] = {
   process_plane_sse41<float, rg_mode20_sse_32<false>, rg_mode20_sse_32<true>>,
   process_plane_sse41<float, rg_mode21_sse_32<false>, rg_mode21_sse_32<true>>,
   process_plane_sse41<float, rg_mode22_sse_32<false>, rg_mode22_sse_32<true>>,
-  process_plane_sse41<float, rg_mode23_sse_32<false>, rg_mode23_sse_32<true>>,
-  process_plane_sse41<float, rg_mode24_sse_32<false>, rg_mode24_sse_32<true>>,
+  process_plane_sse41<float, rg_mode23_sse_32<false, false>, rg_mode23_sse_32<true, false>>,
+  process_plane_sse41<float, rg_mode24_sse_32<false, false>, rg_mode24_sse_32<true, false>>,
+  process_plane_sse41<float, rg_mode25_sse_32<false, false>, rg_mode25_sse_32<true, false>> // 2nd: luma false, chroma true
+};
+
+
+static PlaneProcessor* sse4_functions_32_chroma[] = {
+  doNothing,
+  copyPlane,
+  process_plane_sse41<float, rg_mode1_sse_32<false>, rg_mode1_sse_32<true>>,
+  process_plane_sse41<float, rg_mode2_sse_32<false>, rg_mode2_sse_32<true>>,
+  process_plane_sse41<float, rg_mode3_sse_32<false>, rg_mode3_sse_32<true>>,
+  process_plane_sse41<float, rg_mode4_sse_32<false>, rg_mode4_sse_32<true>>,
+  process_plane_sse41<float, rg_mode5_sse_32<false>, rg_mode5_sse_32<true>>,
+  process_plane_sse41<float, rg_mode6_sse_32<false>, rg_mode6_sse_32<true>>,
+  process_plane_sse41<float, rg_mode7_sse_32<false>, rg_mode7_sse_32<true>>,
+  process_plane_sse41<float, rg_mode8_sse_32<false>, rg_mode8_sse_32<true>>,
+  process_plane_sse41<float, rg_mode9_sse_32<false>, rg_mode9_sse_32<true>>,
+  process_plane_sse41<float, rg_mode10_sse_32<false>, rg_mode10_sse_32<true>>,
+  process_plane_sse41<float, rg_mode11_sse_32<false>, rg_mode11_sse_32<true>>,
+  process_plane_sse41<float, rg_mode12_sse_32<false>, rg_mode12_sse_32<true>>,
+  process_even_rows_sse41<float, rg_mode13_and14_sse_32<false>, rg_mode13_and14_sse_32<true>>,
+  process_odd_rows_sse41<float, rg_mode13_and14_sse_32<false>, rg_mode13_and14_sse_32<true>>,
+  process_even_rows_sse41<float, rg_mode15_and16_sse_32<false>, rg_mode15_and16_sse_32<true>>,
+  process_odd_rows_sse41<float, rg_mode15_and16_sse_32<false>, rg_mode15_and16_sse_32<true>>,
+  process_plane_sse41<float, rg_mode17_sse_32<false>, rg_mode17_sse_32<true>>,
+  process_plane_sse41<float, rg_mode18_sse_32<false>, rg_mode18_sse_32<true>>,
+  process_plane_sse41<float, rg_mode19_sse_32<false>, rg_mode19_sse_32<true>>,
+  process_plane_sse41<float, rg_mode20_sse_32<false>, rg_mode20_sse_32<true>>,
+  process_plane_sse41<float, rg_mode21_sse_32<false>, rg_mode21_sse_32<true>>,
+  process_plane_sse41<float, rg_mode22_sse_32<false>, rg_mode22_sse_32<true>>,
+  process_plane_sse41<float, rg_mode23_sse_32<false, true>, rg_mode23_sse_32<true, true>>,
+  process_plane_sse41<float, rg_mode24_sse_32<false, true>, rg_mode24_sse_32<true, true>>,
+  process_plane_sse41<float, rg_mode25_sse_32<false, true>, rg_mode25_sse_32<true, true>> // 2nd: luma false, chroma true
 };
 
 
@@ -547,7 +583,8 @@ static PlaneProcessor* c_functions[] = {
     process_plane_c<uint8_t, rg_mode21_cpp>,
     process_plane_c<uint8_t, rg_mode22_cpp>,
     process_plane_c<uint8_t, rg_mode23_cpp>,
-    process_plane_c<uint8_t, rg_mode24_cpp>
+    process_plane_c<uint8_t, rg_mode24_cpp>,
+    process_plane_c<uint8_t, rg_mode25_cpp>
 };
 
 static PlaneProcessor* c_functions_10[] = {
@@ -575,8 +612,9 @@ static PlaneProcessor* c_functions_10[] = {
   process_plane_c<uint16_t, rg_mode20_cpp_16>,
   process_plane_c<uint16_t, rg_mode21_cpp_16>,
   process_plane_c<uint16_t, rg_mode22_cpp_16>,
-  process_plane_c<uint16_t, rg_mode23_cpp_16>,
-  process_plane_c<uint16_t, rg_mode24_cpp_16>
+  process_plane_c<uint16_t, rg_mode23_cpp_16<10>>,
+  process_plane_c<uint16_t, rg_mode24_cpp_16<10>>,
+  process_plane_c<uint16_t, rg_mode25_cpp_16<10>>
 };
 
 static PlaneProcessor* c_functions_12[] = {
@@ -604,8 +642,9 @@ static PlaneProcessor* c_functions_12[] = {
   process_plane_c<uint16_t, rg_mode20_cpp_16>,
   process_plane_c<uint16_t, rg_mode21_cpp_16>,
   process_plane_c<uint16_t, rg_mode22_cpp_16>,
-  process_plane_c<uint16_t, rg_mode23_cpp_16>,
-  process_plane_c<uint16_t, rg_mode24_cpp_16>
+  process_plane_c<uint16_t, rg_mode23_cpp_16<12>>,
+  process_plane_c<uint16_t, rg_mode24_cpp_16<12>>,
+  process_plane_c<uint16_t, rg_mode25_cpp_16<12>>
 };
 
 static PlaneProcessor* c_functions_14[] = {
@@ -633,8 +672,9 @@ static PlaneProcessor* c_functions_14[] = {
   process_plane_c<uint16_t, rg_mode20_cpp_16>,
   process_plane_c<uint16_t, rg_mode21_cpp_16>,
   process_plane_c<uint16_t, rg_mode22_cpp_16>,
-  process_plane_c<uint16_t, rg_mode23_cpp_16>,
-  process_plane_c<uint16_t, rg_mode24_cpp_16>
+  process_plane_c<uint16_t, rg_mode23_cpp_16<14>>,
+  process_plane_c<uint16_t, rg_mode24_cpp_16<14>>,
+  process_plane_c<uint16_t, rg_mode25_cpp_16<14>>
 };
 
 
@@ -663,11 +703,12 @@ static PlaneProcessor* c_functions_16[] = {
   process_plane_c<uint16_t, rg_mode20_cpp_16>,
   process_plane_c<uint16_t, rg_mode21_cpp_16>,
   process_plane_c<uint16_t, rg_mode22_cpp_16>,
-  process_plane_c<uint16_t, rg_mode23_cpp_16>,
-  process_plane_c<uint16_t, rg_mode24_cpp_16>
+  process_plane_c<uint16_t, rg_mode23_cpp_16<16>>,
+  process_plane_c<uint16_t, rg_mode24_cpp_16<16>>,
+  process_plane_c<uint16_t, rg_mode25_cpp_16<16>>
 };
 
-static PlaneProcessor* c_functions_32[] = {
+static PlaneProcessor* c_functions_32_luma[] = {
   doNothing,
   copyPlane,
   process_plane_c<float, rg_mode1_cpp_32>,
@@ -692,18 +733,51 @@ static PlaneProcessor* c_functions_32[] = {
   process_plane_c<float, rg_mode20_cpp_32>,
   process_plane_c<float, rg_mode21_cpp_32>,
   process_plane_c<float, rg_mode22_cpp_32>,
-  process_plane_c<float, rg_mode23_cpp_32>,
-  process_plane_c<float, rg_mode24_cpp_32>
+  process_plane_c<float, rg_mode23_cpp_32<false>>,
+  process_plane_c<float, rg_mode24_cpp_32<false>>,
+  process_plane_c<float, rg_mode25_cpp_32<false>> // false: luma, true: chroma
 };
+
+static PlaneProcessor* c_functions_32_chroma[] = {
+  doNothing,
+  copyPlane,
+  process_plane_c<float, rg_mode1_cpp_32>,
+  process_plane_c<float, rg_mode2_cpp_32>,
+  process_plane_c<float, rg_mode3_cpp_32>,
+  process_plane_c<float, rg_mode4_cpp_32>,
+  process_plane_c<float, rg_mode5_cpp_32>,
+  process_plane_c<float, rg_mode6_cpp_32>,
+  process_plane_c<float, rg_mode7_cpp_32>,
+  process_plane_c<float, rg_mode8_cpp_32>,
+  process_plane_c<float, rg_mode9_cpp_32>,
+  process_plane_c<float, rg_mode10_cpp_32>,
+  process_plane_c<float, rg_mode11_cpp_32>,
+  process_plane_c<float, rg_mode12_cpp_32>,
+  process_even_rows_c<float, rg_mode13_and14_cpp_32>,
+  process_odd_rows_c<float, rg_mode13_and14_cpp_32>,
+  process_even_rows_c<float, rg_mode15_and16_cpp_32>,
+  process_odd_rows_c<float, rg_mode15_and16_cpp_32>,
+  process_plane_c<float, rg_mode17_cpp_32>,
+  process_plane_c<float, rg_mode18_cpp_32>,
+  process_plane_c<float, rg_mode19_cpp_32>,
+  process_plane_c<float, rg_mode20_cpp_32>,
+  process_plane_c<float, rg_mode21_cpp_32>,
+  process_plane_c<float, rg_mode22_cpp_32>,
+  process_plane_c<float, rg_mode23_cpp_32<true>>,
+  process_plane_c<float, rg_mode24_cpp_32<true>>,
+  process_plane_c<float, rg_mode25_cpp_32<true>> // false: luma, true: chroma
+};
+
 
 extern PlaneProcessor* avx2_functions[];
 extern PlaneProcessor* avx2_functions_16_10[];
 extern PlaneProcessor* avx2_functions_16_12[];
 extern PlaneProcessor* avx2_functions_16_14[];
 extern PlaneProcessor* avx2_functions_16_16[];
-extern PlaneProcessor* avx2_functions_32[];
+extern PlaneProcessor* avx2_functions_32_luma[];
+extern PlaneProcessor* avx2_functions_32_chroma[];
 
-RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_cs_check, bool use_avx2, IScriptEnvironment* env)
+RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_cs_check, int opt, IScriptEnvironment* env)
     : GenericVideoFilter(child), mode_(mode), modeU_(modeU), modeV_(modeV), functions(nullptr) {
     if (!(vi.IsPlanar() || skip_cs_check)) {
         env->ThrowError("RemoveGrain works only with planar colorspaces");
@@ -729,19 +803,28 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
     pixelsize = vi.ComponentSize();
     bits_per_pixel = vi.BitsPerComponent();
 
-    bool avx2 = (env->GetCPUFlags() & CPUF_AVX2) && use_avx2;
+    // 0: auto
+    // 1: c
+    // 2: sse2
+    // 3: sse4.1
+    // 4: avx2
+    const bool use_avx2 = (opt == 0 || opt >= 4) && !!(env->GetCPUFlags() & CPUF_AVX2);
+    const bool use_sse41 = (opt == 0 || opt >= 3) && !!(env->GetCPUFlags() & CPUF_SSE4_1);
+    const bool use_sse2 = (opt == 0 || opt >= 2) && !!(env->GetCPUFlags() & CPUF_SSE2);
+
+    functions_chroma = nullptr; // only for float
 
     if (pixelsize == 1) {
-      if (avx2)
+      if (use_avx2)
         functions = avx2_functions;
-      else if (env->GetCPUFlags() & CPUF_SSE4_1)
+      else if (use_sse41)
         functions = sse4_functions;
-      else if (env->GetCPUFlags() & CPUF_SSE2)
+      else if (use_sse2)
         functions = sse2_functions;
       else
         functions = c_functions;
 
-      if (vi.width < 32 + 1 && avx2) { //not enough for YMM, try SSE4
+      if (vi.width < 32 + 1 && use_avx2) { //not enough for YMM, try SSE4
         functions = sse4_functions;
       }
       if (vi.width < 16+1) { //not enough for XMM
@@ -749,7 +832,7 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
       }
     }
     else if (pixelsize == 2) {
-      if (avx2 && vi.width >= (32 / sizeof(uint16_t) + 1)) {
+      if (use_avx2 && vi.width >= (32 / sizeof(uint16_t) + 1)) {
         // mode 6 and 8 bitdepth clamp specific
         switch (bits_per_pixel) {
         case 10: functions = avx2_functions_16_10; break;
@@ -759,7 +842,7 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
         default: env->ThrowError("Illegal bit-depth: %d!", bits_per_pixel);
         }
       }
-      else if ((env->GetCPUFlags() & CPUF_SSE4) && vi.width >= (16/sizeof(uint16_t) + 1)) {
+      else if (use_sse41 && vi.width >= (16/sizeof(uint16_t) + 1)) {
         // mode 6 and 8 bitdepth clamp specific
         switch (bits_per_pixel) {
         case 10: functions = sse4_functions_16_10; break;
@@ -780,12 +863,18 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
       }
     }
     else {// if (pixelsize == 4) 
-      if (avx2 && vi.width >= (32 / sizeof(float) + 1))
-        functions = avx2_functions_32;
-      else if ((env->GetCPUFlags() & CPUF_SSE4) && vi.width >= (16/sizeof(float) + 1))
-        functions = sse4_functions_32;
-      else
-        functions = c_functions_32;
+      if (use_avx2 && vi.width >= (32 / sizeof(float) + 1)) {
+        functions = avx2_functions_32_luma;
+        functions_chroma = avx2_functions_32_chroma;
+      }
+      else if (use_sse41 && vi.width >= (16 / sizeof(float) + 1)) {
+        functions = sse4_functions_32_luma;
+        functions_chroma = sse4_functions_32_chroma;
+      }
+      else {
+        functions = c_functions_32_luma;
+        functions_chroma = c_functions_32_chroma;
+      }
     }
 }
 
@@ -814,16 +903,25 @@ PVideoFrame RemoveGrain::GetFrame(int n, IScriptEnvironment* env) {
 
     functions[mode_ + 1](env, srcFrame->GetReadPtr(PLANAR_Y), dstFrame->GetWritePtr(PLANAR_Y), srcFrame->GetRowSize(PLANAR_Y),
       srcFrame->GetHeight(PLANAR_Y), srcFrame->GetPitch(PLANAR_Y), dstFrame->GetPitch(PLANAR_Y));
-    
+
     if (vi.IsPlanar() && !vi.IsY()) {
       if (!is_16byte_aligned(srcFrame->GetReadPtr(PLANAR_U)))
         env->ThrowError("RemoveGrain: Invalid memory alignment. Unaligned crop?");
 
-      functions[modeU_ + 1](env, srcFrame->GetReadPtr(PLANAR_U), dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetRowSize(PLANAR_U),
-        srcFrame->GetHeight(PLANAR_U), srcFrame->GetPitch(PLANAR_U), dstFrame->GetPitch(PLANAR_U));
+      if (functions_chroma != nullptr) {
+        // for float
+        functions_chroma[modeU_ + 1](env, srcFrame->GetReadPtr(PLANAR_U), dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetRowSize(PLANAR_U),
+          srcFrame->GetHeight(PLANAR_U), srcFrame->GetPitch(PLANAR_U), dstFrame->GetPitch(PLANAR_U));
+        functions_chroma[modeV_ + 1](env, srcFrame->GetReadPtr(PLANAR_V), dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetRowSize(PLANAR_V),
+          srcFrame->GetHeight(PLANAR_V), srcFrame->GetPitch(PLANAR_V), dstFrame->GetPitch(PLANAR_V));
+      }
+      else {
+        functions[modeU_ + 1](env, srcFrame->GetReadPtr(PLANAR_U), dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetRowSize(PLANAR_U),
+          srcFrame->GetHeight(PLANAR_U), srcFrame->GetPitch(PLANAR_U), dstFrame->GetPitch(PLANAR_U));
 
-      functions[modeV_ + 1](env, srcFrame->GetReadPtr(PLANAR_V), dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetRowSize(PLANAR_V),
-        srcFrame->GetHeight(PLANAR_V), srcFrame->GetPitch(PLANAR_V), dstFrame->GetPitch(PLANAR_V));
+        functions[modeV_ + 1](env, srcFrame->GetReadPtr(PLANAR_V), dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetRowSize(PLANAR_V),
+          srcFrame->GetHeight(PLANAR_V), srcFrame->GetPitch(PLANAR_V), dstFrame->GetPitch(PLANAR_V));
+      }
     }
   }
   if (vi.IsYUVA() || vi.IsPlanarRGBA())
@@ -835,7 +933,7 @@ PVideoFrame RemoveGrain::GetFrame(int n, IScriptEnvironment* env) {
 
 
 AVSValue __cdecl Create_RemoveGrain(AVSValue args, void*, IScriptEnvironment* env) {
-    enum { CLIP, MODE, MODEU, MODEV, PLANAR, OPTAVX2 };
+    enum { CLIP, MODE, MODEU, MODEV, PLANAR, OPT };
     return new RemoveGrain(args[CLIP].AsClip(), args[MODE].AsInt(1), args[MODEU].AsInt(RemoveGrain::UNDEFINED_MODE), args[MODEV].AsInt(RemoveGrain::UNDEFINED_MODE), 
-      args[PLANAR].AsBool(false), args[OPTAVX2].AsBool(true), env);
+      args[PLANAR].AsBool(false), args[OPT].AsInt(0), env);
 }

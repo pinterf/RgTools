@@ -9,7 +9,7 @@ typedef void (PlaneProcessor)(IScriptEnvironment* env, const BYTE* pSrc, BYTE* p
 
 class RemoveGrain : public GenericVideoFilter {
 public:
-    RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_cs_check, bool use_avx2, IScriptEnvironment* env);
+    RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_cs_check, int opt, IScriptEnvironment* env);
 
     PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 
@@ -27,7 +27,8 @@ private:
     int pixelsize;
     int bits_per_pixel;
 
-    PlaneProcessor **functions;
+    PlaneProcessor** functions;
+    PlaneProcessor** functions_chroma; // only for float
 };
 
 

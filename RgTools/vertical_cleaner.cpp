@@ -571,11 +571,16 @@ VerticalCleaner::VerticalCleaner(PClip child, int mode, int modeU, int modeV, bo
 
     pixelsize = vi.ComponentSize();
     bits_per_pixel = vi.BitsPerComponent();
+
+    has_at_least_v8 = true;
+    try { env->CheckVersion(8); }
+    catch (const AvisynthError&) { has_at_least_v8 = false; }
+
 }
 
 PVideoFrame VerticalCleaner::GetFrame(int n, IScriptEnvironment* env) {
     auto srcFrame = child->GetFrame(n, env);
-    auto dstFrame = env->NewVideoFrame(vi);
+    auto dstFrame = has_at_least_v8 ? env->NewVideoFrameP(vi, &srcFrame) : env->NewVideoFrame(vi);
 
     if (vi.IsPlanarRGB() || vi.IsPlanarRGBA()) {
       dispatch_median(mode_, dstFrame->GetWritePtr(PLANAR_G), srcFrame->GetReadPtr(PLANAR_G), dstFrame->GetPitch(PLANAR_G), srcFrame->GetPitch(PLANAR_G),

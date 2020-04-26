@@ -559,6 +559,9 @@ class	TemporalRepair : public GenericVideoFilter
   int last_frame;
   PClip orig;
   bool grey;
+
+  bool has_at_least_v8 = true;
+
   PlaneProcessor_t* processor_t_repair;
   PlaneProcessor_t* processor_t_repair_chroma;
   PlaneProcessor_t* processor_t_repair_c;
@@ -577,7 +580,7 @@ class	TemporalRepair : public GenericVideoFilter
     PVideoFrame sf = orig->GetFrame(n, env);
     PVideoFrame nf = orig->GetFrame(n + 1, env);
     PVideoFrame cf = child->GetFrame(n, env);
-    PVideoFrame df = env->NewVideoFrame(vi);
+    PVideoFrame df = has_at_least_v8 ? env->NewVideoFrameP(vi, &cf) : env->NewVideoFrame(vi);
 
     const int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
     const int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
@@ -633,6 +636,10 @@ public:
       env->ThrowError("TemporalRepair: only planar color spaces are supported");
 
     CompareVideoInfo(vi, orig->GetVideoInfo(), "TemporalRepair", env);
+
+    has_at_least_v8 = true;
+    try { env->CheckVersion(8); }
+    catch (const AvisynthError&) { has_at_least_v8 = false; }
 
     // only for modes 0 and 4
     assert(mode == 0 || mode == 4);
@@ -2275,7 +2282,9 @@ class SmoothTemporalRepair : public GenericVideoFilter
 
   int last_frame;
   bool grey;
-  
+
+  bool has_at_least_v8;
+
   // MT mode Registration for Avisynth+
   int __stdcall SetCacheHints(int cachehints, int frame_range) override {
     return cachehints == CACHE_GET_MTMODE ? MT_NICE_FILTER : 0;
@@ -2289,7 +2298,7 @@ class SmoothTemporalRepair : public GenericVideoFilter
     PVideoFrame pf = oclip->GetFrame(n - 1, env);
     PVideoFrame of = oclip->GetFrame(n, env);
     PVideoFrame nf = oclip->GetFrame(n + 1, env);
-    PVideoFrame df = env->NewVideoFrame(vi);
+    PVideoFrame df = has_at_least_v8 ? env->NewVideoFrameP(vi, &sf) : env->NewVideoFrame(vi);
 
     const int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
     const int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };
@@ -2356,6 +2365,9 @@ public:
       env->ThrowError("TemporalRepair: only planar color spaces are supported");
 
     CompareVideoInfo(vi, _oclip->GetVideoInfo(), "TemporalRepair", env);
+
+    has_at_least_v8 = true;
+    try { env->CheckVersion(8); } catch (const AvisynthError&) { has_at_least_v8 = false; }
 
     if (vi.IsY())
       grey = true;

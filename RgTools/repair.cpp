@@ -649,6 +649,10 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
   pixelsize = vi.ComponentSize();
   bits_per_pixel = vi.BitsPerComponent();
 
+  has_at_least_v8 = true;
+  try { env->CheckVersion(8); }
+  catch (const AvisynthError&) { has_at_least_v8 = false; }
+
   int worst_case_width = vi.width;
   if (vi.IsYUV() && vi.NumComponents() >= 3)
     worst_case_width >>= vi.GetPlaneWidthSubsampling(PLANAR_U);
@@ -702,7 +706,7 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
 PVideoFrame Repair::GetFrame(int n, IScriptEnvironment* env) {
   auto srcFrame = child->GetFrame(n, env);
   auto refFrame = ref_->GetFrame(n, env);
-  auto dstFrame = env->NewVideoFrame(vi);
+  auto dstFrame = has_at_least_v8 ? env->NewVideoFrameP(vi, &srcFrame) : env->NewVideoFrame(vi);
 
   int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
   int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };

@@ -28,6 +28,8 @@ private:
     int pixelsize;
     int bits_per_pixel;
 
+    bool has_at_least_v8;
+
     RepairPlaneProcessor **functions;
     RepairPlaneProcessor** functions_chroma; // for float
 };

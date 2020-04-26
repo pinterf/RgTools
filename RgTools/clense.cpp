@@ -235,6 +235,10 @@ Clense::Clense(PClip child, PClip previous, PClip next, bool grey, bool reducefl
     if(grey_ && (vi.IsPlanarRGB() || vi.IsPlanarRGBA()))
       env->ThrowError("Clense: cannot speficy grey for planar RGB colorspaces");
 
+    has_at_least_v8 = true;
+    try { env->CheckVersion(8); }
+    catch (const AvisynthError&) { has_at_least_v8 = false; }
+
     pixelsize = vi.ComponentSize();
     bits_per_pixel = vi.BitsPerComponent();
 
@@ -324,7 +328,8 @@ PVideoFrame Clense::GetFrame(int n, IScriptEnvironment* env) {
       frame2 = next_ == nullptr ? child->GetFrame(n+1, env) : next_->GetFrame(n+1, env);
     }
 
-    auto dstFrame = env->NewVideoFrame(vi);
+    auto dstFrame = 
+      has_at_least_v8 ? env->NewVideoFrameP(vi, &srcFrame) : env->NewVideoFrame(vi);
 
     if (vi.IsPlanarRGB() || vi.IsPlanarRGBA()) {
       processor_(dstFrame->GetWritePtr(PLANAR_G), srcFrame->GetReadPtr(PLANAR_G), frame1->GetReadPtr(PLANAR_G), frame2->GetReadPtr(PLANAR_G),

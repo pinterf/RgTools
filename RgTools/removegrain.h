@@ -27,6 +27,8 @@ private:
     int pixelsize;
     int bits_per_pixel;
 
+    bool has_at_least_v8;
+
     PlaneProcessor** functions;
     PlaneProcessor** functions_chroma; // only for float
 };

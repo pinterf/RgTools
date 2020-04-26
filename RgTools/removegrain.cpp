@@ -792,6 +792,10 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
       env->ThrowError("RemoveGrain: cannot specify U or V mode for planar RGB!");
     }
 
+    has_at_least_v8 = true;
+    try { env->CheckVersion(8); }
+    catch (const AvisynthError&) { has_at_least_v8 = false; }
+
     //now change undefined mode value and EVERYTHING WILL BREAK
     if (modeU_ <= UNDEFINED_MODE) { 
         modeU_ = mode_;
@@ -885,7 +889,7 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
 
 PVideoFrame RemoveGrain::GetFrame(int n, IScriptEnvironment* env) {
   auto srcFrame = child->GetFrame(n, env);
-  auto dstFrame = env->NewVideoFrame(vi);
+  auto dstFrame = has_at_least_v8 ? env->NewVideoFrameP(vi, &srcFrame) : env->NewVideoFrame(vi);
 
   int planes_y[4] = { PLANAR_Y, PLANAR_U, PLANAR_V, PLANAR_A };
   int planes_r[4] = { PLANAR_G, PLANAR_B, PLANAR_R, PLANAR_A };

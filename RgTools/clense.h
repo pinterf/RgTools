@@ -14,8 +14,6 @@ enum class ClenseMode {
 
 class Clense : public GenericVideoFilter {
 
-
-
 public:
     Clense(PClip child, PClip previous, PClip next, bool grey, bool reduceflicker, ClenseMode mode, bool skip_cs_check, IScriptEnvironment* env);
 
@@ -37,6 +35,8 @@ private:
 
     int pixelsize;
     int bits_per_pixel;
+
+    bool has_at_least_v8;
 
     // for reduceflicker
     PVideoFrame lastDstFrame;

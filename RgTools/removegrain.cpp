@@ -778,7 +778,7 @@ extern PlaneProcessor* avx2_functions_32_luma[];
 extern PlaneProcessor* avx2_functions_32_chroma[];
 
 RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_cs_check, int opt, IScriptEnvironment* env)
-    : GenericVideoFilter(child), mode_(mode), modeU_(modeU), modeV_(modeV), functions(nullptr) {
+    : GenericVideoFilter(child), mode_(mode), modeU_(modeU), modeV_(modeV), functions(nullptr), functions_chroma(nullptr) {
     if (!(vi.IsPlanar() || skip_cs_check)) {
         env->ThrowError("RemoveGrain works only with planar colorspaces");
     }
@@ -819,8 +819,6 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
     const bool use_avx2 = (opt == 0 || opt >= 4) && !!(env->GetCPUFlags() & CPUF_AVX2);
     const bool use_sse41 = (opt == 0 || opt >= 3) && !!(env->GetCPUFlags() & CPUF_SSE4_1);
     const bool use_sse2 = (opt == 0 || opt >= 2) && !!(env->GetCPUFlags() & CPUF_SSE2);
-
-    functions_chroma = nullptr; // only for float
 
     if (pixelsize == 1) {
       if (use_avx2)

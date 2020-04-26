@@ -602,12 +602,41 @@ static RepairPlaneProcessor* c_functions_32[] = {
   process_plane_c<float,repair_mode16_cpp_32>,
   process_plane_c<float,repair_mode17_cpp_32>,
   process_plane_c<float,repair_mode18_cpp_32>,
-  process_plane_c<float,repair_mode19_cpp_32>, 
-  process_plane_c<float,repair_mode20_cpp_32>, 
-  process_plane_c<float,repair_mode21_cpp_32>, 
-  process_plane_c<float,repair_mode22_cpp_32>, 
-  process_plane_c<float,repair_mode23_cpp_32>, 
-  process_plane_c<float,repair_mode24_cpp_32> 
+  process_plane_c<float,repair_mode19_cpp_32<false>>,
+  process_plane_c<float,repair_mode20_cpp_32<false>>,
+  process_plane_c<float,repair_mode21_cpp_32<false>>,
+  process_plane_c<float,repair_mode22_cpp_32<false>>,
+  process_plane_c<float,repair_mode23_cpp_32<false>>,
+  process_plane_c<float,repair_mode24_cpp_32<false>>
+};
+
+static RepairPlaneProcessor* c_functions_32_chroma[] = {
+  doNothing,
+  copyPlane,
+  process_plane_c<float,repair_mode1_cpp_32>,
+  process_plane_c<float,repair_mode2_cpp_32>,
+  process_plane_c<float,repair_mode3_cpp_32>,
+  process_plane_c<float,repair_mode4_cpp_32>,
+  process_plane_c<float,repair_mode5_cpp_32>,
+  process_plane_c<float,repair_mode6_cpp_32>,
+  process_plane_c<float,repair_mode7_cpp_32>,
+  process_plane_c<float,repair_mode8_cpp_32>,
+  process_plane_c<float,repair_mode9_cpp_32>,
+  process_plane_c<float,repair_mode10_cpp_32>,
+  process_plane_c<float,repair_mode1_cpp_32>,
+  process_plane_c<float,repair_mode12_cpp_32>,
+  process_plane_c<float,repair_mode13_cpp_32>,
+  process_plane_c<float,repair_mode14_cpp_32>,
+  process_plane_c<float,repair_mode15_cpp_32>,
+  process_plane_c<float,repair_mode16_cpp_32>,
+  process_plane_c<float,repair_mode17_cpp_32>,
+  process_plane_c<float,repair_mode18_cpp_32>,
+  process_plane_c<float,repair_mode19_cpp_32<true>>,
+  process_plane_c<float,repair_mode20_cpp_32<true>>,
+  process_plane_c<float,repair_mode21_cpp_32<true>>,
+  process_plane_c<float,repair_mode22_cpp_32<true>>,
+  process_plane_c<float,repair_mode23_cpp_32<true>>,
+  process_plane_c<float,repair_mode24_cpp_32<true>>
 };
 
 Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip_cs_check, IScriptEnvironment* env)
@@ -697,7 +726,7 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
     }
     else {
       functions = c_functions_32;
-      functions_chroma = c_functions_32; // _chroma; // fixme
+      functions_chroma = c_functions_32_chroma; // fixme: and implement like in RG, check those modes
     }
   }
 }

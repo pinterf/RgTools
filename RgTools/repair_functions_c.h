@@ -1498,6 +1498,7 @@ RG_FORCEINLINE uint16_t repair_mode19_cpp_16(const Byte* pSrc, uint16_t val, int
   return clip_16(val, clip_16(c-mindiff, 0, pixel_max), clip_16(c+mindiff, 0, pixel_max));
 }
 
+template<bool chroma>
 RG_FORCEINLINE float repair_mode19_cpp_32(const Byte* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
@@ -1512,18 +1513,8 @@ RG_FORCEINLINE float repair_mode19_cpp_32(const Byte* pSrc, float val, int srcPi
 
   auto mindiff = std::min(std::min(std::min(std::min(std::min(std::min(std::min(d1, d2), d3), d4), d5), d6), d7), d8);
 
-  float mi = c - mindiff;
-  float ma = c + mindiff;
-#if 0
-  // no max_pixel_value clamp for float
-#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
-  const float pixel_min = 0.0f;
-  const float pixel_max = 1.0f;
-#else
-  const float pixel_min = chroma ? -0.5f : 0.0f;
-  const float pixel_max = chroma ? 0.5f : 1.0f;
-#endif
-#endif
+  float mi = subs_32_c<chroma>(c, mindiff);
+  float ma = adds_32_c<chroma>(c, mindiff);
   // mi = clip_32(c-mindiff, pixel_min, pixel_max);
   // ma = clip_32(c+mindiff, pixel_min, pixel_max);
   return clip_32(val, mi, ma);
@@ -1603,6 +1594,7 @@ RG_FORCEINLINE uint16_t repair_mode20_cpp_16(const Byte* pSrc, uint16_t val, int
   return clip_16(val, clip_16(c-maxdiff, 0, max_pixel), clip_16(c+maxdiff, 0, max_pixel));
 }
 
+template<bool chroma>
 RG_FORCEINLINE float repair_mode20_cpp_32(const Byte* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
@@ -1635,18 +1627,8 @@ RG_FORCEINLINE float repair_mode20_cpp_32(const Byte* pSrc, float val, int srcPi
 
   maxdiff = clip_32(maxdiff, mindiff, d8);
 
-#if 0
-  // no max_pixel_value clamp for float
-#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
-  const float pixel_min = 0.0f;
-  const float pixel_max = 1.0f;
-#else
-  const float pixel_min = chroma ? -0.5f : 0.0f;
-  const float pixel_max = chroma ? 0.5f : 1.0f;
-#endif
-#endif
-  float mi = c - maxdiff;
-  float ma = c + maxdiff;
+  float mi = subs_32_c<chroma>(c, maxdiff);
+  float ma = adds_32_c<chroma>(c, maxdiff);
   // mi = clip_32(mi, pixel_min, pixel_max)
   // ma = clip_32(ma, pixel_min, pixel_max)
   return clip_32(val, mi, ma);
@@ -1727,6 +1709,7 @@ RG_FORCEINLINE uint16_t repair_mode21_cpp_16(const Byte* pSrc, uint16_t val, int
   return clip_16(val, clip_16(c-u, 0, max_pixel), clip_16(c+u, 0, max_pixel));
 }
 
+template<bool chroma>
 RG_FORCEINLINE float repair_mode21_cpp_32(const Byte* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
@@ -1742,34 +1725,15 @@ RG_FORCEINLINE float repair_mode21_cpp_32(const Byte* pSrc, float val, int srcPi
   auto mal4 = std::max(a4, a5);
   auto mil4 = std::min(a4, a5);
 
-  auto d1 = mal1 - c;
-  auto d2 = mal2 - c;
-  auto d3 = mal3 - c;
-  auto d4 = mal4 - c;
+  auto d1 = subs_32_c_for_diff(mal1, c);
+  auto d2 = subs_32_c_for_diff(mal2, c);
+  auto d3 = subs_32_c_for_diff(mal3, c);
+  auto d4 = subs_32_c_for_diff(mal4, c);
 
-  auto rd1 = c-mil1;
-  auto rd2 = c-mil2;
-  auto rd3 = c-mil3;
-  auto rd4 = c-mil4;
-
-#if 0
-  // no max_pixel_value clamp for float
-#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
-  const float pixel_min = 0.0f;
-  const float pixel_max = 1.0f;
-#else
-  const float pixel_min = chroma ? -0.5f : 0.0f;
-  const float pixel_max = chroma ? 0.5f : 1.0f;
-#endif
-  d1 = clip_32(d1, pixel_min, pixel_max);
-  d2 = clip_32(d2, pixel_min, pixel_max);
-  d3 = clip_32(d3, pixel_min, pixel_max);
-  d4 = clip_32(d4, pixel_min, pixel_max);
-  rd1 = clip_32(rd1, pixel_min, pixel_max);
-  rd2 = clip_32(rd2, pixel_min, pixel_max);
-  rd3 = clip_32(rd3, pixel_min, pixel_max);
-  rd4 = clip_32(rd4, pixel_min, pixel_max);
-#endif
+  auto rd1 = subs_32_c_for_diff(c, mil1);
+  auto rd2 = subs_32_c_for_diff(c, mil2);
+  auto rd3 = subs_32_c_for_diff(c, mil3);
+  auto rd4 = subs_32_c_for_diff(c, mil4);
 
   auto u1  = std::max(d1, rd1);
   auto u2  = std::max(d2, rd2);
@@ -1778,8 +1742,8 @@ RG_FORCEINLINE float repair_mode21_cpp_32(const Byte* pSrc, float val, int srcPi
 
   auto u = std::min(std::min(std::min(u1, u2), u3), u4);
 
-  float mi = c - u;
-  float ma = c + u;
+  float mi = subs_32_c<chroma>(c, u);
+  float ma = adds_32_c<chroma>(c, u);
   // mi = clip_32(mi, pixel_min, pixel_max);
   // ma = clip_32(ma, pixel_min, pixel_max);
   return clip_32(val, mi, ma);  
@@ -1823,6 +1787,7 @@ RG_FORCEINLINE uint16_t repair_mode22_cpp_16(const Byte* pSrc, uint16_t val, int
   return clip_16(c, clip_16(val-mindiff, 0, max_pixel), clip_16(val+mindiff, 0, max_pixel));
 }
 
+template<bool chroma>
 RG_FORCEINLINE float repair_mode22_cpp_32(const Byte* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
@@ -1837,18 +1802,8 @@ RG_FORCEINLINE float repair_mode22_cpp_32(const Byte* pSrc, float val, int srcPi
 
   auto mindiff = std::min(std::min(std::min(std::min(std::min(std::min(std::min(d1, d2), d3), d4), d5), d6), d7), d8);
 
-#if 0
-  // no max_pixel_value clamp for float
-#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
-  const float pixel_min = 0.0f;
-  const float pixel_max = 1.0f;
-#else
-  const float pixel_min = chroma ? -0.5f : 0.0f;
-  const float pixel_max = chroma ? 0.5f : 1.0f;
-#endif
-#endif
-  float mi = val - mindiff;
-  float ma = val + mindiff;
+  float mi = subs_32_c<chroma>(val, mindiff);
+  float ma = adds_32_c<chroma>(val, mindiff);
   // mi = clip_32(mi, min_pixel, max_pixel);
   // ma = clip_32(ma, min_pixel, max_pixel);
   return clip_32(c, mi, ma);
@@ -1928,6 +1883,7 @@ RG_FORCEINLINE uint16_t repair_mode23_cpp_16(const Byte* pSrc, uint16_t val, int
   return clip_16(c, clip_16(val-maxdiff, 0, max_pixel), clip_16(val+maxdiff, 0, max_pixel));
 }
 
+template<bool chroma>
 RG_FORCEINLINE float repair_mode23_cpp_32(const Byte* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
@@ -1960,18 +1916,8 @@ RG_FORCEINLINE float repair_mode23_cpp_32(const Byte* pSrc, float val, int srcPi
 
   maxdiff = clip_32(maxdiff, mindiff, d8);
 
-#if 0
-  // no max_pixel_value clamp for float
-#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
-  const float pixel_min = 0.0f;
-  const float pixel_max = 1.0f;
-#else
-  const float pixel_min = chroma ? -0.5f : 0.0f;
-  const float pixel_max = chroma ? 0.5f : 1.0f;
-#endif
-#endif
-  float mi = val - maxdiff;
-  float ma = val + maxdiff;
+  float mi = subs_32_c<chroma>(val, maxdiff);
+  float ma = adds_32_c<chroma>(val, maxdiff);
   // mi =  clip_32(mi, pixel_min, pixel_max)
   // ma =  clip_32(ma, pixel_min, pixel_max)
   return clip_32(c, mi, ma);
@@ -2049,8 +1995,13 @@ RG_FORCEINLINE uint16_t repair_mode24_cpp_16(const Byte* pSrc, uint16_t val, int
   auto u = std::min(std::min(std::min(u1, u2), u3), u4);
 
   return clip_16(c, clip_16(val-u, 0, max_pixel), clip_16(val+u, 0, max_pixel));
+/* all these "clip" and "clip_16" could be rewritten to (like in RemoveGrain part) 
+   to subs and adds
+  return clip_16(c, subs_16_c(val, u), adds_16_c<bits_per_pixel>(val, u));
+*/
 }
 
+template<bool chroma>
 RG_FORCEINLINE float repair_mode24_cpp_32(const Byte* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
@@ -2066,34 +2017,15 @@ RG_FORCEINLINE float repair_mode24_cpp_32(const Byte* pSrc, float val, int srcPi
   auto mal4 = std::max(a4, a5);
   auto mil4 = std::min(a4, a5);
 
-  auto d1 = mal1 - val;
-  auto d2 = mal2 - val;
-  auto d3 = mal3 - val;
-  auto d4 = mal4 - val;
+  auto d1 = subs_32_c_for_diff(mal1, val);
+  auto d2 = subs_32_c_for_diff(mal2, val);
+  auto d3 = subs_32_c_for_diff(mal3, val);
+  auto d4 = subs_32_c_for_diff(mal4, val);
 
-  auto rd1 = val-mil1;
-  auto rd2 = val-mil2;
-  auto rd3 = val-mil3;
-  auto rd4 = val-mil4;
-
-#if 0
-  // no max_pixel_value clamp for float
-#ifdef FLOAT_CHROMA_IS_HALF_CENTERED
-  const float pixel_min = 0.0f;
-  const float pixel_max = 1.0f;
-#else
-  const float pixel_min = chroma ? -0.5f : 0.0f;
-  const float pixel_max = chroma ? 0.5f : 1.0f;
-#endif
-  d1 = clip_32(d1, pixel_min, pixel_max);
-  d2 = clip_32(d2, pixel_min, pixel_max);
-  d3 = clip_32(d3, pixel_min, pixel_max);
-  d4 = clip_32(d4, pixel_min, pixel_max);
-  rd1 = clip_32(rd1, pixel_min, pixel_max);
-  rd2 = clip_32(rd2, pixel_min, pixel_max);
-  rd3 = clip_32(rd3, pixel_min, pixel_max);
-  rd4 = clip_32(rd4, pixel_min, pixel_max);
-#endif
+  auto rd1 = subs_32_c_for_diff(val, mil1);
+  auto rd2 = subs_32_c_for_diff(val, mil2);
+  auto rd3 = subs_32_c_for_diff(val, mil3);
+  auto rd4 = subs_32_c_for_diff(val, mil4);
 
   auto u1  = std::max(d1, rd1);
   auto u2  = std::max(d2, rd2);

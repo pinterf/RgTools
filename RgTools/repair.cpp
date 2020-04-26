@@ -640,7 +640,7 @@ static RepairPlaneProcessor* c_functions_32_chroma[] = {
 };
 
 Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip_cs_check, IScriptEnvironment* env)
-  : GenericVideoFilter(child), ref_(ref), mode_(mode), modeU_(modeU), modeV_(modeV), functions(nullptr) {
+  : GenericVideoFilter(child), ref_(ref), mode_(mode), modeU_(modeU), modeV_(modeV), functions(nullptr), functions_chroma(nullptr) {
 
   auto refVi = ref_->GetVideoInfo();
 
@@ -726,7 +726,7 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
     }
     else {
       functions = c_functions_32;
-      functions_chroma = c_functions_32_chroma; // fixme: and implement like in RG, check those modes
+      functions_chroma = c_functions_32_chroma;
     }
   }
 }
@@ -763,13 +763,25 @@ PVideoFrame Repair::GetFrame(int n, IScriptEnvironment* env) {
       if (!is_16byte_aligned(srcFrame->GetReadPtr(PLANAR_U)) || !is_16byte_aligned(refFrame->GetReadPtr(PLANAR_U)))
         env->ThrowError("Repair: Invalid memory alignment. Unaligned crop?");
 
-      functions[modeU_ + 1](env, dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetReadPtr(PLANAR_U), refFrame->GetReadPtr(PLANAR_U),
-        dstFrame->GetPitch(PLANAR_U), srcFrame->GetPitch(PLANAR_U), refFrame->GetPitch(PLANAR_U),
-        srcFrame->GetRowSize(PLANAR_U), srcFrame->GetHeight(PLANAR_U));
+      if (functions_chroma != nullptr) {
+        // for float
+        functions_chroma[modeU_ + 1](env, dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetReadPtr(PLANAR_U), refFrame->GetReadPtr(PLANAR_U),
+          dstFrame->GetPitch(PLANAR_U), srcFrame->GetPitch(PLANAR_U), refFrame->GetPitch(PLANAR_U),
+          srcFrame->GetRowSize(PLANAR_U), srcFrame->GetHeight(PLANAR_U));
 
-      functions[modeV_ + 1](env, dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetReadPtr(PLANAR_V), refFrame->GetReadPtr(PLANAR_V),
-        dstFrame->GetPitch(PLANAR_V), srcFrame->GetPitch(PLANAR_V), refFrame->GetPitch(PLANAR_V),
-        srcFrame->GetRowSize(PLANAR_V), srcFrame->GetHeight(PLANAR_V));
+        functions_chroma[modeV_ + 1](env, dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetReadPtr(PLANAR_V), refFrame->GetReadPtr(PLANAR_V),
+          dstFrame->GetPitch(PLANAR_V), srcFrame->GetPitch(PLANAR_V), refFrame->GetPitch(PLANAR_V),
+          srcFrame->GetRowSize(PLANAR_V), srcFrame->GetHeight(PLANAR_V));
+      }
+      else {
+        functions[modeU_ + 1](env, dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetReadPtr(PLANAR_U), refFrame->GetReadPtr(PLANAR_U),
+          dstFrame->GetPitch(PLANAR_U), srcFrame->GetPitch(PLANAR_U), refFrame->GetPitch(PLANAR_U),
+          srcFrame->GetRowSize(PLANAR_U), srcFrame->GetHeight(PLANAR_U));
+
+        functions[modeV_ + 1](env, dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetReadPtr(PLANAR_V), refFrame->GetReadPtr(PLANAR_V),
+          dstFrame->GetPitch(PLANAR_V), srcFrame->GetPitch(PLANAR_V), refFrame->GetPitch(PLANAR_V),
+          srcFrame->GetRowSize(PLANAR_V), srcFrame->GetHeight(PLANAR_V));
+      }
     }
   }
   if (vi.IsYUVA() || vi.IsPlanarRGBA())

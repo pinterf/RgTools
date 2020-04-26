@@ -921,10 +921,10 @@ RG_FORCEINLINE __m128i repair_mode6_sse_32(const Byte* pSrc, const __m128i &val,
   auto mal4 = _mm_max_ps(_mm_max_ps(a4, a5), c);
   auto mil4 = _mm_min_ps(_mm_min_ps(a4, a5), c);
 
-  auto d1 = _mm_subs_ps(mal1, mil1);
-  auto d2 = _mm_subs_ps(mal2, mil2);
-  auto d3 = _mm_subs_ps(mal3, mil3);
-  auto d4 = _mm_subs_ps(mal4, mil4);
+  auto d1 = _mm_subs_ps_for_diff(mal1, mil1);
+  auto d2 = _mm_subs_ps_for_diff(mal2, mil2);
+  auto d3 = _mm_subs_ps_for_diff(mal3, mil3);
+  auto d4 = _mm_subs_ps_for_diff(mal4, mil4);
 
   auto clipped1 = simd_clip_32(_mm_castsi128_ps(val), mil1, mal1);
   auto clipped2 = simd_clip_32(_mm_castsi128_ps(val), mil2, mal2);
@@ -936,10 +936,10 @@ RG_FORCEINLINE __m128i repair_mode6_sse_32(const Byte* pSrc, const __m128i &val,
   auto absdiff3 = abs_diff_32(_mm_castsi128_ps(val), clipped3);
   auto absdiff4 = abs_diff_32(_mm_castsi128_ps(val), clipped4);
 
-  auto c1 = _mm_adds_ps(_mm_adds_ps(absdiff1, absdiff1), d1);
-  auto c2 = _mm_adds_ps(_mm_adds_ps(absdiff2, absdiff2), d2);
-  auto c3 = _mm_adds_ps(_mm_adds_ps(absdiff3, absdiff3), d3);
-  auto c4 = _mm_adds_ps(_mm_adds_ps(absdiff4, absdiff4), d4);
+  auto c1 = _mm_add_ps(_mm_add_ps(absdiff1, absdiff1), d1); // no adds needed, only for comparison
+  auto c2 = _mm_add_ps(_mm_add_ps(absdiff2, absdiff2), d2);
+  auto c3 = _mm_add_ps(_mm_add_ps(absdiff3, absdiff3), d3);
+  auto c4 = _mm_add_ps(_mm_add_ps(absdiff4, absdiff4), d4);
 
   auto mindiff = _mm_min_ps(c1, c2);
   mindiff = _mm_min_ps(mindiff, c3);
@@ -1101,20 +1101,20 @@ RG_FORCEINLINE __m128i repair_mode7_sse_32(const Byte* pSrc, const __m128i &val,
   auto mal4 = _mm_max_ps(_mm_max_ps(a4, a5), c);
   auto mil4 = _mm_min_ps(_mm_min_ps(a4, a5), c);
 
-  auto d1 = _mm_subs_ps(mal1, mil1);
-  auto d2 = _mm_subs_ps(mal2, mil2);
-  auto d3 = _mm_subs_ps(mal3, mil3);
-  auto d4 = _mm_subs_ps(mal4, mil4);
+  auto d1 = _mm_subs_ps_for_diff(mal1, mil1);
+  auto d2 = _mm_subs_ps_for_diff(mal2, mil2);
+  auto d3 = _mm_subs_ps_for_diff(mal3, mil3);
+  auto d4 = _mm_subs_ps_for_diff(mal4, mil4);
 
   auto clipped1 = simd_clip_32(_mm_castsi128_ps(val), mil1, mal1);
   auto clipped2 = simd_clip_32(_mm_castsi128_ps(val), mil2, mal2);
   auto clipped3 = simd_clip_32(_mm_castsi128_ps(val), mil3, mal3);
   auto clipped4 = simd_clip_32(_mm_castsi128_ps(val), mil4, mal4);
-  //todo: what happens when this overflows?
-  auto c1 = _mm_adds_ps(abs_diff_32(_mm_castsi128_ps(val), clipped1), d1);
-  auto c2 = _mm_adds_ps(abs_diff_32(_mm_castsi128_ps(val), clipped2), d2);
-  auto c3 = _mm_adds_ps(abs_diff_32(_mm_castsi128_ps(val), clipped3), d3);
-  auto c4 = _mm_adds_ps(abs_diff_32(_mm_castsi128_ps(val), clipped4), d4);
+
+  auto c1 = _mm_add_ps(abs_diff_32(_mm_castsi128_ps(val), clipped1), d1); // no adds needed, only for comparison
+  auto c2 = _mm_add_ps(abs_diff_32(_mm_castsi128_ps(val), clipped2), d2);
+  auto c3 = _mm_add_ps(abs_diff_32(_mm_castsi128_ps(val), clipped3), d3);
+  auto c4 = _mm_add_ps(abs_diff_32(_mm_castsi128_ps(val), clipped4), d4);
 
   auto mindiff = _mm_min_ps(c1, c2);
   mindiff = _mm_min_ps(mindiff, c3);
@@ -1285,20 +1285,20 @@ RG_FORCEINLINE __m128i repair_mode8_sse_32(const Byte* pSrc, const __m128i &val,
   auto mal4 = _mm_max_ps(_mm_max_ps(a4, a5), c);
   auto mil4 = _mm_min_ps(_mm_min_ps(a4, a5), c);
 
-  auto d1 = _mm_subs_ps(mal1, mil1);
-  auto d2 = _mm_subs_ps(mal2, mil2);
-  auto d3 = _mm_subs_ps(mal3, mil3);
-  auto d4 = _mm_subs_ps(mal4, mil4);
+  auto d1 = _mm_subs_ps_for_diff(mal1, mil1);
+  auto d2 = _mm_subs_ps_for_diff(mal2, mil2);
+  auto d3 = _mm_subs_ps_for_diff(mal3, mil3);
+  auto d4 = _mm_subs_ps_for_diff(mal4, mil4);
 
   auto clipped1 = simd_clip_32(_mm_castsi128_ps(val), mil1, mal1);
   auto clipped2 = simd_clip_32(_mm_castsi128_ps(val), mil2, mal2);
   auto clipped3 = simd_clip_32(_mm_castsi128_ps(val), mil3, mal3);
   auto clipped4 = simd_clip_32(_mm_castsi128_ps(val), mil4, mal4);
 
-  auto c1 = _mm_adds_ps(abs_diff_32(_mm_castsi128_ps(val), clipped1), _mm_adds_ps(d1, d1));
-  auto c2 = _mm_adds_ps(abs_diff_32(_mm_castsi128_ps(val), clipped2), _mm_adds_ps(d2, d2));
-  auto c3 = _mm_adds_ps(abs_diff_32(_mm_castsi128_ps(val), clipped3), _mm_adds_ps(d3, d3));
-  auto c4 = _mm_adds_ps(abs_diff_32(_mm_castsi128_ps(val), clipped4), _mm_adds_ps(d4, d4));
+  auto c1 = _mm_add_ps(abs_diff_32(_mm_castsi128_ps(val), clipped1), _mm_add_ps(d1, d1)); // no adds needed only for comparison
+  auto c2 = _mm_add_ps(abs_diff_32(_mm_castsi128_ps(val), clipped2), _mm_add_ps(d2, d2));
+  auto c3 = _mm_add_ps(abs_diff_32(_mm_castsi128_ps(val), clipped3), _mm_add_ps(d3, d3));
+  auto c4 = _mm_add_ps(abs_diff_32(_mm_castsi128_ps(val), clipped4), _mm_add_ps(d4, d4));
 
   auto mindiff = _mm_min_ps(c1, c2);
   mindiff = _mm_min_ps(mindiff, c3);
@@ -1432,10 +1432,10 @@ RG_FORCEINLINE __m128i repair_mode9_sse_32(const Byte* pSrc, const __m128i &val,
   auto mal4 = _mm_max_ps(_mm_max_ps(a4, a5), c);
   auto mil4 = _mm_min_ps(_mm_min_ps(a4, a5), c);
 
-  auto d1 = _mm_subs_ps(mal1, mil1);
-  auto d2 = _mm_subs_ps(mal2, mil2);
-  auto d3 = _mm_subs_ps(mal3, mil3);
-  auto d4 = _mm_subs_ps(mal4, mil4);
+  auto d1 = _mm_subs_ps_for_diff(mal1, mil1);
+  auto d2 = _mm_subs_ps_for_diff(mal2, mil2);
+  auto d3 = _mm_subs_ps_for_diff(mal3, mil3);
+  auto d4 = _mm_subs_ps_for_diff(mal4, mil4);
 
   auto mindiff = _mm_min_ps(d1, d2);
   mindiff = _mm_min_ps(mindiff, d3);
@@ -2447,20 +2447,20 @@ RG_FORCEINLINE __m128i repair_mode16_sse_32(const Byte* pSrc, const __m128i &val
   auto clipped3 = simd_clip_32(c, mil3, mal3);
   auto clipped4 = simd_clip_32(c, mil4, mal4);
 
-  auto d1 = _mm_subs_ps(mal1, mil1);
-  auto d2 = _mm_subs_ps(mal2, mil2);
-  auto d3 = _mm_subs_ps(mal3, mil3);
-  auto d4 = _mm_subs_ps(mal4, mil4);
+  auto d1 = _mm_subs_ps_for_diff(mal1, mil1);
+  auto d2 = _mm_subs_ps_for_diff(mal2, mil2);
+  auto d3 = _mm_subs_ps_for_diff(mal3, mil3);
+  auto d4 = _mm_subs_ps_for_diff(mal4, mil4);
 
   auto absdiff1 = abs_diff_32(c, clipped1);
   auto absdiff2 = abs_diff_32(c, clipped2);
   auto absdiff3 = abs_diff_32(c, clipped3);
   auto absdiff4 = abs_diff_32(c, clipped4);
 
-  auto c1 = _mm_adds_ps(_mm_adds_ps(absdiff1, absdiff1), d1);
-  auto c2 = _mm_adds_ps(_mm_adds_ps(absdiff2, absdiff2), d2);
-  auto c3 = _mm_adds_ps(_mm_adds_ps(absdiff3, absdiff3), d3);
-  auto c4 = _mm_adds_ps(_mm_adds_ps(absdiff4, absdiff4), d4);
+  auto c1 = _mm_add_ps(_mm_add_ps(absdiff1, absdiff1), d1); // no adds needed, only comparison
+  auto c2 = _mm_add_ps(_mm_add_ps(absdiff2, absdiff2), d2);
+  auto c3 = _mm_add_ps(_mm_add_ps(absdiff3, absdiff3), d3);
+  auto c4 = _mm_add_ps(_mm_add_ps(absdiff4, absdiff4), d4);
 
   auto mindiff = _mm_min_ps(c1, c2);
   mindiff = _mm_min_ps(mindiff, c3);
@@ -2880,7 +2880,7 @@ RG_FORCEINLINE __m128i repair_mode19_sse_16(const Byte* pSrc, const __m128i &val
   return simd_clip_16(val, mi, ma);
 }
 
-template<bool aligned>
+template<bool aligned, bool chroma>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
@@ -2904,8 +2904,8 @@ RG_FORCEINLINE __m128i repair_mode19_sse_32(const Byte* pSrc, const __m128i &val
   mindiff = _mm_min_ps(mindiff, d7);
   mindiff = _mm_min_ps(mindiff, d8);
 
-  auto mi = _mm_subs_ps(c, mindiff);
-  auto ma = _mm_adds_ps(c, mindiff);
+  auto mi = _mm_subs_ps<chroma>(c, mindiff);
+  auto ma = _mm_adds_ps<chroma>(c, mindiff);
 
   return _mm_castps_si128(simd_clip_32(_mm_castsi128_ps(val), mi, ma));
 }
@@ -3040,7 +3040,7 @@ RG_FORCEINLINE __m128i repair_mode20_sse_16(const Byte* pSrc, const __m128i &val
   return simd_clip_16(val, mi, ma);
 }
 
-template<bool aligned>
+template<bool aligned, bool chroma>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
@@ -3076,8 +3076,8 @@ RG_FORCEINLINE __m128i repair_mode20_sse_32(const Byte* pSrc, const __m128i &val
 
   maxdiff = simd_clip_32(maxdiff, mindiff, d8);
 
-  auto mi = _mm_subs_ps(c, maxdiff);
-  auto ma = _mm_adds_ps(c, maxdiff);
+  auto mi = _mm_subs_ps<chroma>(c, maxdiff);
+  auto ma = _mm_adds_ps<chroma>(c, maxdiff);
 
   return _mm_castps_si128(simd_clip_32(_mm_castsi128_ps(val), mi, ma));
 }
@@ -3218,7 +3218,7 @@ RG_FORCEINLINE __m128i repair_mode21_sse_16(const Byte* pSrc, const __m128i &val
   return simd_clip_16(val, mi, ma);
 }
 
-template<bool aligned>
+template<bool aligned, bool chroma>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
@@ -3237,15 +3237,15 @@ RG_FORCEINLINE __m128i repair_mode21_sse_32(const Byte* pSrc, const __m128i &val
   auto mal4 = _mm_max_ps(a4, a5);
   auto mil4 = _mm_min_ps(a4, a5);
 
-  auto d1 = _mm_subs_ps(mal1, c);
-  auto d2 = _mm_subs_ps(mal2, c);
-  auto d3 = _mm_subs_ps(mal3, c);
-  auto d4 = _mm_subs_ps(mal4, c);
+  auto d1 = _mm_subs_ps_for_diff(mal1, c);
+  auto d2 = _mm_subs_ps_for_diff(mal2, c);
+  auto d3 = _mm_subs_ps_for_diff(mal3, c);
+  auto d4 = _mm_subs_ps_for_diff(mal4, c);
 
-  auto rd1 = _mm_subs_ps(c, mil1);
-  auto rd2 = _mm_subs_ps(c, mil2);
-  auto rd3 = _mm_subs_ps(c, mil3);
-  auto rd4 = _mm_subs_ps(c, mil4);
+  auto rd1 = _mm_subs_ps_for_diff(c, mil1);
+  auto rd2 = _mm_subs_ps_for_diff(c, mil2);
+  auto rd3 = _mm_subs_ps_for_diff(c, mil3);
+  auto rd4 = _mm_subs_ps_for_diff(c, mil4);
 
   auto u1 = _mm_max_ps(d1, rd1);
   auto u2 = _mm_max_ps(d2, rd2);
@@ -3256,8 +3256,8 @@ RG_FORCEINLINE __m128i repair_mode21_sse_32(const Byte* pSrc, const __m128i &val
   u = _mm_min_ps(u, u3);
   u = _mm_min_ps(u, u4);
 
-  auto mi = _mm_subs_ps(c, u);
-  auto ma = _mm_adds_ps(c, u);
+  auto mi = _mm_subs_ps<chroma>(c, u);
+  auto ma = _mm_adds_ps<chroma>(c, u);
 
   return _mm_castps_si128(simd_clip_32(_mm_castsi128_ps(val), mi, ma));
 }
@@ -3355,7 +3355,7 @@ RG_FORCEINLINE __m128i repair_mode22_sse_16(const Byte* pSrc, const __m128i &val
   return simd_clip_16(c, mi, ma);
 }
 
-template<bool aligned>
+template<bool aligned, bool chroma>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
@@ -3379,8 +3379,8 @@ RG_FORCEINLINE __m128i repair_mode22_sse_32(const Byte* pSrc, const __m128i &val
   mindiff = _mm_min_ps(mindiff, d7);
   mindiff = _mm_min_ps(mindiff, d8);
 
-  auto mi = _mm_subs_ps(_mm_castsi128_ps(val), mindiff);
-  auto ma = _mm_adds_ps(_mm_castsi128_ps(val), mindiff);
+  auto mi = _mm_subs_ps<chroma>(_mm_castsi128_ps(val), mindiff);
+  auto ma = _mm_adds_ps<chroma>(_mm_castsi128_ps(val), mindiff);
 
   return _mm_castps_si128(simd_clip_32(c, mi, ma));
 }
@@ -3515,7 +3515,7 @@ RG_FORCEINLINE __m128i repair_mode23_sse_16(const Byte* pSrc, const __m128i &val
   return simd_clip_16(c, mi, ma);
 }
 
-template<bool aligned>
+template<bool aligned, bool chroma>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
@@ -3551,8 +3551,8 @@ RG_FORCEINLINE __m128i repair_mode23_sse_32(const Byte* pSrc, const __m128i &val
 
   maxdiff = simd_clip_32(maxdiff, mindiff, d8);
 
-  auto mi = _mm_subs_ps(_mm_castsi128_ps(val), maxdiff);
-  auto ma = _mm_adds_ps(_mm_castsi128_ps(val), maxdiff);
+  auto mi = _mm_subs_ps<chroma>(_mm_castsi128_ps(val), maxdiff);
+  auto ma = _mm_adds_ps<chroma>(_mm_castsi128_ps(val), maxdiff);
 
   return _mm_castps_si128(simd_clip_32(c, mi, ma));
 }
@@ -3693,7 +3693,7 @@ RG_FORCEINLINE __m128i repair_mode24_sse_16(const Byte* pSrc, const __m128i &val
   return simd_clip_16(c, mi, ma);
 }
 
-template<bool aligned>
+template<bool aligned, bool chroma>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
@@ -3712,15 +3712,15 @@ RG_FORCEINLINE __m128i repair_mode24_sse_32(const Byte* pSrc, const __m128i &val
   auto mal4 = _mm_max_ps(a4, a5);
   auto mil4 = _mm_min_ps(a4, a5);
 
-  auto d1 = _mm_subs_ps(mal1, _mm_castsi128_ps(val));
-  auto d2 = _mm_subs_ps(mal2, _mm_castsi128_ps(val));
-  auto d3 = _mm_subs_ps(mal3, _mm_castsi128_ps(val));
-  auto d4 = _mm_subs_ps(mal4, _mm_castsi128_ps(val));
+  auto d1 = _mm_subs_ps_for_diff(mal1, _mm_castsi128_ps(val));
+  auto d2 = _mm_subs_ps_for_diff(mal2, _mm_castsi128_ps(val));
+  auto d3 = _mm_subs_ps_for_diff(mal3, _mm_castsi128_ps(val));
+  auto d4 = _mm_subs_ps_for_diff(mal4, _mm_castsi128_ps(val));
 
-  auto rd1 = _mm_subs_ps(_mm_castsi128_ps(val), mil1);
-  auto rd2 = _mm_subs_ps(_mm_castsi128_ps(val), mil2);
-  auto rd3 = _mm_subs_ps(_mm_castsi128_ps(val), mil3);
-  auto rd4 = _mm_subs_ps(_mm_castsi128_ps(val), mil4);
+  auto rd1 = _mm_subs_ps_for_diff(_mm_castsi128_ps(val), mil1);
+  auto rd2 = _mm_subs_ps_for_diff(_mm_castsi128_ps(val), mil2);
+  auto rd3 = _mm_subs_ps_for_diff(_mm_castsi128_ps(val), mil3);
+  auto rd4 = _mm_subs_ps_for_diff(_mm_castsi128_ps(val), mil4);
 
   auto u1 = _mm_max_ps(d1, rd1);
   auto u2 = _mm_max_ps(d2, rd2);
@@ -3731,8 +3731,8 @@ RG_FORCEINLINE __m128i repair_mode24_sse_32(const Byte* pSrc, const __m128i &val
   u = _mm_min_ps(u, u3);
   u = _mm_min_ps(u, u4);
 
-  auto mi = _mm_subs_ps(_mm_castsi128_ps(val), u);
-  auto ma = _mm_adds_ps(_mm_castsi128_ps(val), u);
+  auto mi = _mm_subs_ps<chroma>(_mm_castsi128_ps(val), u);
+  auto ma = _mm_adds_ps<chroma>(_mm_castsi128_ps(val), u);
 
   return _mm_castps_si128(simd_clip_32(c, mi, ma));
 }

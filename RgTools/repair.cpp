@@ -399,14 +399,42 @@ static RepairPlaneProcessor* sse4_functions_32[] = {
   process_plane_sse41<float, repair_mode16_sse_32<false>, repair_mode16_sse_32<true>>,
   process_plane_sse41<float, repair_mode17_sse_32<false>, repair_mode17_sse_32<true>>,
   process_plane_sse41<float, repair_mode18_sse_32<false>, repair_mode18_sse_32<true>>,
-  process_plane_sse41<float, repair_mode19_sse_32<false>, repair_mode19_sse_32<true>>, 
-  process_plane_sse41<float, repair_mode20_sse_32<false>, repair_mode20_sse_32<true>>, 
-  process_plane_sse41<float, repair_mode21_sse_32<false>, repair_mode21_sse_32<true>>, 
-  process_plane_sse41<float, repair_mode22_sse_32<false>, repair_mode22_sse_32<true>>, 
-  process_plane_sse41<float, repair_mode23_sse_32<false>, repair_mode23_sse_32<true>>, 
-  process_plane_sse41<float, repair_mode24_sse_32<false>, repair_mode24_sse_32<true>> 
+  process_plane_sse41<float, repair_mode19_sse_32<false, false>, repair_mode19_sse_32<true, false>>, // 2nd template param: luma false chroma true
+  process_plane_sse41<float, repair_mode20_sse_32<false, false>, repair_mode20_sse_32<true, false>>, 
+  process_plane_sse41<float, repair_mode21_sse_32<false, false>, repair_mode21_sse_32<true, false>>, 
+  process_plane_sse41<float, repair_mode22_sse_32<false, false>, repair_mode22_sse_32<true, false>>, 
+  process_plane_sse41<float, repair_mode23_sse_32<false, false>, repair_mode23_sse_32<true, false>>, 
+  process_plane_sse41<float, repair_mode24_sse_32<false, false>, repair_mode24_sse_32<true, false>> 
 };
 
+static RepairPlaneProcessor* sse4_functions_32_chroma[] = {
+  doNothing,
+  copyPlane,
+  process_plane_sse41<float, repair_mode1_sse_32<false>, repair_mode1_sse_32<true>>,
+  process_plane_sse41<float, repair_mode2_sse_32<false>, repair_mode2_sse_32<true>>,
+  process_plane_sse41<float, repair_mode3_sse_32<false>, repair_mode3_sse_32<true>>,
+  process_plane_sse41<float, repair_mode4_sse_32<false>, repair_mode4_sse_32<true>>,
+  process_plane_sse41<float, repair_mode5_sse_32<false>, repair_mode5_sse_32<true>>,
+  process_plane_sse41<float, repair_mode6_sse_32<false>, repair_mode6_sse_32<true>>,
+  process_plane_sse41<float, repair_mode7_sse_32<false>, repair_mode7_sse_32<true>>,
+  process_plane_sse41<float, repair_mode8_sse_32<false>, repair_mode8_sse_32<true>>,
+  process_plane_sse41<float, repair_mode9_sse_32<false>, repair_mode9_sse_32<true>>,
+  process_plane_sse41<float, repair_mode10_sse_32<false>, repair_mode10_sse_32<true>>,
+  process_plane_sse41<float, repair_mode1_sse_32<false>, repair_mode1_sse_32<true>>,
+  process_plane_sse41<float, repair_mode12_sse_32<false>, repair_mode12_sse_32<true>>,
+  process_plane_sse41<float, repair_mode13_sse_32<false>, repair_mode13_sse_32<true>>,
+  process_plane_sse41<float, repair_mode14_sse_32<false>, repair_mode14_sse_32<true>>,
+  process_plane_sse41<float, repair_mode15_sse_32<false>, repair_mode15_sse_32<true>>,
+  process_plane_sse41<float, repair_mode16_sse_32<false>, repair_mode16_sse_32<true>>,
+  process_plane_sse41<float, repair_mode17_sse_32<false>, repair_mode17_sse_32<true>>,
+  process_plane_sse41<float, repair_mode18_sse_32<false>, repair_mode18_sse_32<true>>,
+  process_plane_sse41<float, repair_mode19_sse_32<false, true>, repair_mode19_sse_32<true, true>>,  // 2nd template param: luma false chroma true
+  process_plane_sse41<float, repair_mode20_sse_32<false, true>, repair_mode20_sse_32<true, true>>,
+  process_plane_sse41<float, repair_mode21_sse_32<false, true>, repair_mode21_sse_32<true, true>>,
+  process_plane_sse41<float, repair_mode22_sse_32<false, true>, repair_mode22_sse_32<true, true>>,
+  process_plane_sse41<float, repair_mode23_sse_32<false, true>, repair_mode23_sse_32<true, true>>,
+  process_plane_sse41<float, repair_mode24_sse_32<false, true>, repair_mode24_sse_32<true, true>>
+};
 
 static RepairPlaneProcessor* c_functions[] = {
   doNothing,
@@ -621,6 +649,8 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
   pixelsize = vi.ComponentSize();
   bits_per_pixel = vi.BitsPerComponent();
 
+  functions_chroma = nullptr;
+
   if (pixelsize == 1) {
 
     functions = (env->GetCPUFlags() & CPUF_SSE4_1) ? sse4_functions
@@ -632,7 +662,7 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
     }
   }
   else if (pixelsize == 2) {
-    if ((env->GetCPUFlags() & CPUF_SSE4) && vi.width >= (16/sizeof(uint16_t) + 1)) {
+    if ((env->GetCPUFlags() & CPUF_SSE4) && vi.width >= (16 / sizeof(uint16_t) + 1)) {
       switch (bits_per_pixel) {
       case 10: functions = sse4_functions_16_10; break;
       case 12: functions = sse4_functions_16_12; break;
@@ -652,11 +682,15 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
     }
   }
   else {// if (pixelsize == 4) 
-    
-    if ((env->GetCPUFlags() & CPUF_SSE4) && vi.width >= (16/sizeof(float) + 1))
+
+    if ((env->GetCPUFlags() & CPUF_SSE4) && vi.width >= (16 / sizeof(float) + 1)) {
       functions = sse4_functions_32;
-    else
+      functions_chroma = sse4_functions_32_chroma;
+    }
+    else {
       functions = c_functions_32;
+      functions_chroma = c_functions_32; // _chroma; // fixme
+    }
   }
 }
 

@@ -1005,7 +1005,7 @@ RG_FORCEINLINE __m128i rg_mode7_sse_16(const Byte* pSrc, int srcPitch) {
   auto clipped2 = simd_clip_16(c, mil2, mal2);
   auto clipped3 = simd_clip_16(c, mil3, mal3);
   auto clipped4 = simd_clip_16(c, mil4, mal4);
-  //todo: what happens when this overflows?
+
   auto c1 = _mm_adds_epu16(abs_diff_16(c, clipped1), d1);
   auto c2 = _mm_adds_epu16(abs_diff_16(c, clipped2), d2);
   auto c3 = _mm_adds_epu16(abs_diff_16(c, clipped3), d3);
@@ -1579,6 +1579,10 @@ RG_FORCEINLINE __m128i rg_mode11_sse_32(const Byte* pSrc, int srcPitch) {
 template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode12_sse2(const Byte* pSrc, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
+
+    // different from C!
+    // int	sum = 4 * c + 2 * (a2 + a4 + a5 + a7) + a1 + a3 + a6 + a8;
+
 
     auto a13  = _mm_avg_epu8 (a1, a3);
     auto a123 = _mm_avg_epu8 (a2, a13);
@@ -3209,6 +3213,9 @@ RG_FORCEINLINE __m128i rg_mode25_sse_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned, bool chroma>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
 RG_FORCEINLINE __m128i rg_mode25_sse_32(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
   /*

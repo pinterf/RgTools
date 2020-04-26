@@ -29,6 +29,7 @@ private:
     int bits_per_pixel;
 
     RepairPlaneProcessor **functions;
+    RepairPlaneProcessor** functions_chroma; // for float
 };
 
 

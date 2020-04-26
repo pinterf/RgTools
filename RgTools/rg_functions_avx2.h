@@ -595,10 +595,10 @@ RG_FORCEINLINE __m256i rg_mode6_avx2_32(const Byte* pSrc, int srcPitch) {
   auto mal4 = _mm256_max_ps(a4, a5);
   auto mil4 = _mm256_min_ps(a4, a5);
 
-  auto d1 = _mm256_subs_ps(mal1, mil1);
-  auto d2 = _mm256_subs_ps(mal2, mil2);
-  auto d3 = _mm256_subs_ps(mal3, mil3);
-  auto d4 = _mm256_subs_ps(mal4, mil4);
+  auto d1 = _mm256_subs_ps_for_diff(mal1, mil1);
+  auto d2 = _mm256_subs_ps_for_diff(mal2, mil2);
+  auto d3 = _mm256_subs_ps_for_diff(mal3, mil3);
+  auto d4 = _mm256_subs_ps_for_diff(mal4, mil4);
 
   auto clipped1 = simd_clip_32(c, mil1, mal1);
   auto clipped2 = simd_clip_32(c, mil2, mal2);
@@ -610,15 +610,16 @@ RG_FORCEINLINE __m256i rg_mode6_avx2_32(const Byte* pSrc, int srcPitch) {
   auto absdiff3 = abs_diff_32(c, clipped3);
   auto absdiff4 = abs_diff_32(c, clipped4);
 
-  auto c1 = _mm256_adds_ps(_mm256_adds_ps(absdiff1, absdiff1), d1);
-  auto c2 = _mm256_adds_ps(_mm256_adds_ps(absdiff2, absdiff2), d2);
-  auto c3 = _mm256_adds_ps(_mm256_adds_ps(absdiff3, absdiff3), d3);
-  auto c4 = _mm256_adds_ps(_mm256_adds_ps(absdiff4, absdiff4), d4);
+  auto c1 = _mm256_adds_ps_for_diff(_mm256_adds_ps_for_diff(absdiff1, absdiff1), d1);
+  auto c2 = _mm256_adds_ps_for_diff(_mm256_adds_ps_for_diff(absdiff2, absdiff2), d2);
+  auto c3 = _mm256_adds_ps_for_diff(_mm256_adds_ps_for_diff(absdiff3, absdiff3), d3);
+  auto c4 = _mm256_adds_ps_for_diff(_mm256_adds_ps_for_diff(absdiff4, absdiff4), d4);
 
   auto mindiff = _mm256_min_ps(c1, c2);
   mindiff = _mm256_min_ps(mindiff, c3);
   mindiff = _mm256_min_ps(mindiff, c4);
 
+  // if mindiff==c1 then clipped1 else if mindiff was c2 then clipped2 .. 3, 4
   auto result = select_on_equal_32(mindiff, c1, c, clipped1);
   result = select_on_equal_32(mindiff, c3, result, clipped3);
   result = select_on_equal_32(mindiff, c2, result, clipped2);
@@ -726,20 +727,20 @@ RG_FORCEINLINE __m256i rg_mode7_avx2_32(const Byte* pSrc, int srcPitch) {
   auto mal4 = _mm256_max_ps(a4, a5);
   auto mil4 = _mm256_min_ps(a4, a5);
 
-  auto d1 = _mm256_subs_ps(mal1, mil1);
-  auto d2 = _mm256_subs_ps(mal2, mil2);
-  auto d3 = _mm256_subs_ps(mal3, mil3);
-  auto d4 = _mm256_subs_ps(mal4, mil4);
+  auto d1 = _mm256_subs_ps_for_diff(mal1, mil1);
+  auto d2 = _mm256_subs_ps_for_diff(mal2, mil2);
+  auto d3 = _mm256_subs_ps_for_diff(mal3, mil3);
+  auto d4 = _mm256_subs_ps_for_diff(mal4, mil4);
 
   auto clipped1 = simd_clip_32(c, mil1, mal1);
   auto clipped2 = simd_clip_32(c, mil2, mal2);
   auto clipped3 = simd_clip_32(c, mil3, mal3);
   auto clipped4 = simd_clip_32(c, mil4, mal4);
   //todo: what happens when this overflows?
-  auto c1 = _mm256_adds_ps(abs_diff_32(c, clipped1), d1);
-  auto c2 = _mm256_adds_ps(abs_diff_32(c, clipped2), d2);
-  auto c3 = _mm256_adds_ps(abs_diff_32(c, clipped3), d3);
-  auto c4 = _mm256_adds_ps(abs_diff_32(c, clipped4), d4);
+  auto c1 = _mm256_adds_ps_for_diff(abs_diff_32(c, clipped1), d1);
+  auto c2 = _mm256_adds_ps_for_diff(abs_diff_32(c, clipped2), d2);
+  auto c3 = _mm256_adds_ps_for_diff(abs_diff_32(c, clipped3), d3);
+  auto c4 = _mm256_adds_ps_for_diff(abs_diff_32(c, clipped4), d4);
 
   auto mindiff = _mm256_min_ps(c1, c2);
   mindiff = _mm256_min_ps(mindiff, c3);
@@ -859,20 +860,20 @@ RG_FORCEINLINE __m256i rg_mode8_avx2_32(const Byte* pSrc, int srcPitch) {
   auto mal4 = _mm256_max_ps(a4, a5);
   auto mil4 = _mm256_min_ps(a4, a5);
 
-  auto d1 = _mm256_subs_ps(mal1, mil1);
-  auto d2 = _mm256_subs_ps(mal2, mil2);
-  auto d3 = _mm256_subs_ps(mal3, mil3);
-  auto d4 = _mm256_subs_ps(mal4, mil4);
+  auto d1 = _mm256_subs_ps_for_diff(mal1, mil1);
+  auto d2 = _mm256_subs_ps_for_diff(mal2, mil2);
+  auto d3 = _mm256_subs_ps_for_diff(mal3, mil3);
+  auto d4 = _mm256_subs_ps_for_diff(mal4, mil4);
 
   auto clipped1 = simd_clip_32(c, mil1, mal1);
   auto clipped2 = simd_clip_32(c, mil2, mal2);
   auto clipped3 = simd_clip_32(c, mil3, mal3);
   auto clipped4 = simd_clip_32(c, mil4, mal4);
 
-  auto c1 = _mm256_adds_ps(abs_diff_32(c, clipped1), _mm256_adds_ps(d1, d1));
-  auto c2 = _mm256_adds_ps(abs_diff_32(c, clipped2), _mm256_adds_ps(d2, d2));
-  auto c3 = _mm256_adds_ps(abs_diff_32(c, clipped3), _mm256_adds_ps(d3, d3));
-  auto c4 = _mm256_adds_ps(abs_diff_32(c, clipped4), _mm256_adds_ps(d4, d4));
+  auto c1 = _mm256_add_ps(abs_diff_32(c, clipped1), _mm256_add_ps(d1, d1)); // no adds needed, only comparison
+  auto c2 = _mm256_add_ps(abs_diff_32(c, clipped2), _mm256_add_ps(d2, d2));
+  auto c3 = _mm256_add_ps(abs_diff_32(c, clipped3), _mm256_add_ps(d3, d3));
+  auto c4 = _mm256_add_ps(abs_diff_32(c, clipped4), _mm256_add_ps(d4, d4));
 
   auto mindiff = _mm256_min_ps(c1, c2);
   mindiff = _mm256_min_ps(mindiff, c3);
@@ -964,10 +965,10 @@ RG_FORCEINLINE __m256i rg_mode9_avx2_32(const Byte* pSrc, int srcPitch) {
   auto mal4 = _mm256_max_ps(a4, a5);
   auto mil4 = _mm256_min_ps(a4, a5);
 
-  auto d1 = _mm256_subs_ps(mal1, mil1);
-  auto d2 = _mm256_subs_ps(mal2, mil2);
-  auto d3 = _mm256_subs_ps(mal3, mil3);
-  auto d4 = _mm256_subs_ps(mal4, mil4);
+  auto d1 = _mm256_subs_ps_for_diff(mal1, mil1);
+  auto d2 = _mm256_subs_ps_for_diff(mal2, mil2);
+  auto d3 = _mm256_subs_ps_for_diff(mal3, mil3);
+  auto d4 = _mm256_subs_ps_for_diff(mal4, mil4);
 
   auto mindiff = _mm256_min_ps(d1, d2);
   mindiff = _mm256_min_ps(mindiff, d3);
@@ -1299,9 +1300,9 @@ RG_FORCEINLINE __m256i rg_mode15_and16_avx2_32(const Byte* pSrc, int srcPitch) {
   auto max36 = _mm256_max_ps(a3, a6);
   auto min36 = _mm256_min_ps(a3, a6);
 
-  auto d1 = _mm256_subs_ps(max18, min18);
-  auto d2 = _mm256_subs_ps(max27, min27);
-  auto d3 = _mm256_subs_ps(max36, min36);
+  auto d1 = _mm256_subs_ps_for_diff(max18, min18);
+  auto d2 = _mm256_subs_ps_for_diff(max27, min27);
+  auto d3 = _mm256_subs_ps_for_diff(max36, min36);
 
   auto mindiff = _mm256_min_ps(d1, d2);
   mindiff = _mm256_min_ps(mindiff, d3);
@@ -1317,7 +1318,7 @@ RG_FORCEINLINE __m256i rg_mode15_and16_avx2_32(const Byte* pSrc, int srcPitch) {
   // no rounding here at float: auto avg6778b = _mm256_subs_ps(avg6778, _mm256_set1_epi16(1));
   auto avg = _mm256_avg_ps(avg1223, avg6778);
 
-
+  // case mindiff is from d1 d2 or d3: ...
   auto result = select_on_equal_32(mindiff, d1, c, simd_clip_32(avg, min18, max18));
   result = select_on_equal_32(mindiff, d3, result, simd_clip_32(avg, min36, max36));
   return _mm256_castps_si256(select_on_equal_32(mindiff, d2, result, simd_clip_32(avg, min27, max27)));
@@ -1965,7 +1966,7 @@ RG_FORCEINLINE __m256i rg_mode23_avx2_16(const Byte* pSrc, int srcPitch) {
   return _mm256_adds_epu16(_mm256_subs_epu16(c, u), d);
 }
 
-template<bool aligned>
+template<bool aligned, bool chroma>
 RG_FORCEINLINE __m256i rg_mode23_avx2_32(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
@@ -1981,30 +1982,30 @@ RG_FORCEINLINE __m256i rg_mode23_avx2_32(const Byte* pSrc, int srcPitch) {
   auto mal4 = _mm256_max_ps(a4, a5);
   auto mil4 = _mm256_min_ps(a4, a5);
 
-  auto linediff1 = _mm256_subs_ps(mal1, mil1);
-  auto linediff2 = _mm256_subs_ps(mal2, mil2);
-  auto linediff3 = _mm256_subs_ps(mal3, mil3);
-  auto linediff4 = _mm256_subs_ps(mal4, mil4);
+  auto linediff1 = _mm256_subs_ps_for_diff(mal1, mil1);
+  auto linediff2 = _mm256_subs_ps_for_diff(mal2, mil2);
+  auto linediff3 = _mm256_subs_ps_for_diff(mal3, mil3);
+  auto linediff4 = _mm256_subs_ps_for_diff(mal4, mil4);
 
-  auto u1 = _mm256_min_ps(_mm256_subs_ps(c, mal1), linediff1);
-  auto u2 = _mm256_min_ps(_mm256_subs_ps(c, mal2), linediff2);
-  auto u3 = _mm256_min_ps(_mm256_subs_ps(c, mal3), linediff3);
-  auto u4 = _mm256_min_ps(_mm256_subs_ps(c, mal4), linediff4);
+  auto u1 = _mm256_min_ps(_mm256_subs_ps_for_diff(c, mal1), linediff1);
+  auto u2 = _mm256_min_ps(_mm256_subs_ps_for_diff(c, mal2), linediff2);
+  auto u3 = _mm256_min_ps(_mm256_subs_ps_for_diff(c, mal3), linediff3);
+  auto u4 = _mm256_min_ps(_mm256_subs_ps_for_diff(c, mal4), linediff4);
 
   auto u = _mm256_max_ps(u1, u2);
   u = _mm256_max_ps(u, u3);
   u = _mm256_max_ps(u, u4);
 
-  auto d1 = _mm256_min_ps(_mm256_subs_ps(mil1, c), linediff1);
-  auto d2 = _mm256_min_ps(_mm256_subs_ps(mil2, c), linediff2);
-  auto d3 = _mm256_min_ps(_mm256_subs_ps(mil3, c), linediff3);
-  auto d4 = _mm256_min_ps(_mm256_subs_ps(mil4, c), linediff4);
+  auto d1 = _mm256_min_ps(_mm256_subs_ps_for_diff(mil1, c), linediff1);
+  auto d2 = _mm256_min_ps(_mm256_subs_ps_for_diff(mil2, c), linediff2);
+  auto d3 = _mm256_min_ps(_mm256_subs_ps_for_diff(mil3, c), linediff3);
+  auto d4 = _mm256_min_ps(_mm256_subs_ps_for_diff(mil4, c), linediff4);
 
   auto d = _mm256_max_ps(d1, d2);
   d = _mm256_max_ps(d, d3);
   d = _mm256_max_ps(d, d4);
 
-  return _mm256_castps_si256(_mm256_adds_ps(_mm256_subs_ps(c, u), d));
+  return _mm256_castps_si256(_mm256_adds_ps<chroma>(_mm256_subs_ps<chroma>(c, u), d));
 }
 
 
@@ -2107,53 +2108,196 @@ RG_FORCEINLINE __m256i rg_mode24_avx2_16(const Byte* pSrc, int srcPitch) {
   return _mm256_adds_epu16(_mm256_subs_epu16(c, u), d);
 }
 
-template<bool aligned>
+template<bool aligned, bool chroma>
 RG_FORCEINLINE __m256i rg_mode24_avx2_32(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto mal  = _mm256_max_ps(a1, a8);
   auto mil  = _mm256_min_ps(a1, a8);
-  auto diff = _mm256_subs_ps(mal, mil);
-  auto temp = _mm256_subs_ps(c, mal);
-  auto u1   = _mm256_min_ps(temp, _mm256_subs_ps(diff, temp));
-  temp      = _mm256_subs_ps(mil, c);
-  auto d1   = _mm256_min_ps(temp, _mm256_subs_ps(diff, temp));
+  auto diff = _mm256_subs_ps_for_diff(mal, mil);
+  auto temp = _mm256_subs_ps_for_diff(c, mal);
+  auto u1   = _mm256_min_ps(temp, _mm256_subs_ps_for_diff(diff, temp));
+  temp      = _mm256_subs_ps_for_diff(mil, c);
+  auto d1   = _mm256_min_ps(temp, _mm256_subs_ps_for_diff(diff, temp));
 
   mal       = _mm256_max_ps(a2, a7);
   mil       = _mm256_min_ps(a2, a7);
-  diff      = _mm256_subs_ps(mal, mil);
-  temp      = _mm256_subs_ps(c, mal);
-  auto u2   = _mm256_min_ps(temp, _mm256_subs_ps(diff, temp));
-  temp      = _mm256_subs_ps(mil, c);
-  auto d2   = _mm256_min_ps(temp, _mm256_subs_ps(diff, temp));
+  diff      = _mm256_subs_ps_for_diff(mal, mil);
+  temp      = _mm256_subs_ps_for_diff(c, mal);
+  auto u2   = _mm256_min_ps(temp, _mm256_subs_ps_for_diff(diff, temp));
+  temp      = _mm256_subs_ps_for_diff(mil, c);
+  auto d2   = _mm256_min_ps(temp, _mm256_subs_ps_for_diff(diff, temp));
 
   auto d = _mm256_max_ps(d1, d2);
   auto u = _mm256_max_ps(u1, u2);
 
   mal       = _mm256_max_ps(a3, a6);
   mil       = _mm256_min_ps(a3, a6);
-  diff      = _mm256_subs_ps(mal, mil);
-  temp      = _mm256_subs_ps(c, mal);
-  auto u3   = _mm256_min_ps(temp, _mm256_subs_ps(diff, temp));
-  temp      = _mm256_subs_ps(mil, c);
-  auto d3   = _mm256_min_ps(temp, _mm256_subs_ps(diff, temp));
+  diff      = _mm256_subs_ps_for_diff(mal, mil);
+  temp      = _mm256_subs_ps_for_diff(c, mal);
+  auto u3   = _mm256_min_ps(temp, _mm256_subs_ps_for_diff(diff, temp));
+  temp      = _mm256_subs_ps_for_diff(mil, c);
+  auto d3   = _mm256_min_ps(temp, _mm256_subs_ps_for_diff(diff, temp));
 
   d = _mm256_max_ps(d, d3);
   u = _mm256_max_ps(u, u3);
 
   mal       = _mm256_max_ps(a4, a5);
   mil       = _mm256_min_ps(a4, a5);
-  diff      = _mm256_subs_ps(mal, mil);
-  temp      = _mm256_subs_ps(c, mal);
-  auto u4   = _mm256_min_ps(temp, _mm256_subs_ps(diff, temp));
-  temp      = _mm256_subs_ps(mil, c);
-  auto d4   = _mm256_min_ps(temp, _mm256_subs_ps(diff, temp));
+  diff      = _mm256_subs_ps_for_diff(mal, mil);
+  temp      = _mm256_subs_ps_for_diff(c, mal);
+  auto u4   = _mm256_min_ps(temp, _mm256_subs_ps_for_diff(diff, temp));
+  temp      = _mm256_subs_ps_for_diff(mil, c);
+  auto d4   = _mm256_min_ps(temp, _mm256_subs_ps_for_diff(diff, temp));
 
   d = _mm256_max_ps(d, d4);
   u = _mm256_max_ps(u, u4);
 
-  return _mm256_castps_si256(_mm256_adds_ps(_mm256_subs_ps(c, u), d));
+  return _mm256_castps_si256(_mm256_adds_ps<chroma>(_mm256_subs_ps<chroma>(c, u), d));
 }
 
+template<bool aligned>
+RG_FORCEINLINE __m256i rg_mode25_avx2(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
+  /*
+  a1 a2 a3
+  a4 c  a5
+  a6 a7 a8
+  */
+  __m256i SSE4, SSE5; // SSE4_minus, SSE5_plus; // global collectors
+  __m256i SSE6, SSE7; // SSE6_actual_minus, SSE7_actual_plus the actual results
+  const __m256i zero = _mm256_setzero_si256();
+
+  neighbourdiff_avx2(SSE4, SSE5, c, a4, zero); // out out out in in in
+  // first result fill into collectors SSE4 and SSE5, no comparison
+
+  neighbourdiff_avx2(SSE6, SSE7, c, a5, zero);
+  SSE4 = _mm256_min_epu8(SSE4, SSE6);
+  SSE5 = _mm256_min_epu8(SSE5, SSE7);
+
+  neighbourdiff_avx2(SSE6, SSE7, c, a1, zero);
+  SSE4 = _mm256_min_epu8(SSE4, SSE6);
+  SSE5 = _mm256_min_epu8(SSE5, SSE7);
+
+  neighbourdiff_avx2(SSE6, SSE7, c, a2, zero);
+  SSE4 = _mm256_min_epu8(SSE4, SSE6);
+  SSE5 = _mm256_min_epu8(SSE5, SSE7);
+
+  neighbourdiff_avx2(SSE6, SSE7, c, a3, zero);
+  SSE4 = _mm256_min_epu8(SSE4, SSE6);
+  SSE5 = _mm256_min_epu8(SSE5, SSE7);
+
+  neighbourdiff_avx2(SSE6, SSE7, c, a6, zero);
+  SSE4 = _mm256_min_epu8(SSE4, SSE6);
+  SSE5 = _mm256_min_epu8(SSE5, SSE7);
+
+  neighbourdiff_avx2(SSE6, SSE7, c, a7, zero);
+  SSE4 = _mm256_min_epu8(SSE4, SSE6);
+  SSE5 = _mm256_min_epu8(SSE5, SSE7);
+
+  neighbourdiff_avx2(SSE6, SSE7, c, a8, zero);
+  SSE4 = _mm256_min_epu8(SSE4, SSE6);
+  SSE5 = _mm256_min_epu8(SSE5, SSE7);
+
+  auto result = sharpen_avx2(c, SSE4, SSE5);
+  return result;
+}
+
+
+template<int bits_per_pixel, bool aligned>
+RG_FORCEINLINE __m256i rg_mode25_avx2_16(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
+  /*
+  a1 a2 a3
+  a4 c  a5
+  a6 a7 a8
+  */
+  __m256i SSE4, SSE5; // SSE4_minus, SSE5_plus; // global collectors
+  __m256i SSE6, SSE7; // SSE6_actual_minus, SSE7_actual_plus the actual results
+  const __m256i zero = _mm256_setzero_si256();
+
+  neighbourdiff_avx2_16(SSE4, SSE5, c, a4, zero); // out out out in in in
+  // first result fill into collectors SSE4 and SSE5, no comparison
+
+  neighbourdiff_avx2_16(SSE6, SSE7, c, a5, zero);
+  SSE4 = _mm256_min_epu16(SSE4, SSE6);
+  SSE5 = _mm256_min_epu16(SSE5, SSE7);
+
+  neighbourdiff_avx2_16(SSE6, SSE7, c, a1, zero);
+  SSE4 = _mm256_min_epu16(SSE4, SSE6);
+  SSE5 = _mm256_min_epu16(SSE5, SSE7);
+
+  neighbourdiff_avx2_16(SSE6, SSE7, c, a2, zero);
+  SSE4 = _mm256_min_epu16(SSE4, SSE6);
+  SSE5 = _mm256_min_epu16(SSE5, SSE7);
+
+  neighbourdiff_avx2_16(SSE6, SSE7, c, a3, zero);
+  SSE4 = _mm256_min_epu16(SSE4, SSE6);
+  SSE5 = _mm256_min_epu16(SSE5, SSE7);
+
+  neighbourdiff_avx2_16(SSE6, SSE7, c, a6, zero);
+  SSE4 = _mm256_min_epu16(SSE4, SSE6);
+  SSE5 = _mm256_min_epu16(SSE5, SSE7);
+
+  neighbourdiff_avx2_16(SSE6, SSE7, c, a7, zero);
+  SSE4 = _mm256_min_epu16(SSE4, SSE6);
+  SSE5 = _mm256_min_epu16(SSE5, SSE7);
+
+  neighbourdiff_avx2_16(SSE6, SSE7, c, a8, zero);
+  SSE4 = _mm256_min_epu16(SSE4, SSE6);
+  SSE5 = _mm256_min_epu16(SSE5, SSE7);
+
+  auto result = sharpen_avx2_16<bits_per_pixel>(c, SSE4, SSE5);
+
+  return result;
+}
+
+template<bool aligned, bool chroma>
+RG_FORCEINLINE __m256i rg_mode25_avx2_32(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
+  /*
+  a1 a2 a3
+  a4 c  a5
+  a6 a7 a8
+  */
+  __m256 SSE4, SSE5; // SSE4_minus, SSE5_plus; // global collectors
+  __m256 SSE6, SSE7; // SSE6_actual_minus, SSE7_actual_plus the actual results
+  const __m256 zero = _mm256_setzero_ps();
+
+  neighbourdiff_avx2_32(SSE4, SSE5, c, a4, zero); // out out out in in in
+  // first result fill into collectors SSE4 and SSE5, no comparison
+
+  neighbourdiff_avx2_32(SSE6, SSE7, c, a5, zero);
+  SSE4 = _mm256_min_ps(SSE4, SSE6);
+  SSE5 = _mm256_min_ps(SSE5, SSE7);
+
+  neighbourdiff_avx2_32(SSE6, SSE7, c, a1, zero);
+  SSE4 = _mm256_min_ps(SSE4, SSE6);
+  SSE5 = _mm256_min_ps(SSE5, SSE7);
+
+  neighbourdiff_avx2_32(SSE6, SSE7, c, a2, zero);
+  SSE4 = _mm256_min_ps(SSE4, SSE6);
+  SSE5 = _mm256_min_ps(SSE5, SSE7);
+
+  neighbourdiff_avx2_32(SSE6, SSE7, c, a3, zero);
+  SSE4 = _mm256_min_ps(SSE4, SSE6);
+  SSE5 = _mm256_min_ps(SSE5, SSE7);
+
+  neighbourdiff_avx2_32(SSE6, SSE7, c, a6, zero);
+  SSE4 = _mm256_min_ps(SSE4, SSE6);
+  SSE5 = _mm256_min_ps(SSE5, SSE7);
+
+  neighbourdiff_avx2_32(SSE6, SSE7, c, a7, zero);
+  SSE4 = _mm256_min_ps(SSE4, SSE6);
+  SSE5 = _mm256_min_ps(SSE5, SSE7);
+
+  neighbourdiff_avx2_32(SSE6, SSE7, c, a8, zero);
+  SSE4 = _mm256_min_ps(SSE4, SSE6);
+  SSE5 = _mm256_min_ps(SSE5, SSE7);
+
+  auto result = sharpen_avx2_32<chroma>(c, SSE4, SSE5);
+
+  return _mm256_castps_si256(result);
+}
 
 #endif

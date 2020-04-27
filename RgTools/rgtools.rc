@@ -1,10 +1,10 @@
 #include <windows.h>
 
-#define VER_FILEVERSION             0,99,0,0
-#define VER_PRODUCTVERSION          0,99,0,0
+#define VER_FILEVERSION             1,0,0,0
+#define VER_PRODUCTVERSION          1,0,0,0
 #define VER_COMPANYNAME_STR         "The Public\0"
 #define VER_FILEDESCRIPTION_STR     "RgTools for Avisynth+ and Avisynth with 2.6 API\0"
-#define VER_FILEVERSION_STR         "0, 99\0"
+#define VER_FILEVERSION_STR         "1, 0\0"
 #define VER_INTERNALNAME_STR        "RgTools\0"
 #define VER_LEGALCOPYRIGHT_STR      "© -2020\0"
 #define VER_ORIGINALFILENAME_STR    "RgTools.dll\0"

@@ -12,7 +12,7 @@ extern "C" __declspec(dllexport) const char* __stdcall AvisynthPluginInit3(IScri
     AVS_linkage = vectors;
 
     env->AddFunction("RemoveGrain", "c[mode]i[modeU]i[modeV]i[planar]b[opt]i", Create_RemoveGrain, 0);
-    env->AddFunction("Repair", "cc[mode]i[modeU]i[modeV]i[planar]b", Create_Repair, 0);
+    env->AddFunction("Repair", "cc[mode]i[modeU]i[modeV]i[planar]b[opt]i", Create_Repair, 0);
     env->AddFunction("Clense", "c[previous]c[next]c[grey]b[reduceflicker]b[planar]b[cache]i", Create_Clense, 0);
     env->AddFunction("ForwardClense", "c[grey]b[planar]b[cache]i", Create_ForwardClense, 0);
     env->AddFunction("BackwardClense", "c[grey]b[planar]b[cache]i", Create_BackwardClense, 0);

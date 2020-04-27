@@ -2041,6 +2041,457 @@ RG_FORCEINLINE float repair_mode24_cpp_32(const Byte* pSrc, float val, int srcPi
   return clip_32(c, mi, ma);
 }
 
+// ------------
+// mode25: does not exist in repair
+// ------------
+// similar to mode17
+RG_FORCEINLINE Byte repair_mode26_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+  LOAD_SQUARE_CPP(pSrc, srcPitch);
+
+  auto mal1 = std::max(a1, a2);
+  auto mil1 = std::min(a1, a2);
+
+  auto mal2 = std::max(a2, a3);
+  auto mil2 = std::min(a2, a3);
+
+  auto mal3 = std::max(a3, a5);
+  auto mil3 = std::min(a3, a5);
+
+  auto mal4 = std::max(a5, a8);
+  auto mil4 = std::min(a5, a8);
+
+  auto lower = std::max(std::max(std::max(mil1, mil2), mil3), mil4);
+  auto upper = std::min(std::min(std::min(mal1, mal2), mal3), mal4);
+
+  mal1 = std::max(a7, a8);
+  mil1 = std::min(a7, a8);
+
+  mal2 = std::max(a6, a7);
+  mil2 = std::min(a6, a7);
+
+  mal3 = std::max(a4, a6);
+  mil3 = std::min(a4, a6);
+
+  mal4 = std::max(a1, a4);
+  mil4 = std::min(a1, a4);
+
+  lower = std::max(std::max(std::max(std::max(mil1, mil2), mil3), mil4), lower);
+  upper = std::min(std::min(std::min(std::min(mal1, mal2), mal3), mal4), upper);
+
+  /*
+  normal removegrain
+    mi = std::min (lower, upper);
+    ma = std::max (lower, upper);
+    return clip(c, mi, ma);
+
+  repair difference:
+    mi = std::min (std::min (lower, upper), c);
+    ma = std::max (std::max (lower, upper), c);
+    return clip(val, mi, ma);
+  */
+  auto mi = std::min(std::min(lower, upper), c);
+  auto ma = std::max(std::max(lower, upper), c);
+  return clip(val, mi, ma);
+}
+
+RG_FORCEINLINE uint16_t repair_mode26_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+  LOAD_SQUARE_CPP_16(pSrc, srcPitch);
+
+  auto mal1 = std::max(a1, a2);
+  auto mil1 = std::min(a1, a2);
+
+  auto mal2 = std::max(a2, a3);
+  auto mil2 = std::min(a2, a3);
+
+  auto mal3 = std::max(a3, a5);
+  auto mil3 = std::min(a3, a5);
+
+  auto mal4 = std::max(a5, a8);
+  auto mil4 = std::min(a5, a8);
+
+  auto lower = std::max(std::max(std::max(mil1, mil2), mil3), mil4);
+  auto upper = std::min(std::min(std::min(mal1, mal2), mal3), mal4);
+
+  mal1 = std::max(a7, a8);
+  mil1 = std::min(a7, a8);
+
+  mal2 = std::max(a6, a7);
+  mil2 = std::min(a6, a7);
+
+  mal3 = std::max(a4, a6);
+  mil3 = std::min(a4, a6);
+
+  mal4 = std::max(a1, a4);
+  mil4 = std::min(a1, a4);
+
+  lower = std::max(std::max(std::max(std::max(mil1, mil2), mil3), mil4), lower);
+  upper = std::min(std::min(std::min(std::min(mal1, mal2), mal3), mal4), upper);
+
+  auto mi = std::min(std::min(lower, upper), c);
+  auto ma = std::max(std::max(lower, upper), c);
+  return clip_16(val, mi, ma);
+}
+
+RG_FORCEINLINE float repair_mode26_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+  LOAD_SQUARE_CPP_32(pSrc, srcPitch);
+
+  auto mal1 = std::max(a1, a2);
+  auto mil1 = std::min(a1, a2);
+
+  auto mal2 = std::max(a2, a3);
+  auto mil2 = std::min(a2, a3);
+
+  auto mal3 = std::max(a3, a5);
+  auto mil3 = std::min(a3, a5);
+
+  auto mal4 = std::max(a5, a8);
+  auto mil4 = std::min(a5, a8);
+
+  auto lower = std::max(std::max(std::max(mil1, mil2), mil3), mil4);
+  auto upper = std::min(std::min(std::min(mal1, mal2), mal3), mal4);
+
+  mal1 = std::max(a7, a8);
+  mil1 = std::min(a7, a8);
+
+  mal2 = std::max(a6, a7);
+  mil2 = std::min(a6, a7);
+
+  mal3 = std::max(a4, a6);
+  mil3 = std::min(a4, a6);
+
+  mal4 = std::max(a1, a4);
+  mil4 = std::min(a1, a4);
+
+  lower = std::max(std::max(std::max(std::max(mil1, mil2), mil3), mil4), lower);
+  upper = std::min(std::min(std::min(std::min(mal1, mal2), mal3), mal4), upper);
+
+  auto mi = std::min(std::min(lower, upper), c);
+  auto ma = std::max(std::max(lower, upper), c);
+  return clip_32(val, mi, ma);
+}
+
+// ------------
+
+RG_FORCEINLINE Byte repair_mode27_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+  LOAD_SQUARE_CPP(pSrc, srcPitch);
+
+  auto mal1 = std::max(a1, a8);
+  auto mil1 = std::min(a1, a8);
+
+  auto mal2 = std::max(a1, a2);
+  auto mil2 = std::min(a1, a2);
+
+  auto mal3 = std::max(a7, a8);
+  auto mil3 = std::min(a7, a8);
+
+  auto mal4 = std::max(a2, a7);
+  auto mil4 = std::min(a2, a7);
+
+  auto lower = std::max(std::max(std::max(mil1, mil2), mil3), mil4);
+  auto upper = std::min(std::min(std::min(mal1, mal2), mal3), mal4);
+
+  mal1 = std::max(a2, a3);
+  mil1 = std::min(a2, a3);
+
+  mal2 = std::max(a6, a7);
+  mil2 = std::min(a6, a7);
+
+  mal3 = std::max(a3, a6);
+  mil3 = std::min(a3, a6);
+
+  mal4 = std::max(a3, a5);
+  mil4 = std::min(a3, a5);
+
+  lower = std::max(std::max(std::max(std::max(mil1, mil2), mil3), mil4), lower);
+  upper = std::min(std::min(std::min(std::min(mal1, mal2), mal3), mal4), upper);
+
+  mal1 = std::max(a4, a6);
+  mil1 = std::min(a4, a6);
+
+  mal2 = std::max(a4, a5);
+  mil2 = std::min(a4, a5);
+
+  mal3 = std::max(a5, a8);
+  mil3 = std::min(a5, a8);
+
+  mal4 = std::max(a1, a4);
+  mil4 = std::min(a1, a4);
+
+  lower = std::max(std::max(std::max(std::max(mil1, mil2), mil3), mil4), lower);
+  upper = std::min(std::min(std::min(std::min(mal1, mal2), mal3), mal4), upper);
+
+  auto mi = std::min(std::min(lower, upper), c);
+  auto ma = std::max(std::max(lower, upper), c);
+  return clip(val, mi, ma);
+}
+
+RG_FORCEINLINE uint16_t repair_mode27_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+  LOAD_SQUARE_CPP_16(pSrc, srcPitch);
+
+  auto mal1 = std::max(a1, a8);
+  auto mil1 = std::min(a1, a8);
+
+  auto mal2 = std::max(a1, a2);
+  auto mil2 = std::min(a1, a2);
+
+  auto mal3 = std::max(a7, a8);
+  auto mil3 = std::min(a7, a8);
+
+  auto mal4 = std::max(a2, a7);
+  auto mil4 = std::min(a2, a7);
+
+  auto lower = std::max(std::max(std::max(mil1, mil2), mil3), mil4);
+  auto upper = std::min(std::min(std::min(mal1, mal2), mal3), mal4);
+
+  mal1 = std::max(a2, a3);
+  mil1 = std::min(a2, a3);
+
+  mal2 = std::max(a6, a7);
+  mil2 = std::min(a6, a7);
+
+  mal3 = std::max(a3, a6);
+  mil3 = std::min(a3, a6);
+
+  mal4 = std::max(a3, a5);
+  mil4 = std::min(a3, a5);
+
+  lower = std::max(std::max(std::max(std::max(mil1, mil2), mil3), mil4), lower);
+  upper = std::min(std::min(std::min(std::min(mal1, mal2), mal3), mal4), upper);
+
+  mal1 = std::max(a4, a6);
+  mil1 = std::min(a4, a6);
+
+  mal2 = std::max(a4, a5);
+  mil2 = std::min(a4, a5);
+
+  mal3 = std::max(a5, a8);
+  mil3 = std::min(a5, a8);
+
+  mal4 = std::max(a1, a4);
+  mil4 = std::min(a1, a4);
+
+  lower = std::max(std::max(std::max(std::max(mil1, mil2), mil3), mil4), lower);
+  upper = std::min(std::min(std::min(std::min(mal1, mal2), mal3), mal4), upper);
+
+  auto mi = std::min(std::min(lower, upper), c);
+  auto ma = std::max(std::max(lower, upper), c);
+  return clip_16(val, mi, ma);
+}
+
+RG_FORCEINLINE float repair_mode27_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+  LOAD_SQUARE_CPP_32(pSrc, srcPitch);
+
+  auto mal1 = std::max(a1, a8);
+  auto mil1 = std::min(a1, a8);
+
+  auto mal2 = std::max(a1, a2);
+  auto mil2 = std::min(a1, a2);
+
+  auto mal3 = std::max(a7, a8);
+  auto mil3 = std::min(a7, a8);
+
+  auto mal4 = std::max(a2, a7);
+  auto mil4 = std::min(a2, a7);
+
+  auto lower = std::max(std::max(std::max(mil1, mil2), mil3), mil4);
+  auto upper = std::min(std::min(std::min(mal1, mal2), mal3), mal4);
+
+  mal1 = std::max(a2, a3);
+  mil1 = std::min(a2, a3);
+
+  mal2 = std::max(a6, a7);
+  mil2 = std::min(a6, a7);
+
+  mal3 = std::max(a3, a6);
+  mil3 = std::min(a3, a6);
+
+  mal4 = std::max(a3, a5);
+  mil4 = std::min(a3, a5);
+
+  lower = std::max(std::max(std::max(std::max(mil1, mil2), mil3), mil4), lower);
+  upper = std::min(std::min(std::min(std::min(mal1, mal2), mal3), mal4), upper);
+
+  mal1 = std::max(a4, a6);
+  mil1 = std::min(a4, a6);
+
+  mal2 = std::max(a4, a5);
+  mil2 = std::min(a4, a5);
+
+  mal3 = std::max(a5, a8);
+  mil3 = std::min(a5, a8);
+
+  mal4 = std::max(a1, a4);
+  mil4 = std::min(a1, a4);
+
+  lower = std::max(std::max(std::max(std::max(mil1, mil2), mil3), mil4), lower);
+  upper = std::min(std::min(std::min(std::min(mal1, mal2), mal3), mal4), upper);
+
+  auto mi = std::min(std::min(lower, upper), c);
+  auto ma = std::max(std::max(lower, upper), c);
+  return clip_32(val, mi, ma);
+}
+
+// ------------
+
+RG_FORCEINLINE Byte repair_mode28_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+  LOAD_SQUARE_CPP(pSrc, srcPitch);
+
+  auto mal1 = std::max(a1, a2);
+  auto mil1 = std::min(a1, a2);
+
+  auto mal2 = std::max(a2, a3);
+  auto mil2 = std::min(a2, a3);
+
+  auto mal3 = std::max(a3, a5);
+  auto mil3 = std::min(a3, a5);
+
+  auto mal4 = std::max(a5, a8);
+  auto mil4 = std::min(a5, a8);
+
+  auto lower = std::max(std::max(std::max(mil1, mil2), mil3), mil4);
+  auto upper = std::min(std::min(std::min(mal1, mal2), mal3), mal4);
+
+  mal1 = std::max(a7, a8);
+  mil1 = std::min(a7, a8);
+
+  mal2 = std::max(a6, a7);
+  mil2 = std::min(a6, a7);
+
+  mal3 = std::max(a4, a6);
+  mil3 = std::min(a4, a6);
+
+  mal4 = std::max(a1, a4);
+  mil4 = std::min(a1, a4);
+
+  lower = std::max(std::max(std::max(std::max(mil1, mil2), mil3), mil4), lower);
+  upper = std::min(std::min(std::min(std::min(mal1, mal2), mal3), mal4), upper);
+
+  mal1 = std::max(a1, a8);
+  mil1 = std::min(a1, a8);
+
+  mal2 = std::max(a3, a6);
+  mil2 = std::min(a3, a6);
+
+  mal3 = std::max(a2, a7);
+  mil3 = std::min(a2, a7);
+
+  mal4 = std::max(a4, a5);
+  mil4 = std::min(a4, a5);
+
+  lower = std::max(std::max(std::max(std::max(mil1, mil2), mil3), mil4), lower);
+  upper = std::min(std::min(std::min(std::min(mal1, mal2), mal3), mal4), upper);
+
+  auto mi = std::min(std::min(lower, upper), c);
+  auto ma = std::max(std::max(lower, upper), c);
+  return clip(val, mi, ma);
+}
+
+RG_FORCEINLINE uint16_t repair_mode28_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+  LOAD_SQUARE_CPP_16(pSrc, srcPitch);
+
+  auto mal1 = std::max(a1, a2);
+  auto mil1 = std::min(a1, a2);
+
+  auto mal2 = std::max(a2, a3);
+  auto mil2 = std::min(a2, a3);
+
+  auto mal3 = std::max(a3, a5);
+  auto mil3 = std::min(a3, a5);
+
+  auto mal4 = std::max(a5, a8);
+  auto mil4 = std::min(a5, a8);
+
+  auto lower = std::max(std::max(std::max(mil1, mil2), mil3), mil4);
+  auto upper = std::min(std::min(std::min(mal1, mal2), mal3), mal4);
+
+  mal1 = std::max(a7, a8);
+  mil1 = std::min(a7, a8);
+
+  mal2 = std::max(a6, a7);
+  mil2 = std::min(a6, a7);
+
+  mal3 = std::max(a4, a6);
+  mil3 = std::min(a4, a6);
+
+  mal4 = std::max(a1, a4);
+  mil4 = std::min(a1, a4);
+
+  lower = std::max(std::max(std::max(std::max(mil1, mil2), mil3), mil4), lower);
+  upper = std::min(std::min(std::min(std::min(mal1, mal2), mal3), mal4), upper);
+
+  mal1 = std::max(a1, a8);
+  mil1 = std::min(a1, a8);
+
+  mal2 = std::max(a3, a6);
+  mil2 = std::min(a3, a6);
+
+  mal3 = std::max(a2, a7);
+  mil3 = std::min(a2, a7);
+
+  mal4 = std::max(a4, a5);
+  mil4 = std::min(a4, a5);
+
+  lower = std::max(std::max(std::max(std::max(mil1, mil2), mil3), mil4), lower);
+  upper = std::min(std::min(std::min(std::min(mal1, mal2), mal3), mal4), upper);
+
+  auto mi = std::min(std::min(lower, upper), c);
+  auto ma = std::max(std::max(lower, upper), c);
+  return clip_16(val, mi, ma);
+}
+
+RG_FORCEINLINE float repair_mode28_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+  LOAD_SQUARE_CPP_32(pSrc, srcPitch);
+
+  auto mal1 = std::max(a1, a2);
+  auto mil1 = std::min(a1, a2);
+
+  auto mal2 = std::max(a2, a3);
+  auto mil2 = std::min(a2, a3);
+
+  auto mal3 = std::max(a3, a5);
+  auto mil3 = std::min(a3, a5);
+
+  auto mal4 = std::max(a5, a8);
+  auto mil4 = std::min(a5, a8);
+
+  auto lower = std::max(std::max(std::max(mil1, mil2), mil3), mil4);
+  auto upper = std::min(std::min(std::min(mal1, mal2), mal3), mal4);
+
+  mal1 = std::max(a7, a8);
+  mil1 = std::min(a7, a8);
+
+  mal2 = std::max(a6, a7);
+  mil2 = std::min(a6, a7);
+
+  mal3 = std::max(a4, a6);
+  mil3 = std::min(a4, a6);
+
+  mal4 = std::max(a1, a4);
+  mil4 = std::min(a1, a4);
+
+  lower = std::max(std::max(std::max(std::max(mil1, mil2), mil3), mil4), lower);
+  upper = std::min(std::min(std::min(std::min(mal1, mal2), mal3), mal4), upper);
+
+  mal1 = std::max(a1, a8);
+  mil1 = std::min(a1, a8);
+
+  mal2 = std::max(a3, a6);
+  mil2 = std::min(a3, a6);
+
+  mal3 = std::max(a2, a7);
+  mil3 = std::min(a2, a7);
+
+  mal4 = std::max(a4, a5);
+  mil4 = std::min(a4, a5);
+
+  lower = std::max(std::max(std::max(std::max(mil1, mil2), mil3), mil4), lower);
+  upper = std::min(std::min(std::min(std::min(mal1, mal2), mal3), mal4), upper);
+
+  auto mi = std::min(std::min(lower, upper), c);
+  auto ma = std::max(std::max(lower, upper), c);
+  return clip_32(val, mi, ma);
+}
+
 #undef LOAD_SQUARE_CPP
 #undef LOAD_SQUARE_CPP_16
 #undef LOAD_SQUARE_CPP_32

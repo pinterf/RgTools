@@ -229,7 +229,11 @@ static RepairPlaneProcessor* sse4_functions[] = {
     process_plane_sse41<uint8_t, repair_mode21_sse<false>, repair_mode21_sse<true>>, 
     process_plane_sse41<uint8_t, repair_mode22_sse<false>, repair_mode22_sse<true>>, 
     process_plane_sse41<uint8_t, repair_mode23_sse<false>, repair_mode23_sse<true>>, 
-    process_plane_sse41<uint8_t, repair_mode24_sse<false>, repair_mode24_sse<true>> 
+    process_plane_sse41<uint8_t, repair_mode24_sse<false>, repair_mode24_sse<true>>,
+    doNothing,
+    process_plane_sse41<uint8_t, repair_mode26_sse<false>, repair_mode26_sse<true>>,
+    process_plane_sse41<uint8_t, repair_mode27_sse<false>, repair_mode27_sse<true>>,
+    process_plane_sse41<uint8_t, repair_mode28_sse<false>, repair_mode28_sse<true>>,
 };
 
 static RepairPlaneProcessor* sse2_functions[] = {
@@ -258,7 +262,11 @@ static RepairPlaneProcessor* sse2_functions[] = {
     process_plane_sse<uint8_t, repair_mode21_sse2<false>, repair_mode21_sse2<true>>, 
     process_plane_sse<uint8_t, repair_mode22_sse2<false>, repair_mode22_sse2<true>>, 
     process_plane_sse<uint8_t, repair_mode23_sse2<false>, repair_mode23_sse2<true>>, 
-    process_plane_sse<uint8_t, repair_mode24_sse2<false>, repair_mode24_sse2<true>> 
+    process_plane_sse<uint8_t, repair_mode24_sse2<false>, repair_mode24_sse2<true>>,
+    doNothing,
+    process_plane_sse<uint8_t, repair_mode26_sse2<false>, repair_mode26_sse2<true>>,
+    process_plane_sse<uint8_t, repair_mode27_sse2<false>, repair_mode27_sse2<true>>,
+    process_plane_sse<uint8_t, repair_mode28_sse2<false>, repair_mode28_sse2<true>>,
 };
 
 static RepairPlaneProcessor* sse4_functions_16_10[] = {
@@ -287,7 +295,11 @@ static RepairPlaneProcessor* sse4_functions_16_10[] = {
   process_plane_sse41<uint16_t, repair_mode21_sse_16<10, false>, repair_mode21_sse_16<10, true>>, 
   process_plane_sse41<uint16_t, repair_mode22_sse_16<10, false>, repair_mode22_sse_16<10, true>>, 
   process_plane_sse41<uint16_t, repair_mode23_sse_16<10, false>, repair_mode23_sse_16<10, true>>, 
-  process_plane_sse41<uint16_t, repair_mode24_sse_16<10, false>, repair_mode24_sse_16<10, true>> 
+  process_plane_sse41<uint16_t, repair_mode24_sse_16<10, false>, repair_mode24_sse_16<10, true>>,
+  doNothing,
+  process_plane_sse41<uint16_t, repair_mode26_sse_16<false>,  repair_mode26_sse_16<true>>,
+  process_plane_sse41<uint16_t, repair_mode27_sse_16<false>,  repair_mode27_sse_16<true>>,
+  process_plane_sse41<uint16_t, repair_mode28_sse_16<false>,  repair_mode28_sse_16<true>>,
 };
 
 static RepairPlaneProcessor* sse4_functions_16_12[] = {
@@ -316,7 +328,11 @@ static RepairPlaneProcessor* sse4_functions_16_12[] = {
   process_plane_sse41<uint16_t, repair_mode21_sse_16<12, false>,  repair_mode21_sse_16<12, true>>, 
   process_plane_sse41<uint16_t, repair_mode22_sse_16<12, false>,  repair_mode22_sse_16<12, true>>, 
   process_plane_sse41<uint16_t, repair_mode23_sse_16<12, false>,  repair_mode23_sse_16<12, true>>, 
-  process_plane_sse41<uint16_t, repair_mode24_sse_16<12, false>,  repair_mode24_sse_16<12, true>> 
+  process_plane_sse41<uint16_t, repair_mode24_sse_16<12, false>,  repair_mode24_sse_16<12, true>>,
+  doNothing,
+  process_plane_sse41<uint16_t, repair_mode26_sse_16<false>,  repair_mode26_sse_16<true>>,
+  process_plane_sse41<uint16_t, repair_mode27_sse_16<false>,  repair_mode27_sse_16<true>>,
+  process_plane_sse41<uint16_t, repair_mode28_sse_16<false>,  repair_mode28_sse_16<true>>,
 };
 
 static RepairPlaneProcessor* sse4_functions_16_14[] = {
@@ -345,7 +361,11 @@ static RepairPlaneProcessor* sse4_functions_16_14[] = {
   process_plane_sse41<uint16_t, repair_mode21_sse_16<14, false>,  repair_mode21_sse_16<14, true>>, 
   process_plane_sse41<uint16_t, repair_mode22_sse_16<14, false>,  repair_mode22_sse_16<14, true>>, 
   process_plane_sse41<uint16_t, repair_mode23_sse_16<14, false>,  repair_mode23_sse_16<14, true>>, 
-  process_plane_sse41<uint16_t, repair_mode24_sse_16<14, false>,  repair_mode24_sse_16<14, true>> 
+  process_plane_sse41<uint16_t, repair_mode24_sse_16<14, false>,  repair_mode24_sse_16<14, true>>,
+  doNothing,
+  process_plane_sse41<uint16_t, repair_mode26_sse_16<false>,  repair_mode26_sse_16<true>>,
+  process_plane_sse41<uint16_t, repair_mode27_sse_16<false>,  repair_mode27_sse_16<true>>,
+  process_plane_sse41<uint16_t, repair_mode28_sse_16<false>,  repair_mode28_sse_16<true>>,
 };
 
 static RepairPlaneProcessor* sse4_functions_16_16[] = {
@@ -374,7 +394,11 @@ static RepairPlaneProcessor* sse4_functions_16_16[] = {
   process_plane_sse41<uint16_t, repair_mode21_sse_16<16, false>,  repair_mode21_sse_16<16, true>>, 
   process_plane_sse41<uint16_t, repair_mode22_sse_16<16, false>,  repair_mode22_sse_16<16, true>>, 
   process_plane_sse41<uint16_t, repair_mode23_sse_16<16, false>,  repair_mode23_sse_16<16, true>>, 
-  process_plane_sse41<uint16_t, repair_mode24_sse_16<16, false>,  repair_mode24_sse_16<16, true>> 
+  process_plane_sse41<uint16_t, repair_mode24_sse_16<16, false>,  repair_mode24_sse_16<16, true>>,
+  doNothing,
+  process_plane_sse41<uint16_t, repair_mode26_sse_16<false>,  repair_mode26_sse_16<true>>,
+  process_plane_sse41<uint16_t, repair_mode27_sse_16<false>,  repair_mode27_sse_16<true>>,
+  process_plane_sse41<uint16_t, repair_mode28_sse_16<false>,  repair_mode28_sse_16<true>>,
 };
 
 
@@ -404,7 +428,11 @@ static RepairPlaneProcessor* sse4_functions_32[] = {
   process_plane_sse41<float, repair_mode21_sse_32<false, false>, repair_mode21_sse_32<true, false>>, 
   process_plane_sse41<float, repair_mode22_sse_32<false, false>, repair_mode22_sse_32<true, false>>, 
   process_plane_sse41<float, repair_mode23_sse_32<false, false>, repair_mode23_sse_32<true, false>>, 
-  process_plane_sse41<float, repair_mode24_sse_32<false, false>, repair_mode24_sse_32<true, false>> 
+  process_plane_sse41<float, repair_mode24_sse_32<false, false>, repair_mode24_sse_32<true, false>>,
+  doNothing,
+  process_plane_sse41<float, repair_mode26_sse_32<false>, repair_mode26_sse_32<true>>,
+  process_plane_sse41<float, repair_mode27_sse_32<false>, repair_mode27_sse_32<true>>,
+  process_plane_sse41<float, repair_mode28_sse_32<false>, repair_mode28_sse_32<true>>
 };
 
 static RepairPlaneProcessor* sse4_functions_32_chroma[] = {
@@ -433,7 +461,11 @@ static RepairPlaneProcessor* sse4_functions_32_chroma[] = {
   process_plane_sse41<float, repair_mode21_sse_32<false, true>, repair_mode21_sse_32<true, true>>,
   process_plane_sse41<float, repair_mode22_sse_32<false, true>, repair_mode22_sse_32<true, true>>,
   process_plane_sse41<float, repair_mode23_sse_32<false, true>, repair_mode23_sse_32<true, true>>,
-  process_plane_sse41<float, repair_mode24_sse_32<false, true>, repair_mode24_sse_32<true, true>>
+  process_plane_sse41<float, repair_mode24_sse_32<false, true>, repair_mode24_sse_32<true, true>>,
+  doNothing,
+  process_plane_sse41<float, repair_mode26_sse_32<false>, repair_mode26_sse_32<true>>,
+  process_plane_sse41<float, repair_mode27_sse_32<false>, repair_mode27_sse_32<true>>,
+  process_plane_sse41<float, repair_mode28_sse_32<false>, repair_mode28_sse_32<true>>
 };
 
 static RepairPlaneProcessor* c_functions[] = {
@@ -462,7 +494,11 @@ static RepairPlaneProcessor* c_functions[] = {
   process_plane_c<uint8_t,repair_mode21_cpp>, 
   process_plane_c<uint8_t,repair_mode22_cpp>, 
   process_plane_c<uint8_t,repair_mode23_cpp>, 
-  process_plane_c<uint8_t,repair_mode24_cpp> 
+  process_plane_c<uint8_t,repair_mode24_cpp>,
+  doNothing,
+  process_plane_c<uint8_t,repair_mode26_cpp>,
+  process_plane_c<uint8_t,repair_mode27_cpp>,
+  process_plane_c<uint8_t,repair_mode28_cpp>
 };
 
 static RepairPlaneProcessor* c_functions_10[] = {
@@ -491,7 +527,11 @@ static RepairPlaneProcessor* c_functions_10[] = {
   process_plane_c<uint16_t,repair_mode21_cpp_16<10>>, 
   process_plane_c<uint16_t,repair_mode22_cpp_16<10>>, 
   process_plane_c<uint16_t,repair_mode23_cpp_16<10>>, 
-  process_plane_c<uint16_t,repair_mode24_cpp_16<10>> 
+  process_plane_c<uint16_t,repair_mode24_cpp_16<10>>,
+  doNothing,
+  process_plane_c<uint16_t,repair_mode26_cpp_16>,
+  process_plane_c<uint16_t,repair_mode27_cpp_16>,
+  process_plane_c<uint16_t,repair_mode28_cpp_16>,
 };
 
 static RepairPlaneProcessor* c_functions_12[] = {
@@ -520,7 +560,11 @@ static RepairPlaneProcessor* c_functions_12[] = {
   process_plane_c<uint16_t,repair_mode21_cpp_16<12>>, 
   process_plane_c<uint16_t,repair_mode22_cpp_16<12>>, 
   process_plane_c<uint16_t,repair_mode23_cpp_16<12>>, 
-  process_plane_c<uint16_t,repair_mode24_cpp_16<12>> 
+  process_plane_c<uint16_t,repair_mode24_cpp_16<12>>,
+  doNothing,
+  process_plane_c<uint16_t,repair_mode26_cpp_16>,
+  process_plane_c<uint16_t,repair_mode27_cpp_16>,
+  process_plane_c<uint16_t,repair_mode28_cpp_16>,
 };
 
 static RepairPlaneProcessor* c_functions_14[] = {
@@ -549,7 +593,11 @@ static RepairPlaneProcessor* c_functions_14[] = {
   process_plane_c<uint16_t,repair_mode21_cpp_16<14>>, 
   process_plane_c<uint16_t,repair_mode22_cpp_16<14>>, 
   process_plane_c<uint16_t,repair_mode23_cpp_16<14>>, 
-  process_plane_c<uint16_t,repair_mode24_cpp_16<14>> 
+  process_plane_c<uint16_t,repair_mode24_cpp_16<14>>,
+  doNothing,
+  process_plane_c<uint16_t,repair_mode26_cpp_16>,
+  process_plane_c<uint16_t,repair_mode27_cpp_16>,
+  process_plane_c<uint16_t,repair_mode28_cpp_16>,
 };
 
 static RepairPlaneProcessor* c_functions_16[] = {
@@ -578,7 +626,11 @@ static RepairPlaneProcessor* c_functions_16[] = {
   process_plane_c<uint16_t,repair_mode21_cpp_16<16>>, 
   process_plane_c<uint16_t,repair_mode22_cpp_16<16>>, 
   process_plane_c<uint16_t,repair_mode23_cpp_16<16>>, 
-  process_plane_c<uint16_t,repair_mode24_cpp_16<16>> 
+  process_plane_c<uint16_t,repair_mode24_cpp_16<16>>,
+  doNothing,
+  process_plane_c<uint16_t,repair_mode26_cpp_16>,
+  process_plane_c<uint16_t,repair_mode27_cpp_16>,
+  process_plane_c<uint16_t,repair_mode28_cpp_16>,
 };
 
 static RepairPlaneProcessor* c_functions_32[] = {
@@ -607,7 +659,11 @@ static RepairPlaneProcessor* c_functions_32[] = {
   process_plane_c<float,repair_mode21_cpp_32<false>>,
   process_plane_c<float,repair_mode22_cpp_32<false>>,
   process_plane_c<float,repair_mode23_cpp_32<false>>,
-  process_plane_c<float,repair_mode24_cpp_32<false>>
+  process_plane_c<float,repair_mode24_cpp_32<false>>,
+  doNothing,
+  process_plane_c<float,repair_mode26_cpp_32>,
+  process_plane_c<float,repair_mode27_cpp_32>,
+  process_plane_c<float,repair_mode28_cpp_32>
 };
 
 static RepairPlaneProcessor* c_functions_32_chroma[] = {
@@ -636,10 +692,14 @@ static RepairPlaneProcessor* c_functions_32_chroma[] = {
   process_plane_c<float,repair_mode21_cpp_32<true>>,
   process_plane_c<float,repair_mode22_cpp_32<true>>,
   process_plane_c<float,repair_mode23_cpp_32<true>>,
-  process_plane_c<float,repair_mode24_cpp_32<true>>
+  process_plane_c<float,repair_mode24_cpp_32<true>>,
+  doNothing,
+  process_plane_c<float,repair_mode26_cpp_32>,
+  process_plane_c<float,repair_mode27_cpp_32>,
+  process_plane_c<float,repair_mode28_cpp_32>
 };
 
-Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip_cs_check, IScriptEnvironment* env)
+Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip_cs_check, int opt, IScriptEnvironment* env)
   : GenericVideoFilter(child), ref_(ref), mode_(mode), modeU_(modeU), modeV_(modeV), functions(nullptr), functions_chroma(nullptr) {
 
   auto refVi = ref_->GetVideoInfo();
@@ -652,8 +712,10 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
     env->ThrowError("Clips should be of the same size!");
   }
 
-  if (mode <= UNDEFINED_MODE || mode_ > 24 || modeU_ > 24 || modeV_ > 24) {
-    env->ThrowError("Repair mode should be between -1 and 24!");
+  if (mode <= UNDEFINED_MODE || mode_ > 28 || modeU_ > 28 || modeV_ > 28 ||
+    mode_ == 25 || modeU_ == 25 || modeV_ == 25 // mode 25 exists only in RemoveGrain
+    ) {
+    env->ThrowError("Repair mode should be between -1 and 28, except 25!");
   }
 
   bool isPlanarRGB = vi.IsPlanarRGB() || vi.IsPlanarRGBA();
@@ -686,20 +748,29 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
   if (vi.IsYUV() && vi.NumComponents() >= 3)
     worst_case_width >>= vi.GetPlaneWidthSubsampling(PLANAR_U);
 
-  functions_chroma = nullptr;
+  // 0: auto
+  // 1: c
+  // 2: sse2
+  // 3: sse4.1
+  // 4: avx2
+  //const bool use_avx2 = (opt == 0 || opt >= 4) && !!(env->GetCPUFlags() & CPUF_AVX2);
+  const bool use_sse41 = (opt == 0 || opt >= 3) && !!(env->GetCPUFlags() & CPUF_SSE4_1);
+  const bool use_sse2 = (opt == 0 || opt >= 2) && !!(env->GetCPUFlags() & CPUF_SSE2);
+
+  // no avx2 here
 
   if (pixelsize == 1) {
 
-    functions = (env->GetCPUFlags() & CPUF_SSE4_1) ? sse4_functions
-      : (env->GetCPUFlags() & CPUF_SSE2) ? sse2_functions
-      : c_functions;
+    functions = 
+      use_sse41 ? sse4_functions :
+      use_sse2 ? sse2_functions : c_functions;
 
     if (worst_case_width < 17) { //not enough for XMM
       functions = c_functions;
     }
   }
   else if (pixelsize == 2) {
-    if ((env->GetCPUFlags() & CPUF_SSE4) && worst_case_width >= (16 / sizeof(uint16_t) + 1)) {
+    if (use_sse41 && worst_case_width >= (16 / sizeof(uint16_t) + 1)) {
       switch (bits_per_pixel) {
       case 10: functions = sse4_functions_16_10; break;
       case 12: functions = sse4_functions_16_12; break;
@@ -720,7 +791,7 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
   }
   else {// if (pixelsize == 4) 
 
-    if ((env->GetCPUFlags() & CPUF_SSE4) && worst_case_width >= (16 / sizeof(float) + 1)) {
+    if (use_sse41 && worst_case_width >= (16 / sizeof(float) + 1)) {
       functions = sse4_functions_32;
       functions_chroma = sse4_functions_32_chroma;
     }
@@ -793,6 +864,12 @@ PVideoFrame Repair::GetFrame(int n, IScriptEnvironment* env) {
 
 
 AVSValue __cdecl Create_Repair(AVSValue args, void*, IScriptEnvironment* env) {
-    enum { CLIP, REF, MODE, MODEU, MODEV, PLANAR };
-    return new Repair(args[CLIP].AsClip(), args[REF].AsClip(), args[MODE].AsInt(1), args[MODEU].AsInt(Repair::UNDEFINED_MODE), args[MODEV].AsInt(Repair::UNDEFINED_MODE), args[PLANAR].AsBool(false), env);
+    enum { CLIP, REF, MODE, MODEU, MODEV, PLANAR, OPT };
+    return new Repair(args[CLIP].AsClip(), args[REF].AsClip(), 
+      args[MODE].AsInt(1), 
+      args[MODEU].AsInt(Repair::UNDEFINED_MODE), 
+      args[MODEV].AsInt(Repair::UNDEFINED_MODE), 
+      args[PLANAR].AsBool(false), // not used, compatibility parameter
+      args[OPT].AsInt(0),
+      env);
 }

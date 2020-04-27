@@ -9,7 +9,7 @@ typedef void (RepairPlaneProcessor)(IScriptEnvironment* env, BYTE* pDst, const B
 
 class Repair : public GenericVideoFilter {
 public:
-    Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip_cs_check, IScriptEnvironment* env);
+    Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip_cs_check, int opt, IScriptEnvironment* env);
 
     PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env) override;
 

@@ -3519,6 +3519,163 @@ RG_FORCEINLINE __m128i rg_mode26_sse(const Byte* pSrc, int srcPitch) {
   return simd_clip(c, real_lower, real_upper);
 }
 
+
+template<bool aligned>
+RG_FORCEINLINE __m128i rg_mode26_sse2(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
+  /*
+  a1 a2 a3
+  a4 c  a5
+  a6 a7 a8
+  */
+  // going clockwise
+  auto mi12 = _mm_min_epu8(a1, a2);
+  auto ma12 = _mm_max_epu8(a1, a2);
+
+  auto mi23 = _mm_min_epu8(a2, a3);
+  auto ma23 = _mm_max_epu8(a2, a3);
+  auto lower = _mm_max_epu8(mi12, mi23);
+  auto upper = _mm_min_epu8(ma12, ma23);
+
+  auto mi35 = _mm_min_epu8(a3, a5);
+  auto ma35 = _mm_max_epu8(a3, a5);
+  lower = _mm_max_epu8(lower, mi35);
+  upper = _mm_min_epu8(upper, ma35);
+
+  auto mi58 = _mm_min_epu8(a5, a8);
+  auto ma58 = _mm_max_epu8(a5, a8);
+  lower = _mm_max_epu8(lower, mi58);
+  upper = _mm_min_epu8(upper, ma58);
+
+  auto mi78 = _mm_min_epu8(a7, a8);
+  auto ma78 = _mm_max_epu8(a7, a8);
+  lower = _mm_max_epu8(lower, mi78);
+  upper = _mm_min_epu8(upper, ma78);
+
+  auto mi67 = _mm_min_epu8(a6, a7);
+  auto ma67 = _mm_max_epu8(a6, a7);
+  lower = _mm_max_epu8(lower, mi67);
+  upper = _mm_min_epu8(upper, ma67);
+
+  auto mi46 = _mm_min_epu8(a4, a6);
+  auto ma46 = _mm_max_epu8(a4, a6);
+  lower = _mm_max_epu8(lower, mi46);
+  upper = _mm_min_epu8(upper, ma46);
+
+  auto mi14 = _mm_min_epu8(a1, a4);
+  auto ma14 = _mm_max_epu8(a1, a4);
+  lower = _mm_max_epu8(lower, mi14);
+  upper = _mm_min_epu8(upper, ma14);
+
+  auto real_lower = _mm_min_epu8(lower, upper);
+  auto real_upper = _mm_max_epu8(lower, upper);
+
+  return simd_clip(c, real_lower, real_upper);
+}
+
+template<bool aligned>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE __m128i rg_mode26_sse_16(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
+
+  auto mi12 = _mm_min_epu16(a1, a2);
+  auto ma12 = _mm_max_epu16(a1, a2);
+
+  auto mi23 = _mm_min_epu16(a2, a3);
+  auto ma23 = _mm_max_epu16(a2, a3);
+  auto lower = _mm_max_epu16(mi12, mi23);
+  auto upper = _mm_min_epu16(ma12, ma23);
+
+  auto mi35 = _mm_min_epu16(a3, a5);
+  auto ma35 = _mm_max_epu16(a3, a5);
+  lower = _mm_max_epu16(lower, mi35);
+  upper = _mm_min_epu16(upper, ma35);
+
+  auto mi58 = _mm_min_epu16(a5, a8);
+  auto ma58 = _mm_max_epu16(a5, a8);
+  lower = _mm_max_epu16(lower, mi58);
+  upper = _mm_min_epu16(upper, ma58);
+
+  auto mi78 = _mm_min_epu16(a7, a8);
+  auto ma78 = _mm_max_epu16(a7, a8);
+  lower = _mm_max_epu16(lower, mi78);
+  upper = _mm_min_epu16(upper, ma78);
+
+  auto mi67 = _mm_min_epu16(a6, a7);
+  auto ma67 = _mm_max_epu16(a6, a7);
+  lower = _mm_max_epu16(lower, mi67);
+  upper = _mm_min_epu16(upper, ma67);
+
+  auto mi46 = _mm_min_epu16(a4, a6);
+  auto ma46 = _mm_max_epu16(a4, a6);
+  lower = _mm_max_epu16(lower, mi46);
+  upper = _mm_min_epu16(upper, ma46);
+
+  auto mi14 = _mm_min_epu16(a1, a4);
+  auto ma14 = _mm_max_epu16(a1, a4);
+  lower = _mm_max_epu16(lower, mi14);
+  upper = _mm_min_epu16(upper, ma14);
+
+  auto real_lower = _mm_min_epu16(lower, upper);
+  auto real_upper = _mm_max_epu16(lower, upper);
+
+  return simd_clip_16(c, real_lower, real_upper);
+}
+
+template<bool aligned>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE __m128i rg_mode26_sse_32(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
+
+  auto mi12 = _mm_min_ps(a1, a2);
+  auto ma12 = _mm_max_ps(a1, a2);
+
+  auto mi23 = _mm_min_ps(a2, a3);
+  auto ma23 = _mm_max_ps(a2, a3);
+  auto lower = _mm_max_ps(mi12, mi23);
+  auto upper = _mm_min_ps(ma12, ma23);
+
+  auto mi35 = _mm_min_ps(a3, a5);
+  auto ma35 = _mm_max_ps(a3, a5);
+  lower = _mm_max_ps(lower, mi35);
+  upper = _mm_min_ps(upper, ma35);
+
+  auto mi58 = _mm_min_ps(a5, a8);
+  auto ma58 = _mm_max_ps(a5, a8);
+  lower = _mm_max_ps(lower, mi58);
+  upper = _mm_min_ps(upper, ma58);
+
+  auto mi78 = _mm_min_ps(a7, a8);
+  auto ma78 = _mm_max_ps(a7, a8);
+  lower = _mm_max_ps(lower, mi78);
+  upper = _mm_min_ps(upper, ma78);
+
+  auto mi67 = _mm_min_ps(a6, a7);
+  auto ma67 = _mm_max_ps(a6, a7);
+  lower = _mm_max_ps(lower, mi67);
+  upper = _mm_min_ps(upper, ma67);
+
+  auto mi46 = _mm_min_ps(a4, a6);
+  auto ma46 = _mm_max_ps(a4, a6);
+  lower = _mm_max_ps(lower, mi46);
+  upper = _mm_min_ps(upper, ma46);
+
+  auto mi14 = _mm_min_ps(a1, a4);
+  auto ma14 = _mm_max_ps(a1, a4);
+  lower = _mm_max_ps(lower, mi14);
+  upper = _mm_min_ps(upper, ma14);
+
+  auto real_lower = _mm_min_ps(lower, upper);
+  auto real_upper = _mm_max_ps(lower, upper);
+
+  return _mm_castps_si128(simd_clip_32(c, real_lower, real_upper));
+}
+
+
 #if mode26
 __asm	align		16
 __asm	middle_loop:
@@ -3688,6 +3845,225 @@ RG_FORCEINLINE __m128i rg_mode27_sse(const Byte* pSrc, int srcPitch) {
 
   return simd_clip(c, real_lower, real_upper);
 }
+
+template<bool aligned>
+RG_FORCEINLINE __m128i rg_mode27_sse2(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
+  /*
+  a1 a2 a3
+  a4 c  a5
+  a6 a7 a8
+  */
+
+  auto mi18 = _mm_min_epu8(a1, a8);
+  auto ma18 = _mm_max_epu8(a1, a8);
+
+  auto mi12 = _mm_min_epu8(a1, a2);
+  auto ma12 = _mm_max_epu8(a1, a2);
+
+  auto lower = _mm_max_epu8(mi18, mi12);
+  auto upper = _mm_min_epu8(ma18, ma12);
+
+  auto mi78 = _mm_min_epu8(a7, a8);
+  auto ma78 = _mm_max_epu8(a7, a8);
+  lower = _mm_max_epu8(lower, mi78);
+  upper = _mm_min_epu8(upper, ma78);
+
+  auto mi27 = _mm_min_epu8(a2, a7);
+  auto ma27 = _mm_max_epu8(a2, a7);
+  lower = _mm_max_epu8(lower, mi27);
+  upper = _mm_min_epu8(upper, ma27);
+
+  auto mi23 = _mm_min_epu8(a2, a3);
+  auto ma23 = _mm_max_epu8(a2, a3);
+  lower = _mm_max_epu8(lower, mi23);
+  upper = _mm_min_epu8(upper, ma23);
+
+  auto mi67 = _mm_min_epu8(a6, a7);
+  auto ma67 = _mm_max_epu8(a6, a7);
+  lower = _mm_max_epu8(lower, mi67);
+  upper = _mm_min_epu8(upper, ma67);
+
+  auto mi36 = _mm_min_epu8(a3, a6);
+  auto ma36 = _mm_max_epu8(a3, a6);
+  lower = _mm_max_epu8(lower, mi36);
+  upper = _mm_min_epu8(upper, ma36);
+
+  auto mi35 = _mm_min_epu8(a3, a5);
+  auto ma35 = _mm_max_epu8(a3, a5);
+  lower = _mm_max_epu8(lower, mi35);
+  upper = _mm_min_epu8(upper, ma35);
+
+  auto mi46 = _mm_min_epu8(a4, a6);
+  auto ma46 = _mm_max_epu8(a4, a6);
+  lower = _mm_max_epu8(lower, mi46);
+  upper = _mm_min_epu8(upper, ma46);
+
+  auto mi45 = _mm_min_epu8(a4, a5);
+  auto ma45 = _mm_max_epu8(a4, a5);
+  lower = _mm_max_epu8(lower, mi45);
+  upper = _mm_min_epu8(upper, ma45);
+
+  auto mi58 = _mm_min_epu8(a5, a8);
+  auto ma58 = _mm_max_epu8(a5, a8);
+  lower = _mm_max_epu8(lower, mi58);
+  upper = _mm_min_epu8(upper, ma58);
+
+  auto mi14 = _mm_min_epu8(a1, a4);
+  auto ma14 = _mm_max_epu8(a1, a4);
+  lower = _mm_max_epu8(lower, mi14);
+  upper = _mm_min_epu8(upper, ma14);
+
+  auto real_upper = _mm_max_epu8(upper, lower);
+  auto real_lower = _mm_min_epu8(upper, lower);
+
+  return simd_clip(c, real_lower, real_upper);
+}
+
+template<bool aligned>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE __m128i rg_mode27_sse_16(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
+
+  auto mi18 = _mm_min_epu16(a1, a8);
+  auto ma18 = _mm_max_epu16(a1, a8);
+
+  auto mi12 = _mm_min_epu16(a1, a2);
+  auto ma12 = _mm_max_epu16(a1, a2);
+
+  auto lower = _mm_max_epu16(mi18, mi12);
+  auto upper = _mm_min_epu16(ma18, ma12);
+
+  auto mi78 = _mm_min_epu16(a7, a8);
+  auto ma78 = _mm_max_epu16(a7, a8);
+  lower = _mm_max_epu16(lower, mi78);
+  upper = _mm_min_epu16(upper, ma78);
+
+  auto mi27 = _mm_min_epu16(a2, a7);
+  auto ma27 = _mm_max_epu16(a2, a7);
+  lower = _mm_max_epu16(lower, mi27);
+  upper = _mm_min_epu16(upper, ma27);
+
+  auto mi23 = _mm_min_epu16(a2, a3);
+  auto ma23 = _mm_max_epu16(a2, a3);
+  lower = _mm_max_epu16(lower, mi23);
+  upper = _mm_min_epu16(upper, ma23);
+
+  auto mi67 = _mm_min_epu16(a6, a7);
+  auto ma67 = _mm_max_epu16(a6, a7);
+  lower = _mm_max_epu16(lower, mi67);
+  upper = _mm_min_epu16(upper, ma67);
+
+  auto mi36 = _mm_min_epu16(a3, a6);
+  auto ma36 = _mm_max_epu16(a3, a6);
+  lower = _mm_max_epu16(lower, mi36);
+  upper = _mm_min_epu16(upper, ma36);
+
+  auto mi35 = _mm_min_epu16(a3, a5);
+  auto ma35 = _mm_max_epu16(a3, a5);
+  lower = _mm_max_epu16(lower, mi35);
+  upper = _mm_min_epu16(upper, ma35);
+
+  auto mi46 = _mm_min_epu16(a4, a6);
+  auto ma46 = _mm_max_epu16(a4, a6);
+  lower = _mm_max_epu16(lower, mi46);
+  upper = _mm_min_epu16(upper, ma46);
+
+  auto mi45 = _mm_min_epu16(a4, a5);
+  auto ma45 = _mm_max_epu16(a4, a5);
+  lower = _mm_max_epu16(lower, mi45);
+  upper = _mm_min_epu16(upper, ma45);
+
+  auto mi58 = _mm_min_epu16(a5, a8);
+  auto ma58 = _mm_max_epu16(a5, a8);
+  lower = _mm_max_epu16(lower, mi58);
+  upper = _mm_min_epu16(upper, ma58);
+
+  auto mi14 = _mm_min_epu16(a1, a4);
+  auto ma14 = _mm_max_epu16(a1, a4);
+  lower = _mm_max_epu16(lower, mi14);
+  upper = _mm_min_epu16(upper, ma14);
+
+  auto real_upper = _mm_max_epu16(upper, lower);
+  auto real_lower = _mm_min_epu16(upper, lower);
+
+  return simd_clip_16(c, real_lower, real_upper);
+}
+
+template<bool aligned>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE __m128i rg_mode27_sse_32(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
+
+  auto mi18 = _mm_min_ps(a1, a8);
+  auto ma18 = _mm_max_ps(a1, a8);
+
+  auto mi12 = _mm_min_ps(a1, a2);
+  auto ma12 = _mm_max_ps(a1, a2);
+
+  auto lower = _mm_max_ps(mi18, mi12);
+  auto upper = _mm_min_ps(ma18, ma12);
+
+  auto mi78 = _mm_min_ps(a7, a8);
+  auto ma78 = _mm_max_ps(a7, a8);
+  lower = _mm_max_ps(lower, mi78);
+  upper = _mm_min_ps(upper, ma78);
+
+  auto mi27 = _mm_min_ps(a2, a7);
+  auto ma27 = _mm_max_ps(a2, a7);
+  lower = _mm_max_ps(lower, mi27);
+  upper = _mm_min_ps(upper, ma27);
+
+  auto mi23 = _mm_min_ps(a2, a3);
+  auto ma23 = _mm_max_ps(a2, a3);
+  lower = _mm_max_ps(lower, mi23);
+  upper = _mm_min_ps(upper, ma23);
+
+  auto mi67 = _mm_min_ps(a6, a7);
+  auto ma67 = _mm_max_ps(a6, a7);
+  lower = _mm_max_ps(lower, mi67);
+  upper = _mm_min_ps(upper, ma67);
+
+  auto mi36 = _mm_min_ps(a3, a6);
+  auto ma36 = _mm_max_ps(a3, a6);
+  lower = _mm_max_ps(lower, mi36);
+  upper = _mm_min_ps(upper, ma36);
+
+  auto mi35 = _mm_min_ps(a3, a5);
+  auto ma35 = _mm_max_ps(a3, a5);
+  lower = _mm_max_ps(lower, mi35);
+  upper = _mm_min_ps(upper, ma35);
+
+  auto mi46 = _mm_min_ps(a4, a6);
+  auto ma46 = _mm_max_ps(a4, a6);
+  lower = _mm_max_ps(lower, mi46);
+  upper = _mm_min_ps(upper, ma46);
+
+  auto mi45 = _mm_min_ps(a4, a5);
+  auto ma45 = _mm_max_ps(a4, a5);
+  lower = _mm_max_ps(lower, mi45);
+  upper = _mm_min_ps(upper, ma45);
+
+  auto mi58 = _mm_min_ps(a5, a8);
+  auto ma58 = _mm_max_ps(a5, a8);
+  lower = _mm_max_ps(lower, mi58);
+  upper = _mm_min_ps(upper, ma58);
+
+  auto mi14 = _mm_min_ps(a1, a4);
+  auto ma14 = _mm_max_ps(a1, a4);
+  lower = _mm_max_ps(lower, mi14);
+  upper = _mm_min_ps(upper, ma14);
+
+  auto real_upper = _mm_max_ps(upper, lower);
+  auto real_lower = _mm_min_ps(upper, lower);
+
+  return _mm_castps_si128(simd_clip_32(c, real_lower, real_upper));
+}
+
 
 #ifdef mode27
 __asm	align		16
@@ -3883,6 +4259,221 @@ RG_FORCEINLINE __m128i rg_mode28_sse(const Byte* pSrc, int srcPitch) {
 
   return simd_clip(c, real_lower, real_upper);
 }
+
+template<bool aligned>
+RG_FORCEINLINE __m128i rg_mode28_sse2(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
+  /*
+  a1 a2 a3
+  a4 c  a5
+  a6 a7 a8
+  */
+  auto mi12 = _mm_min_epu8(a1, a2);
+  auto ma12 = _mm_max_epu8(a1, a2);
+
+  auto mi23 = _mm_min_epu8(a2, a3);
+  auto ma23 = _mm_max_epu8(a2, a3);
+  auto lower = _mm_max_epu8(mi12, mi23);
+  auto upper = _mm_min_epu8(ma12, ma23);
+
+  auto mi35 = _mm_min_epu8(a3, a5);
+  auto ma35 = _mm_max_epu8(a3, a5);
+  lower = _mm_max_epu8(lower, mi35);
+  upper = _mm_min_epu8(upper, ma35);
+
+  auto mi58 = _mm_min_epu8(a5, a8);
+  auto ma58 = _mm_max_epu8(a5, a8);
+  lower = _mm_max_epu8(lower, mi58);
+  upper = _mm_min_epu8(upper, ma58);
+
+  auto mi78 = _mm_min_epu8(a7, a8);
+  auto ma78 = _mm_max_epu8(a7, a8);
+  lower = _mm_max_epu8(lower, mi78);
+  upper = _mm_min_epu8(upper, ma78);
+
+  auto mi67 = _mm_min_epu8(a6, a7);
+  auto ma67 = _mm_max_epu8(a6, a7);
+  lower = _mm_max_epu8(lower, mi67);
+  upper = _mm_min_epu8(upper, ma67);
+
+  auto mi46 = _mm_min_epu8(a4, a6);
+  auto ma46 = _mm_max_epu8(a4, a6);
+  lower = _mm_max_epu8(lower, mi46);
+  upper = _mm_min_epu8(upper, ma46);
+
+  auto mi14 = _mm_min_epu8(a1, a4);
+  auto ma14 = _mm_max_epu8(a1, a4);
+  lower = _mm_max_epu8(lower, mi14);
+  upper = _mm_min_epu8(upper, ma14);
+
+  auto mi18 = _mm_min_epu8(a1, a8);
+  auto ma18 = _mm_max_epu8(a1, a8);
+  lower = _mm_max_epu8(lower, mi18);
+  upper = _mm_min_epu8(upper, ma18);
+
+  auto mi36 = _mm_min_epu8(a3, a6);
+  auto ma36 = _mm_max_epu8(a3, a6);
+  lower = _mm_max_epu8(lower, mi36);
+  upper = _mm_min_epu8(upper, ma36);
+
+  auto mi27 = _mm_min_epu8(a2, a7);
+  auto ma27 = _mm_max_epu8(a2, a7);
+  lower = _mm_max_epu8(lower, mi27);
+  upper = _mm_min_epu8(upper, ma27);
+
+  auto mi45 = _mm_min_epu8(a4, a5);
+  auto ma45 = _mm_max_epu8(a4, a5);
+  lower = _mm_max_epu8(lower, mi45);
+  upper = _mm_min_epu8(upper, ma45);
+
+  auto real_upper = _mm_max_epu8(upper, lower);
+  auto real_lower = _mm_min_epu8(upper, lower);
+
+  return simd_clip(c, real_lower, real_upper);
+}
+
+template<bool aligned>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE __m128i rg_mode28_sse_16(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
+
+  auto mi12 = _mm_min_epu16(a1, a2);
+  auto ma12 = _mm_max_epu16(a1, a2);
+
+  auto mi23 = _mm_min_epu16(a2, a3);
+  auto ma23 = _mm_max_epu16(a2, a3);
+  auto lower = _mm_max_epu16(mi12, mi23);
+  auto upper = _mm_min_epu16(ma12, ma23);
+
+  auto mi35 = _mm_min_epu16(a3, a5);
+  auto ma35 = _mm_max_epu16(a3, a5);
+  lower = _mm_max_epu16(lower, mi35);
+  upper = _mm_min_epu16(upper, ma35);
+
+  auto mi58 = _mm_min_epu16(a5, a8);
+  auto ma58 = _mm_max_epu16(a5, a8);
+  lower = _mm_max_epu16(lower, mi58);
+  upper = _mm_min_epu16(upper, ma58);
+
+  auto mi78 = _mm_min_epu16(a7, a8);
+  auto ma78 = _mm_max_epu16(a7, a8);
+  lower = _mm_max_epu16(lower, mi78);
+  upper = _mm_min_epu16(upper, ma78);
+
+  auto mi67 = _mm_min_epu16(a6, a7);
+  auto ma67 = _mm_max_epu16(a6, a7);
+  lower = _mm_max_epu16(lower, mi67);
+  upper = _mm_min_epu16(upper, ma67);
+
+  auto mi46 = _mm_min_epu16(a4, a6);
+  auto ma46 = _mm_max_epu16(a4, a6);
+  lower = _mm_max_epu16(lower, mi46);
+  upper = _mm_min_epu16(upper, ma46);
+
+  auto mi14 = _mm_min_epu16(a1, a4);
+  auto ma14 = _mm_max_epu16(a1, a4);
+  lower = _mm_max_epu16(lower, mi14);
+  upper = _mm_min_epu16(upper, ma14);
+
+  auto mi18 = _mm_min_epu16(a1, a8);
+  auto ma18 = _mm_max_epu16(a1, a8);
+  lower = _mm_max_epu16(lower, mi18);
+  upper = _mm_min_epu16(upper, ma18);
+
+  auto mi36 = _mm_min_epu16(a3, a6);
+  auto ma36 = _mm_max_epu16(a3, a6);
+  lower = _mm_max_epu16(lower, mi36);
+  upper = _mm_min_epu16(upper, ma36);
+
+  auto mi27 = _mm_min_epu16(a2, a7);
+  auto ma27 = _mm_max_epu16(a2, a7);
+  lower = _mm_max_epu16(lower, mi27);
+  upper = _mm_min_epu16(upper, ma27);
+
+  auto mi45 = _mm_min_epu16(a4, a5);
+  auto ma45 = _mm_max_epu16(a4, a5);
+  lower = _mm_max_epu16(lower, mi45);
+  upper = _mm_min_epu16(upper, ma45);
+
+  auto real_upper = _mm_max_epu16(upper, lower);
+  auto real_lower = _mm_min_epu16(upper, lower);
+
+  return simd_clip_16(c, real_lower, real_upper);
+}
+
+template<bool aligned>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE __m128i rg_mode28_sse_32(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
+
+  auto mi12 = _mm_min_ps(a1, a2);
+  auto ma12 = _mm_max_ps(a1, a2);
+
+  auto mi23 = _mm_min_ps(a2, a3);
+  auto ma23 = _mm_max_ps(a2, a3);
+  auto lower = _mm_max_ps(mi12, mi23);
+  auto upper = _mm_min_ps(ma12, ma23);
+
+  auto mi35 = _mm_min_ps(a3, a5);
+  auto ma35 = _mm_max_ps(a3, a5);
+  lower = _mm_max_ps(lower, mi35);
+  upper = _mm_min_ps(upper, ma35);
+
+  auto mi58 = _mm_min_ps(a5, a8);
+  auto ma58 = _mm_max_ps(a5, a8);
+  lower = _mm_max_ps(lower, mi58);
+  upper = _mm_min_ps(upper, ma58);
+
+  auto mi78 = _mm_min_ps(a7, a8);
+  auto ma78 = _mm_max_ps(a7, a8);
+  lower = _mm_max_ps(lower, mi78);
+  upper = _mm_min_ps(upper, ma78);
+
+  auto mi67 = _mm_min_ps(a6, a7);
+  auto ma67 = _mm_max_ps(a6, a7);
+  lower = _mm_max_ps(lower, mi67);
+  upper = _mm_min_ps(upper, ma67);
+
+  auto mi46 = _mm_min_ps(a4, a6);
+  auto ma46 = _mm_max_ps(a4, a6);
+  lower = _mm_max_ps(lower, mi46);
+  upper = _mm_min_ps(upper, ma46);
+
+  auto mi14 = _mm_min_ps(a1, a4);
+  auto ma14 = _mm_max_ps(a1, a4);
+  lower = _mm_max_ps(lower, mi14);
+  upper = _mm_min_ps(upper, ma14);
+
+  auto mi18 = _mm_min_ps(a1, a8);
+  auto ma18 = _mm_max_ps(a1, a8);
+  lower = _mm_max_ps(lower, mi18);
+  upper = _mm_min_ps(upper, ma18);
+
+  auto mi36 = _mm_min_ps(a3, a6);
+  auto ma36 = _mm_max_ps(a3, a6);
+  lower = _mm_max_ps(lower, mi36);
+  upper = _mm_min_ps(upper, ma36);
+
+  auto mi27 = _mm_min_ps(a2, a7);
+  auto ma27 = _mm_max_ps(a2, a7);
+  lower = _mm_max_ps(lower, mi27);
+  upper = _mm_min_ps(upper, ma27);
+
+  auto mi45 = _mm_min_ps(a4, a5);
+  auto ma45 = _mm_max_ps(a4, a5);
+  lower = _mm_max_ps(lower, mi45);
+  upper = _mm_min_ps(upper, ma45);
+
+  auto real_upper = _mm_max_ps(upper, lower);
+  auto real_lower = _mm_min_ps(upper, lower);
+
+  return _mm_castps_si128(simd_clip_32(c, real_lower, real_upper));
+}
+
 
 
 #ifdef mode28

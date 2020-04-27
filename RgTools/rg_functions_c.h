@@ -923,6 +923,18 @@ RG_FORCEINLINE Byte rg_mode17_cpp(const Byte* pSrc, int srcPitch) {
     auto upper = std::min(std::min(std::min(mal1, mal2), mal3), mal4);
 
     return clip(c, std::min(lower, upper), std::max(lower, upper));
+
+/*
+normal removegrain
+  mi = std::min (lower, upper);
+  ma = std::max (lower, upper);
+  return clip(c, mi, ma);
+
+repair difference:
+  mi = std::min (std::min (lower, upper), c);
+  ma = std::max (std::max (lower, upper), c);
+  return clip(val, mi, ma);
+*/
 }
 
 RG_FORCEINLINE uint16_t rg_mode17_cpp_16(const Byte* pSrc, int srcPitch) {

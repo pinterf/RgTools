@@ -157,6 +157,9 @@ PlaneProcessor* avx2_functions[] = {
     process_plane_avx2<uint8_t, rg_mode23_avx2<false>>,
     process_plane_avx2<uint8_t, rg_mode24_avx2<false>>,
     process_plane_avx2<uint8_t, rg_mode25_avx2<false>>,
+    process_plane_avx2<uint8_t, rg_mode26_avx2<false>>,
+    process_plane_avx2<uint8_t, rg_mode27_avx2<false>>,
+    process_plane_avx2<uint8_t, rg_mode28_avx2<false>>,
 };
 
 
@@ -188,6 +191,9 @@ PlaneProcessor* avx2_functions_16_10[] = {
   process_plane_avx2<uint16_t, rg_mode23_avx2_16<false>>,
   process_plane_avx2<uint16_t, rg_mode24_avx2_16<false>>,
   process_plane_avx2<uint16_t, rg_mode25_avx2_16<10,false>>,
+  process_plane_avx2<uint16_t, rg_mode26_avx2_16<false>>,
+  process_plane_avx2<uint16_t, rg_mode27_avx2_16<false>>,
+  process_plane_avx2<uint16_t, rg_mode28_avx2_16<false>>,
 };
 
 PlaneProcessor* avx2_functions_16_12[] = {
@@ -218,6 +224,9 @@ PlaneProcessor* avx2_functions_16_12[] = {
   process_plane_avx2<uint16_t, rg_mode23_avx2_16<false>>,
   process_plane_avx2<uint16_t, rg_mode24_avx2_16<false>>,
   process_plane_avx2<uint16_t, rg_mode25_avx2_16<12,false>>,
+  process_plane_avx2<uint16_t, rg_mode26_avx2_16<false>>,
+  process_plane_avx2<uint16_t, rg_mode27_avx2_16<false>>,
+  process_plane_avx2<uint16_t, rg_mode28_avx2_16<false>>,
 };
 
 PlaneProcessor* avx2_functions_16_14[] = {
@@ -248,6 +257,9 @@ PlaneProcessor* avx2_functions_16_14[] = {
   process_plane_avx2<uint16_t, rg_mode23_avx2_16<false>>,
   process_plane_avx2<uint16_t, rg_mode24_avx2_16<false>>,
   process_plane_avx2<uint16_t, rg_mode25_avx2_16<14,false>>,
+  process_plane_avx2<uint16_t, rg_mode26_avx2_16<false>>,
+  process_plane_avx2<uint16_t, rg_mode27_avx2_16<false>>,
+  process_plane_avx2<uint16_t, rg_mode28_avx2_16<false>>,
 };
 
 PlaneProcessor* avx2_functions_16_16[] = {
@@ -278,6 +290,9 @@ PlaneProcessor* avx2_functions_16_16[] = {
   process_plane_avx2<uint16_t, rg_mode23_avx2_16<false>>,
   process_plane_avx2<uint16_t, rg_mode24_avx2_16<false>>,
   process_plane_avx2<uint16_t, rg_mode25_avx2_16<16,false>>,
+  process_plane_avx2<uint16_t, rg_mode26_avx2_16<false>>,
+  process_plane_avx2<uint16_t, rg_mode27_avx2_16<false>>,
+  process_plane_avx2<uint16_t, rg_mode28_avx2_16<false>>,
 };
 
 
@@ -310,6 +325,9 @@ PlaneProcessor* avx2_functions_32_luma[] = {
   process_plane_avx2<float, rg_mode23_avx2_32<false, false>>,
   process_plane_avx2<float, rg_mode24_avx2_32<false, false>>,
   process_plane_avx2<float, rg_mode25_avx2_32<false, false>>, // false: luma
+  process_plane_avx2<float, rg_mode26_avx2_32<false>>,
+  process_plane_avx2<float, rg_mode27_avx2_32<false>>,
+  process_plane_avx2<float, rg_mode28_avx2_32<false>>,
 };
 
 PlaneProcessor* avx2_functions_32_chroma[] = {
@@ -340,4 +358,7 @@ PlaneProcessor* avx2_functions_32_chroma[] = {
   process_plane_avx2<float, rg_mode23_avx2_32<false, true>>,
   process_plane_avx2<float, rg_mode24_avx2_32<false, true>>,
   process_plane_avx2<float, rg_mode25_avx2_32<false, true>>, // true: chroma
+  process_plane_avx2<float, rg_mode26_avx2_32<false>>,
+  process_plane_avx2<float, rg_mode27_avx2_32<false>>,
+  process_plane_avx2<float, rg_mode28_avx2_32<false>>,
 };

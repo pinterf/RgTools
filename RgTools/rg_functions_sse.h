@@ -3473,96 +3473,49 @@ RG_FORCEINLINE __m128i rg_mode26_sse(const Byte* pSrc, int srcPitch) {
   a4 c  a5
   a6 a7 a8
   */
-  __m128i sse0, sse1, sse2, sse3, sse4, sse5;
-  __m128i sse6, sse7;
+  // going clockwise
+  auto mi12 = _mm_min_epu8(a1, a2);
+  auto ma12 = _mm_max_epu8(a1, a2);
+  
+  auto mi23 = _mm_min_epu8(a2, a3);
+  auto ma23 = _mm_max_epu8(a2, a3);
+  auto lower = _mm_max_epu8(mi12, mi23);
+  auto upper = _mm_min_epu8(ma12, ma23);
 
-  sse7 = a1; // __asm	SSE3_MOVE	SSE7, [esi]
-  sse6 = a2; // __asm	SSE3_MOVE	SSE6, [esi + 1]
-  sse0 = sse7; // __asm	SSE_RMOVE	SSE0, SSE7
-  sse1 = sse6; // __asm	SSE_RMOVE	SSE1, SSE6
-  sse5 = a3; // __asm	SSE3_MOVE	SSE5, [esi + 2]
-  sse0 = _mm_min_epu8(sse0, sse6); // __asm	pminub		SSE0, SSE6
-  sse2 = sse5; // __asm	SSE_RMOVE	SSE2, SSE5
-  sse1 = _mm_max_epu8(sse1, sse7); // __asm	pmaxub		SSE1, SSE7
-  sse2 = _mm_min_epu8(sse2, sse6); //  __asm	pminub		SSE2, SSE6
-  sse4 = a5; // __asm	SSE3_MOVE	SSE4, [esi + ebx + 2]
-  sse6 = _mm_max_epu8(sse6, sse5); // __asm	pmaxub		SSE6, SSE5
-  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
-  sse3 = sse4; // __asm	SSE_RMOVE	SSE3, SSE4
-  sse1 = _mm_min_epu8(sse1, sse6); // __asm	pminub		SSE1, SSE6
-  sse3 = _mm_min_epu8(sse3, sse5); // __asm	pminub		SSE3, SSE5
-  sse6 = a8; // __asm	SSE3_MOVE	SSE6, [esi + 2 * ebx + 2]
-  sse5 = _mm_max_epu8(sse5, sse4); // __asm	pmaxub		SSE5, SSE4
-  sse0 = _mm_max_epu8(sse0, sse3); // __asm	pmaxub		SSE0, SSE3
-  sse2 = sse6; // __asm	SSE_RMOVE	SSE2, SSE6
-  sse1 = _mm_min_epu8(sse1, sse5); // __asm	pminub		SSE1, SSE5
-  sse2 = _mm_min_epu8(sse2, sse4); // __asm	pminub		SSE2, SSE4
-  sse5 = a7; // __asm	SSE3_MOVE	SSE5, [esi + 2 * ebx + 1]
-  sse4 = _mm_max_epu8(sse4, sse6); // __asm	pmaxub		SSE4, SSE6
-  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
-  sse3 = sse5; // __asm	SSE_RMOVE	SSE3, SSE5
-  sse1 = _mm_min_epu8(sse1, sse4); // __asm	pminub		SSE1, SSE4
-  sse3 = _mm_min_epu8(sse3, sse6); //  __asm	pminub		SSE3, SSE6
-  sse4 = a6; // __asm	SSE3_MOVE	SSE4, [esi + 2 * ebx]
-  sse6 = _mm_max_epu8(sse6, sse5); // __asm	pmaxub		SSE6, SSE5
-  sse0 = _mm_max_epu8(sse0, sse3); // __asm	pmaxub		SSE0, SSE3
-  sse2 = sse4; // __asm	SSE_RMOVE	SSE2, SSE4
-  sse1 = _mm_min_epu8(sse1, sse6); // __asm	pminub		SSE1, SSE6
-  sse2 = _mm_min_epu8(sse2, sse5); // __asm	pminub		SSE2, SSE5
-  sse6 = a4; // __asm	SSE3_MOVE	SSE6, [esi + ebx]
-  sse5 = _mm_max_epu8(sse5, sse4); // __asm	pmaxub		SSE5, SSE4
-  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
-  sse3 = sse6; // __asm	SSE_RMOVE	SSE3, SSE6
-  sse1 = _mm_min_epu8(sse1, sse5); // __asm	pminub		SSE1, SSE5
-  sse3 = _mm_min_epu8(sse3, sse4); // __asm	pminub		SSE3, SSE4
-  sse2 = sse7; // __asm	SSE_RMOVE	SSE2, SSE7
-  sse4 = _mm_max_epu8(sse4, sse6); // __asm	pmaxub		SSE4, SSE6
-  sse0 = _mm_max_epu8(sse0, sse3); // __asm	pmaxub		SSE0, SSE3
-  sse1 = _mm_min_epu8(sse1, sse4); // __asm	pminub		SSE1, SSE4
-  sse2 = _mm_min_epu8(sse2, sse6); // __asm	pminub		SSE2, SSE6
-  sse7 = _mm_max_epu8(sse7, sse6); // __asm	pmaxub		SSE7, SSE6
-  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
-  sse1 = _mm_min_epu8(sse1, sse7); // __asm	pminub		SSE1, SSE7
+  auto mi35 = _mm_min_epu8(a3, a5);
+  auto ma35 = _mm_max_epu8(a3, a5);
+  lower = _mm_max_epu8(lower, mi35);
+  upper = _mm_min_epu8(upper, ma35);
 
-  sse2 = sse0; //   __asm	SSE_RMOVE	SSE2, SSE0
-  //#if		(ISSE > 1) || defined(SHLUR)
-  //#ifdef	MODIFYPLUGIN
-  //__asm	SSE3_MOVE	SSE4, [edi] (repair)
-  //#else
-  sse4 = c; // __asm	SSE3_MOVE	SSE4, [esi + ebx + 1]
-  //#endif
-  //#endif
-  //#if		MODIFYPLUGIN > 0 (repair)
-  //sse5 = c; // __asm	SSE3_MOVE	SSE5, [esi + ebx + 1]
-  //#endif
+  auto mi58 = _mm_min_epu8(a5, a8);
+  auto ma58 = _mm_max_epu8(a5, a8);
+  lower = _mm_max_epu8(lower, mi58);
+  upper = _mm_min_epu8(upper, ma58);
 
-  sse0 = _mm_min_epu8(sse0, sse1); // __asm	pminub		SSE0, SSE1
-  sse2 = _mm_max_epu8(sse2, sse1); //  __asm	pmaxub		SSE2, SSE1
-  // #if		MODIFYPLUGIN > 0 (repair)
-  // sse1 = _mm_min_epu8(sse0, sse5); //__asm	pminub		SSE0, SSE5
-  // sse2 = _mm_max_epu8(sse2, sse5); //__asm	pmaxub		SSE2, SSE5
-  //#endif
+  auto mi78 = _mm_min_epu8(a7, a8);
+  auto ma78 = _mm_max_epu8(a7, a8);
+  lower = _mm_max_epu8(lower, mi78);
+  upper = _mm_min_epu8(upper, ma78);
 
-  //#ifdef	SHLUR
-  //sharpen(SSE4, SSE0, SSE2, rshift[eax], shift_mask[eax], SSE7, SSE3)
-  //__asm	add			esi, SSE_INCREMENT
-  //__asm	SSE_MOVE[edi], SSE4
-  //#else
-  //#if	ISSE > 1
-  sse0 = _mm_max_epu8(sse0, sse4); // __asm	pmaxub		SSE0, SSE4
-  //#else
-  //#ifdef	MODIFYPLUGIN (repair)
-  // sse0 = _mm_max_epu8(sse0, reference); // __asm	pmaxub		SSE0, [edi]
-  // #else
-  // sse0 = _mm_max_epu8(sse0, c); // __asm	pmaxub		SSE0, [esi + ebx + 1]
-  //#endif
-  //#endif
-  sse0 = _mm_min_epu8(sse0, sse2); // __asm	pminub		SSE0, SSE2
-  auto result = sse0; //  __asm	SSE_MOVE[edi], SSE0
-  // #endif	// SHLUR
-  //#endif
+  auto mi67 = _mm_min_epu8(a6, a7);
+  auto ma67 = _mm_max_epu8(a6, a7);
+  lower = _mm_max_epu8(lower, mi67);
+  upper = _mm_min_epu8(upper, ma67);
 
-  return result;
+  auto mi46 = _mm_min_epu8(a4, a6);
+  auto ma46 = _mm_max_epu8(a4, a6);
+  lower = _mm_max_epu8(lower, mi46);
+  upper = _mm_min_epu8(upper, ma46);
+
+  auto mi14 = _mm_min_epu8(a1, a4);
+  auto ma14 = _mm_max_epu8(a1, a4);
+  lower = _mm_max_epu8(lower, mi14);
+  upper = _mm_min_epu8(upper, ma14);
+
+  auto real_lower = _mm_min_epu8(lower, upper);
+  auto real_upper = _mm_max_epu8(lower, upper);
+
+  return simd_clip(c, real_lower, real_upper);
 }
 
 #if mode26
@@ -3669,121 +3622,70 @@ RG_FORCEINLINE __m128i rg_mode27_sse(const Byte* pSrc, int srcPitch) {
   a4 c  a5
   a6 a7 a8
   */
-  __m128i SSE0, SSE1, SSE2, SSE3, SSE4, SSE5; // SSE4_minus, SSE5_plus; // global collectors
-  __m128i SSE6, SSE7; // SSE6_actual_minus, SSE7_actual_plus the actual results
 
-  SSE4 = a1; // __asm	SSE3_MOVE	SSE4, [esi]
-  SSE5 = a8; //  __asm	SSE3_MOVE	SSE5, [esi + 2 * ebx + 2]
-  SSE0 = SSE4; //  __asm	SSE_RMOVE	SSE0, SSE4
-  SSE1 = SSE5; //  __asm	SSE_RMOVE	SSE1, SSE5
-  SSE6 = a2; //  __asm	SSE3_MOVE	SSE6, [esi + 1]
-  SSE0 = _mm_min_epu8(SSE0, SSE5); //  __asm	pminub		SSE0, SSE5
-  SSE2 = SSE6; //  __asm	SSE_RMOVE	SSE2, SSE6
-  SSE1 = _mm_max_epu8(SSE1, SSE4); // __asm	pmaxub		SSE1, SSE4
-  SSE7 = a7; // __asm	SSE3_MOVE	SSE7, [esi + 2 * ebx + 1]
-  SSE2 = _mm_min_epu8(SSE2, SSE4); //  __asm	pminub		SSE2, SSE4
-  SSE3 = SSE7; // __asm	SSE_RMOVE	SSE3, SSE7
-  SSE4 = _mm_max_epu8(SSE4, SSE6); // __asm	pmaxub		SSE4, SSE6
-  SSE3 = _mm_min_epu8(SSE3, SSE5); // __asm	pminub		SSE3, SSE5
-  SSE0 = _mm_max_epu8(SSE0, SSE2); //  __asm	pmaxub		SSE0, SSE2
-  SSE5 = _mm_max_epu8(SSE5, SSE7); // __asm	pmaxub		SSE5, SSE7
-  SSE1 = _mm_min_epu8(SSE1, SSE4); //  __asm	pminub		SSE1, SSE4
-  SSE0 = _mm_max_epu8(SSE0, SSE3); // __asm	pmaxub		SSE0, SSE3
-  SSE1 = _mm_min_epu8(SSE1, SSE5); // __asm	pminub		SSE1, SSE5
+  auto mi18 = _mm_min_epu8(a1, a8);
+  auto ma18 = _mm_max_epu8(a1, a8);
 
-  SSE4 = a3; // __asm	SSE3_MOVE	SSE4, [esi + 2]
-  SSE2 = SSE6; // __asm	SSE_RMOVE	SSE2, SSE6
-  SSE3 = SSE7; // __asm	SSE_RMOVE	SSE3, SSE7
-  SSE5 = SSE4; // __asm	SSE_RMOVE	SSE5, SSE4
-  SSE2 = _mm_min_epu8(SSE2, SSE7); // __asm	pminub		SSE2, SSE7
-  SSE3 = _mm_max_epu8(SSE3, SSE6); // __asm	pmaxub		SSE3, SSE6
-  SSE0 = _mm_max_epu8(SSE0, SSE2); // __asm	pmaxub		SSE0, SSE2
-  SSE5 = _mm_min_epu8(SSE5, SSE6); //  __asm	pminub		SSE5, SSE6
-  SSE1 = _mm_min_epu8(SSE1, SSE3); // __asm	pminub		SSE1, SSE3
-  SSE6 = _mm_max_epu8(SSE6, SSE4); // __asm	pmaxub		SSE6, SSE4
-  SSE0 = _mm_max_epu8(SSE0, SSE5); //  __asm	pmaxub		SSE0, SSE5
-  SSE5 = a6; // __asm	SSE3_MOVE	SSE5, [esi + 2 * ebx]
-  SSE1 = _mm_min_epu8(SSE1, SSE6); //  __asm	pminub		SSE1, SSE6
-  SSE2 = SSE5; // __asm	SSE_RMOVE	SSE2, SSE5
-  SSE5 = _mm_min_epu8(SSE5, SSE7); // __asm	pminub		SSE5, SSE7
-  SSE7 = _mm_max_epu8(SSE7, SSE2); // __asm	pmaxub		SSE7, SSE2
-  SSE0 = _mm_max_epu8(SSE0, SSE5); // __asm	pmaxub		SSE0, SSE5
-  SSE1 = _mm_min_epu8(SSE1, SSE7); // __asm	pminub		SSE1, SSE7
-  SSE5 = SSE2; // __asm	SSE_RMOVE	SSE5, SSE2
-  SSE3 = SSE4; // __asm	SSE_RMOVE	SSE3, SSE4
+  auto mi12 = _mm_min_epu8(a1, a2);
+  auto ma12 = _mm_max_epu8(a1, a2);
 
-  SSE6 = a5; // __asm	SSE3_MOVE	SSE6, [esi + ebx + 2]
-  SSE2 = _mm_min_epu8(SSE2, SSE4); // __asm	pminub		SSE2, SSE4
-  SSE3 = _mm_max_epu8(SSE3, SSE5); // __asm	pmaxub		SSE3, SSE5
-  SSE7 = SSE6; // __asm	SSE_RMOVE	SSE7, SSE6
-  SSE0 = _mm_max_epu8(SSE0, SSE2); // __asm	pmaxub		SSE0, SSE2
-  SSE7 = _mm_min_epu8(SSE7, SSE4); // __asm	pminub		SSE7, SSE4
-  SSE2 = a4; // __asm	SSE3_MOVE	SSE2, [esi + ebx]
-  SSE1 = _mm_min_epu8(SSE1, SSE3); // __asm	pminub		SSE1, SSE3
-  SSE4 = _mm_max_epu8(SSE4, SSE6); // __asm	pmaxub		SSE4, SSE6
-  SSE3 = SSE2; // __asm	SSE_RMOVE	SSE3, SSE2
-  SSE0 = _mm_max_epu8(SSE0, SSE7); // __asm	pmaxub		SSE0, SSE7
-  SSE3 = _mm_min_epu8(SSE3, SSE5); // __asm	pminub		SSE3, SSE5
-  SSE1 = _mm_min_epu8(SSE1, SSE4); // __asm	pminub		SSE1, SSE4
-  SSE5 = _mm_max_epu8(SSE5, SSE2); // __asm	pmaxub		SSE5, SSE2
-  SSE0 = _mm_max_epu8(SSE0, SSE3); // __asm	pmaxub		SSE0, SSE3
-  SSE1 = _mm_min_epu8(SSE1, SSE5); // __asm	pminub		SSE1, SSE5
-  SSE7 = SSE2; // __asm	SSE_RMOVE	SSE7, SSE2
-  SSE3 = SSE6; // __asm	SSE_RMOVE	SSE3, SSE6
-  SSE4 = a8; // __asm	SSE3_MOVE	SSE4, [esi + 2 * ebx + 2]
-  SSE2 = _mm_min_epu8(SSE2, SSE6); // __asm	pminub		SSE2, SSE6
-  SSE3 = _mm_max_epu8(SSE3, SSE7); // __asm	pmaxub		SSE3, SSE7
-  SSE5 = SSE4; // __asm	SSE_RMOVE	SSE5, SSE4
-  SSE0 = _mm_max_epu8(SSE0, SSE2); // __asm	pmaxub		SSE0, SSE2
-  SSE5 = _mm_min_epu8(SSE5, SSE6); // __asm	pminub		SSE5, SSE6
-  SSE2 = a1; // __asm	SSE3_MOVE	SSE2, [esi]
-  SSE1 = _mm_min_epu8(SSE1, SSE3); // __asm	pminub		SSE1, SSE3
-  SSE6 = _mm_max_epu8(SSE6, SSE4); // __asm	pmaxub		SSE6, SSE4
-  SSE0 = _mm_max_epu8(SSE0, SSE5); // __asm	pmaxub		SSE0, SSE5
-  SSE3 = SSE2; // __asm	SSE_RMOVE	SSE3, SSE2
-  SSE1 = _mm_min_epu8(SSE1, SSE6); // __asm	pminub		SSE1, SSE6
-  SSE2 = _mm_min_epu8(SSE2, SSE7); // __asm	pminub		SSE2, SSE7
-  SSE3 = _mm_max_epu8(SSE3, SSE7); // __asm	pmaxub		SSE3, SSE7
-  SSE0 = _mm_max_epu8(SSE0, SSE2); // __asm	pmaxub		SSE0, SSE2
-  SSE1 = _mm_min_epu8(SSE1, SSE3); // __asm	pminub		SSE1, SSE3
-  SSE2 = SSE0; //__asm	SSE_RMOVE	SSE2, SSE0
+  auto lower = _mm_max_epu8(mi18, mi12);
+  auto upper = _mm_min_epu8(ma18, ma12);
 
-  // #if		(ISSE > 1) || defined(SHLUR)
-  // #ifdef	MODIFYPLUGIN (repair)
-  // SSE4 = reference; // __asm	SSE3_MOVE	SSE4, [edi]
-  // #else
-  SSE4 = c; // __asm	SSE3_MOVE	SSE4, [esi + ebx + 1]
-  //#endif
-  //#endif
-  // #if		MODIFYPLUGIN > 0
-  // SSE5 = c; // __asm	SSE3_MOVE	SSE5, [esi + ebx + 1]
-  //#endif
+  auto mi78 = _mm_min_epu8(a7, a8);
+  auto ma78 = _mm_max_epu8(a7, a8);
+  lower = _mm_max_epu8(lower, mi78);
+  upper = _mm_min_epu8(upper, ma78);
 
-  SSE0 = _mm_min_epu8(SSE0, SSE1); //  __asm	pminub		SSE0, SSE1
-  SSE2 = _mm_max_epu8(SSE2, SSE1); // __asm	pmaxub		SSE2, SSE1
-  //#if		MODIFYPLUGIN > 0
-  // SSE0 = _mm_min_epu8(SSE0, SSE5); //__asm	pminub		SSE0, SSE5
-  // SSE2 = _mm_max_epu8(SSE2, SSE5); // __asm	pmaxub		SSE2, SSE5
-  //#endif
+  auto mi27 = _mm_min_epu8(a2, a7);
+  auto ma27 = _mm_max_epu8(a2, a7);
+  lower = _mm_max_epu8(lower, mi27);
+  upper = _mm_min_epu8(upper, ma27);
 
-  //#ifdef	SHLUR
-  //sharpen(SSE4, SSE0, SSE2, rshift[eax], shift_mask[eax], SSE7, SSE3)
-  //__asm	add			esi, SSE_INCREMENT
-  //__asm	SSE_MOVE[edi], SSE4
-  //#else
-  //#if	ISSE > 1
-  SSE0 = _mm_max_epu8(SSE0, SSE4); // __asm	pmaxub		SSE0, SSE4
-  //#else
-    // #ifdef	MODIFYPLUGIN (repair)
-    // SSE0 = _mm_max_epu8(SSE0, reference); //__asm	pmaxub		SSE0, [edi]
-    //#else
-    //SSE0 = _mm_max_epu8(SEE0, c); //__asm	pmaxub		SSE0, [esi + ebx + 1]
-    //#endif
-  //#endif
-  SSE0 = _mm_min_epu8(SSE0, SSE2); // __asm	pminub		SSE0, SSE2
-  auto result = SSE0; // __asm	SSE_MOVE[edi], SSE0
+  auto mi23 = _mm_min_epu8(a2, a3);
+  auto ma23 = _mm_max_epu8(a2, a3);
+  lower = _mm_max_epu8(lower, mi23);
+  upper = _mm_min_epu8(upper, ma23);
 
-  return result;
+  auto mi67 = _mm_min_epu8(a6, a7);
+  auto ma67 = _mm_max_epu8(a6, a7);
+  lower = _mm_max_epu8(lower, mi67);
+  upper = _mm_min_epu8(upper, ma67);
+
+  auto mi36 = _mm_min_epu8(a3, a6);
+  auto ma36 = _mm_max_epu8(a3, a6);
+  lower = _mm_max_epu8(lower, mi36);
+  upper = _mm_min_epu8(upper, ma36);
+
+  auto mi35 = _mm_min_epu8(a3, a5);
+  auto ma35 = _mm_max_epu8(a3, a5);
+  lower = _mm_max_epu8(lower, mi35);
+  upper = _mm_min_epu8(upper, ma35);
+
+  auto mi46 = _mm_min_epu8(a4, a6);
+  auto ma46 = _mm_max_epu8(a4, a6);
+  lower = _mm_max_epu8(lower, mi46);
+  upper = _mm_min_epu8(upper, ma46);
+
+  auto mi45 = _mm_min_epu8(a4, a5);
+  auto ma45 = _mm_max_epu8(a4, a5);
+  lower = _mm_max_epu8(lower, mi45);
+  upper = _mm_min_epu8(upper, ma45);
+
+  auto mi58 = _mm_min_epu8(a5, a8);
+  auto ma58 = _mm_max_epu8(a5, a8);
+  lower = _mm_max_epu8(lower, mi58);
+  upper = _mm_min_epu8(upper, ma58);
+  
+  auto mi14 = _mm_min_epu8(a1, a4);
+  auto ma14 = _mm_max_epu8(a1, a4);
+  lower = _mm_max_epu8(lower, mi14);
+  upper = _mm_min_epu8(upper, ma14);
+
+  auto real_upper = _mm_max_epu8(upper, lower);
+  auto real_lower = _mm_min_epu8(upper, lower);
+
+  return simd_clip(c, real_lower, real_upper);
 }
 
 #ifdef mode27
@@ -3917,126 +3819,68 @@ RG_FORCEINLINE __m128i rg_mode28_sse(const Byte* pSrc, int srcPitch) {
   a4 c  a5
   a6 a7 a8
   */
-  __m128i sse0, sse1, sse2, sse3, sse4, sse5;
-  __m128i sse6, sse7;
-  sse7 = a1; // __asm	SSE3_MOVE	SSE7, [esi]
-  sse6 = a2; // __asm	SSE3_MOVE	SSE6, [esi + 1]
-  sse0 = sse7; // __asm	SSE_RMOVE	SSE0, SSE7
-  sse1 = sse6; // __asm	SSE_RMOVE	SSE1, SSE6
-  sse5 = a3; //__asm	SSE3_MOVE	SSE5, [esi + 2]
-  sse0 = _mm_min_epu8(sse0, sse6); // __asm	pminub		SSE0, SSE6
-  sse2 = sse5; // __asm	SSE_RMOVE	SSE2, SSE5
-  sse1 = _mm_max_epu8(sse1, sse7); // __asm	pmaxub		SSE1, SSE7
-  sse2 = _mm_min_epu8(sse2, sse6); // __asm	pminub		SSE2, SSE6
-  sse4 = a5; //  __asm	SSE3_MOVE	SSE4, [esi + ebx + 2]
-  sse6 = _mm_max_epu8(sse6, sse5); // __asm	pmaxub		SSE6, SSE5
-  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
-  sse3 = sse4; // __asm	SSE_RMOVE	SSE3, SSE4
-  sse1 = _mm_min_epu8(sse1, sse6); // __asm	pminub		SSE1, SSE6
-  sse3 = _mm_min_epu8(sse3, sse5); // __asm	pminub		SSE3, SSE5
-  sse6 = a8; // __asm	SSE3_MOVE	SSE6, [esi + 2 * ebx + 2]
-  sse5 = _mm_max_epu8(sse5, sse4); // __asm	pmaxub		SSE5, SSE4
-  sse0 = _mm_max_epu8(sse0, sse3); // __asm	pmaxub		SSE0, SSE3
-  sse2 = sse6; // __asm	SSE_RMOVE	SSE2, SSE6
-  sse1 = _mm_min_epu8(sse1, sse5); // __asm	pminub		SSE1, SSE5
-  sse2 = _mm_min_epu8(sse2, sse4); // __asm	pminub		SSE2, SSE4
-  sse5 = a7; //  __asm	SSE3_MOVE	SSE5, [esi + 2 * ebx + 1]
-  sse4 = _mm_max_epu8(sse4, sse6); // __asm	pmaxub		SSE4, SSE6
-  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
-  sse3 = sse5; //  __asm	SSE_RMOVE	SSE3, SSE5
-  sse1 = _mm_min_epu8(sse1, sse4); // __asm	pminub		SSE1, SSE4
-  sse3 = _mm_min_epu8(sse3, sse6); // __asm	pminub		SSE3, SSE6
-  sse4 = a6; // __asm	SSE3_MOVE	SSE4, [esi + 2 * ebx]
-  sse6 = _mm_max_epu8(sse6, sse5); // __asm	pmaxub		SSE6, SSE5
-  sse0 = _mm_max_epu8(sse0, sse3); // __asm	pmaxub		SSE0, SSE3
-  sse2 = sse4; //  __asm	SSE_RMOVE	SSE2, SSE4
-  sse1 = _mm_min_epu8(sse1, sse6); // __asm	pminub		SSE1, SSE6
-  sse2 = _mm_min_epu8(sse2, sse5); // __asm	pminub		SSE2, SSE5
-  sse6 = a4; //  __asm	SSE3_MOVE	SSE6, [esi + ebx]
-  sse5 = _mm_max_epu8(sse5, sse4); // __asm	pmaxub		SSE5, SSE4
-  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
-  sse3 = sse6; // __asm	SSE_RMOVE	SSE3, SSE6
-  sse1 = _mm_min_epu8(sse1, sse5); // __asm	pminub		SSE1, SSE5
-  sse3 = _mm_min_epu8(sse3, sse4); // __asm	pminub		SSE3, SSE4
-  sse2 = sse7; // __asm	SSE_RMOVE	SSE2, SSE7
-  sse4 = _mm_max_epu8(sse4, sse6); // __asm	pmaxub		SSE4, SSE6
-  sse0 = _mm_max_epu8(sse0, sse3); // __asm	pmaxub		SSE0, SSE3
-  sse1 = _mm_min_epu8(sse1, sse4); // __asm	pminub		SSE1, SSE4
-  sse2 = _mm_min_epu8(sse2, sse6); // __asm	pminub		SSE2, SSE6
-  sse7 = _mm_max_epu8(sse7, sse6); // __asm	pmaxub		SSE7, SSE6
-  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
-  sse1 = _mm_min_epu8(sse1, sse7); // __asm	pminub		SSE1, SSE7
+  auto mi12 = _mm_min_epu8(a1, a2);
+  auto ma12 = _mm_max_epu8(a1, a2);
 
-  sse2 = a1; // __asm	SSE3_MOVE	SSE2, [esi]
-  sse7 = a8; // __asm	SSE3_MOVE	SSE7, [esi + 2 * ebx + 2]
-  sse3 = sse2; // __asm	SSE_RMOVE	SSE3, SSE2
-  sse4 = a3; // __asm	SSE3_MOVE	SSE4, [esi + 2]
-  sse2 = _mm_min_epu8(sse2, sse7); // __asm	pminub		SSE2, SSE7
-  sse6 = a6; // __asm	SSE3_MOVE	SSE6, [esi + 2 * ebx]
-  sse5 = sse4; // __asm	SSE_RMOVE	SSE5, SSE4
-  sse3 = _mm_max_epu8(sse3, sse7); //  __asm	pmaxub		SSE3, SSE7
-  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
-  sse1 = _mm_min_epu8(sse1, sse3); // __asm	pminub		SSE1, SSE3
-  sse4 = _mm_min_epu8(sse4, sse6); // __asm	pminub		SSE4, SSE6
+  auto mi23 = _mm_min_epu8(a2, a3);
+  auto ma23 = _mm_max_epu8(a2, a3);
+  auto lower = _mm_max_epu8(mi12, mi23);
+  auto upper = _mm_min_epu8(ma12, ma23);
+
+  auto mi35 = _mm_min_epu8(a3, a5);
+  auto ma35 = _mm_max_epu8(a3, a5);
+  lower = _mm_max_epu8(lower, mi35);
+  upper = _mm_min_epu8(upper, ma35);
+
+  auto mi58 = _mm_min_epu8(a5, a8);
+  auto ma58 = _mm_max_epu8(a5, a8);
+  lower = _mm_max_epu8(lower, mi58);
+  upper = _mm_min_epu8(upper, ma58);
   
-  sse2 = a2; // __asm	SSE3_MOVE	SSE2, [esi + 1]
+  auto mi78 = _mm_min_epu8(a7, a8);
+  auto ma78 = _mm_max_epu8(a7, a8);
+  lower = _mm_max_epu8(lower, mi78);
+  upper = _mm_min_epu8(upper, ma78);
+  
+  auto mi67 = _mm_min_epu8(a6, a7);
+  auto ma67 = _mm_max_epu8(a6, a7);
+  lower = _mm_max_epu8(lower, mi67);
+  upper = _mm_min_epu8(upper, ma67);
+  
+  auto mi46 = _mm_min_epu8(a4, a6);
+  auto ma46 = _mm_max_epu8(a4, a6);
+  lower = _mm_max_epu8(lower, mi46);
+  upper = _mm_min_epu8(upper, ma46);
+  
+  auto mi14 = _mm_min_epu8(a1, a4);
+  auto ma14 = _mm_max_epu8(a1, a4);
+  lower = _mm_max_epu8(lower, mi14);
+  upper = _mm_min_epu8(upper, ma14);
 
-  sse5 = _mm_max_epu8(sse5, sse6); // __asm	pmaxub		SSE5, SSE6
-  sse0 = _mm_max_epu8(sse0, sse4); // __asm	pmaxub		SSE0, SSE4
-  sse7 = a7; // __asm	SSE3_MOVE	SSE7, [esi + 2 * ebx + 1]
-  sse3 = sse2; // __asm	SSE_RMOVE	SSE3, SSE2
-  sse1 = _mm_min_epu8(sse1, sse5); // __asm	pminub		SSE1, SSE5
-  sse2 = _mm_min_epu8(sse2, sse7); // __asm	pminub		SSE2, SSE7
-  sse4 = a4; // __asm	SSE3_MOVE	SSE4, [esi + ebx]
-  sse3 = _mm_max_epu8(sse3, sse7); // __asm	pmaxub		SSE3, SSE7
-  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
-  sse7 = a5; // __asm	SSE3_MOVE	SSE7, [esi + ebx + 2]
-  sse5 = sse4; // __asm	SSE_RMOVE	SSE5, SSE4
-  sse1 = _mm_min_epu8(sse1, sse3); // __asm	pminub		SSE1, SSE3
-  sse4 = _mm_min_epu8(sse4, sse7); // __asm	pminub		SSE4, SSE7
-  sse5 = _mm_max_epu8(sse5, sse7); // __asm	pmaxub		SSE5, SSE7
-  sse0 = _mm_max_epu8(sse0, sse4); // __asm	pmaxub		SSE0, SSE4
-  sse1 = _mm_min_epu8(sse1, sse5); // __asm	pminub		SSE1, SSE5
+  auto mi18 = _mm_min_epu8(a1, a8);
+  auto ma18 = _mm_max_epu8(a1, a8);
+  lower = _mm_max_epu8(lower, mi18);
+  upper = _mm_min_epu8(upper, ma18);
+  
+  auto mi36 = _mm_min_epu8(a3, a6);
+  auto ma36 = _mm_max_epu8(a3, a6);
+  lower = _mm_max_epu8(lower, mi36);
+  upper = _mm_min_epu8(upper, ma36);
+  
+  auto mi27 = _mm_min_epu8(a2, a7);
+  auto ma27 = _mm_max_epu8(a2, a7);
+  lower = _mm_max_epu8(lower, mi27);
+  upper = _mm_min_epu8(upper, ma27);
+  
+  auto mi45 = _mm_min_epu8(a4, a5);
+  auto ma45 = _mm_max_epu8(a4, a5);
+  lower = _mm_max_epu8(lower, mi45);
+  upper = _mm_min_epu8(upper, ma45);
 
-  sse2 = sse0; // __asm	SSE_RMOVE	SSE2, SSE0
-  //#if		(ISSE > 1) || defined(SHLUR)
-  //#ifdef	MODIFYPLUGIN (repair)
-  // sse4 = reference__asm	SSE3_MOVE	SSE4, [edi]
-  //#else
-  sse4 = c; // __asm	SSE3_MOVE	SSE4, [esi + ebx + 1]
-  //#endif
-  //#endif
-  //#if		MODIFYPLUGIN > 0(repair)
-  //sse5 = c; //__asm	SSE3_MOVE	SSE5, [esi + ebx + 1]
-  //#endif
+  auto real_upper = _mm_max_epu8(upper, lower);
+  auto real_lower = _mm_min_epu8(upper, lower);
 
-  sse0 = _mm_min_epu8(sse0, sse1); // __asm	pminub		SSE0, SSE1
-  sse2 = _mm_max_epu8(sse2, sse1); // __asm	pmaxub		SSE2, SSE1
-  //#if		MODIFYPLUGIN > 0 repair
-  // sse0 = _mm_min_epu8(sse0, sse5); //__asm	pminub		SSE0, SSE5
-  // sse2 = _mm_max_epu8(sse2, sse5); //__asm	pmaxub		SSE2, SSE5
-  //#endif
-
-  //#ifdef	SHLUR
-  //sharpen(SSE4, SSE0, SSE2, rshift[eax], shift_mask[eax], SSE7, SSE3)
-  //__asm	add			esi, SSE_INCREMENT
-  //__asm	SSE_MOVE[edi], SSE4
-  //#else
-  //#if	ISSE > 1
-  sse0 = _mm_max_epu8(sse0, sse4); // __asm	pmaxub		SSE0, SSE4
-  //#else
-  //#ifdef	MODIFYPLUGIN
-  //__asm	pmaxub		SSE0, [edi]
-  //#else
-  //__asm	pmaxub		SSE0, [esi + ebx + 1]
-  //#endif
-  //#endif
-  sse0 = _mm_min_epu8(sse0, sse2); // __asm	pminub		SSE0, SSE2
-  auto result = sse0; // __asm	SSE_MOVE[edi], SSE0
-  //#endif	// SHLUR
-  //#endif
-
-  return result;
+  return simd_clip(c, real_lower, real_upper);
 }
 
 

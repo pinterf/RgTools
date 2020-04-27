@@ -92,8 +92,14 @@ Todo: modes 25-30
 These modes exist in a later version of the old RemoveGrain package.
 They were not ported originally, and since no C code exists, the assembly code has to be reverse engineered first.
 Which is extremely painful task.
+Edit (April, 2020): finally mode 25-28 were reverse engineered. Mode 26-28 were implemented in "Repair" as well (they are similar to mode 17)
+Mode 29 and 30 RIP at the moment
 
 Naming hint from the original code (ifdefs were controlled the plugin behaviour):
+Sharpen was not implemented
+MODIFYPLUGIN option means "Repair"
+the rest is RemoveGrain
+
 '''
 #ifdef  SHARPEN
 static void (*cleaning_methods[MAXMODE + 1])(BYTE *dp, int dpitch, const BYTE *sp, int spitch, int hblocks, int remainder, int incpitch, int height, int strength)

@@ -6,11 +6,23 @@ Some routines might be slightly less efficient than original, some are faster. O
 
 This plugin is written from scratch and licensed under the [MIT license][1]. Some modes of RemoveGrain and Repair were taken from the Firesledge's Dither package.
 
+v1.0 (20200427)
+- RemoveGrain mode 26-28, (C, up to SSE4.1)
+  by the original author:
+  Mode 26 SmartRGC: 26 = medianblur. Based off mode 17, but preserves corners, but not thin lines.
+  Mode 27 SmartRGCL: 27 = medianblur. Same as mode 26 but preserves thin lines.
+  Mode 28 SmartRGCL2
+
+  I swear that by seeing the code mode 28 is different from mode 27 but I cannot find a clip where 27 and 28 gave different results :)
+
+- Repair mode 26-28 (25 is nonexisting, only exists in RemoveGrain)
+- add "opt" debug parameter to Repair. 0:auto, 1:c 2:SSE2 3:SSE4.1 4:AVX2 (latter is not used here atm)
+
 v0.99 (20200426)
 - RemoveGrain mode 25 ("nondestructivesharpen") finally reverse engineered 
   and ported from the original RemoveGrain package. (no-no, Repair has still 24 modes)
   Plus: 10-32 bits, Plus: sse4.1, avx2
-- RemoveGrain: More correct 32 bit float in mode 6,7,8,9,15,16,23,24 
+- RemoveGrain: Revised, more correct 32 bit float in mode 6,7,8,9,15,16,23,24 
   (proper clamping, chroma part specially treated)
 - General: make C reference more similar to actual SIMD code
 - fix: width<32 (or 16) with horizontal subsampling would use AVX2 (SSE2) on chroma
@@ -18,7 +30,7 @@ v0.99 (20200426)
    instead of really do 1/4 1/2 1/4 kernel blur like C (todo).
    This is written in docs but even very old RemoveGrainSSE2 acts like this)
 - Avisynth+ V8 header, frame property copy support
-- opt debug parameter to RemoveGrain. 0:auto, 1:c 2:SSE2 3:SSE4.1 4:AVX2
+- opt debug parameter to RemoveGrain. 0:auto, 1:c 2:SSE2 3:SSE4.1 4:AVX2. Replaces bool "optAvx2"
 
 v0.98 (20190814)
 - Include "TemporalRepair" filter from old RemoveGrainT package (rewritten C and SIMD intrinsics from pure inline asm)
@@ -60,17 +72,21 @@ v0.93: new pixel formats are supported
 - 10, 12, 14, 16 bit and float 
 - Planar RGB, RGBA and YUVA (alpha plane is copied)
 
+v0.92:
+- tp7, high quality port of original source full with inline asm. C, SSE2 intrinsics. Modes 1-24
 
 ### Functions
 ```
-RemoveGrain(clip c, int "mode", int "modeU", int "modeV", bool "planar")
+RemoveGrain(clip, int "mode", int "modeU", int "modeV", bool "planar", int "opt")
 ```
-Purely spatial denoising function, includes 24 different modes. Additional info can be found in the [wiki][2].
+Purely spatial denoising function, includes 28 different modes. Additional info can be found in the [wiki][2].
+Parameters "planar" is dummy, exists for compatibility reasons.
 
 ```
-Repair(clip c, int "mode", int "modeU", int "modeV", bool "planar")
+Repair(clip, clip, int "mode", int "modeU", int "modeV", bool "planar", int "opt")
 ```
-Repairs unwanted artifacts from (but not limited to) RemoveGrain, includes 24 modes.
+Repairs unwanted artifacts from (but not limited to) RemoveGrain, includes 28 modes, except mode 25.
+Parameters "planar" is dummy, exists for compatibility reasons.
 
 ```
 Clense(clip c, clip "previous", clip "next", bool "grey", bool "reduceflicker", bool "planar", int "cache")
@@ -111,3 +127,5 @@ Parameter "planar" is dummy, exists for compatibility reasons.
   [3]: http://mechaweaponsvidya.wordpress.com/2014/01/31/enter-title-here/
   [4]: http://mechaweaponsvidya.wordpress.com/2014/04/23/ricing-your-temporal-medians-for-maximum-speed/
   [5]: http://mechaweaponsvidya.wordpress.com/2014/05/14/clense-versus-mt_clamp/
+  [6]: https://github.com/pinterf/RgTools
+

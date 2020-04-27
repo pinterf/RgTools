@@ -3461,6 +3461,203 @@ void	nondestructivesharpen(const Byte* pSrc, int srcPitch, BYTE* dp, int dpitch,
 */
 #endif // 0
 
+// Mode26_SmartRGC.cpp
+template<bool aligned>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE __m128i rg_mode26_sse(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
+  /*
+  a1 a2 a3
+  a4 c  a5
+  a6 a7 a8
+  */
+  __m128i sse0, sse1, sse2, sse3, sse4, sse5;
+  __m128i sse6, sse7;
+
+  sse7 = a1; // __asm	SSE3_MOVE	SSE7, [esi]
+  sse6 = a2; // __asm	SSE3_MOVE	SSE6, [esi + 1]
+  sse0 = sse7; // __asm	SSE_RMOVE	SSE0, SSE7
+  sse1 = sse6; // __asm	SSE_RMOVE	SSE1, SSE6
+  sse5 = a3; // __asm	SSE3_MOVE	SSE5, [esi + 2]
+  sse0 = _mm_min_epu8(sse0, sse6); // __asm	pminub		SSE0, SSE6
+  sse2 = sse5; // __asm	SSE_RMOVE	SSE2, SSE5
+  sse1 = _mm_max_epu8(sse1, sse7); // __asm	pmaxub		SSE1, SSE7
+  sse2 = _mm_min_epu8(sse2, sse6); //  __asm	pminub		SSE2, SSE6
+  sse4 = a5; // __asm	SSE3_MOVE	SSE4, [esi + ebx + 2]
+  sse6 = _mm_max_epu8(sse6, sse5); // __asm	pmaxub		SSE6, SSE5
+  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+  sse3 = sse4; // __asm	SSE_RMOVE	SSE3, SSE4
+  sse1 = _mm_min_epu8(sse1, sse6); // __asm	pminub		SSE1, SSE6
+  sse3 = _mm_min_epu8(sse3, sse5); // __asm	pminub		SSE3, SSE5
+  sse6 = a8; // __asm	SSE3_MOVE	SSE6, [esi + 2 * ebx + 2]
+  sse5 = _mm_max_epu8(sse5, sse4); // __asm	pmaxub		SSE5, SSE4
+  sse0 = _mm_max_epu8(sse0, sse3); // __asm	pmaxub		SSE0, SSE3
+  sse2 = sse6; // __asm	SSE_RMOVE	SSE2, SSE6
+  sse1 = _mm_min_epu8(sse1, sse5); // __asm	pminub		SSE1, SSE5
+  sse2 = _mm_min_epu8(sse2, sse4); // __asm	pminub		SSE2, SSE4
+  sse5 = a7; // __asm	SSE3_MOVE	SSE5, [esi + 2 * ebx + 1]
+  sse4 = _mm_max_epu8(sse4, sse6); // __asm	pmaxub		SSE4, SSE6
+  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+  sse3 = sse5; // __asm	SSE_RMOVE	SSE3, SSE5
+  sse1 = _mm_min_epu8(sse1, sse4); // __asm	pminub		SSE1, SSE4
+  sse3 = _mm_min_epu8(sse3, sse6); //  __asm	pminub		SSE3, SSE6
+  sse4 = a6; // __asm	SSE3_MOVE	SSE4, [esi + 2 * ebx]
+  sse6 = _mm_max_epu8(sse6, sse5); // __asm	pmaxub		SSE6, SSE5
+  sse0 = _mm_max_epu8(sse0, sse3); // __asm	pmaxub		SSE0, SSE3
+  sse2 = sse4; // __asm	SSE_RMOVE	SSE2, SSE4
+  sse1 = _mm_min_epu8(sse1, sse6); // __asm	pminub		SSE1, SSE6
+  sse2 = _mm_min_epu8(sse2, sse5); // __asm	pminub		SSE2, SSE5
+  sse6 = a4; // __asm	SSE3_MOVE	SSE6, [esi + ebx]
+  sse5 = _mm_max_epu8(sse5, sse4); // __asm	pmaxub		SSE5, SSE4
+  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+  sse3 = sse6; // __asm	SSE_RMOVE	SSE3, SSE6
+  sse1 = _mm_min_epu8(sse1, sse5); // __asm	pminub		SSE1, SSE5
+  sse3 = _mm_min_epu8(sse3, sse4); // __asm	pminub		SSE3, SSE4
+  sse2 = sse7; // __asm	SSE_RMOVE	SSE2, SSE7
+  sse4 = _mm_max_epu8(sse4, sse6); // __asm	pmaxub		SSE4, SSE6
+  sse0 = _mm_max_epu8(sse0, sse3); // __asm	pmaxub		SSE0, SSE3
+  sse1 = _mm_min_epu8(sse1, sse4); // __asm	pminub		SSE1, SSE4
+  sse2 = _mm_min_epu8(sse2, sse6); // __asm	pminub		SSE2, SSE6
+  sse7 = _mm_max_epu8(sse7, sse6); // __asm	pmaxub		SSE7, SSE6
+  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+  sse1 = _mm_min_epu8(sse1, sse7); // __asm	pminub		SSE1, SSE7
+
+  sse2 = sse0; //   __asm	SSE_RMOVE	SSE2, SSE0
+  //#if		(ISSE > 1) || defined(SHLUR)
+  //#ifdef	MODIFYPLUGIN
+  //__asm	SSE3_MOVE	SSE4, [edi] (repair)
+  //#else
+  sse4 = c; // __asm	SSE3_MOVE	SSE4, [esi + ebx + 1]
+  //#endif
+  //#endif
+  //#if		MODIFYPLUGIN > 0 (repair)
+  //sse5 = c; // __asm	SSE3_MOVE	SSE5, [esi + ebx + 1]
+  //#endif
+
+  sse0 = _mm_min_epu8(sse0, sse1); // __asm	pminub		SSE0, SSE1
+  sse2 = _mm_max_epu8(sse2, sse1); //  __asm	pmaxub		SSE2, SSE1
+  // #if		MODIFYPLUGIN > 0 (repair)
+  // sse1 = _mm_min_epu8(sse0, sse5); //__asm	pminub		SSE0, SSE5
+  // sse2 = _mm_max_epu8(sse2, sse5); //__asm	pmaxub		SSE2, SSE5
+  //#endif
+
+  //#ifdef	SHLUR
+  //sharpen(SSE4, SSE0, SSE2, rshift[eax], shift_mask[eax], SSE7, SSE3)
+  //__asm	add			esi, SSE_INCREMENT
+  //__asm	SSE_MOVE[edi], SSE4
+  //#else
+  //#if	ISSE > 1
+  sse0 = _mm_max_epu8(sse0, sse4); // __asm	pmaxub		SSE0, SSE4
+  //#else
+  //#ifdef	MODIFYPLUGIN (repair)
+  // sse0 = _mm_max_epu8(sse0, reference); // __asm	pmaxub		SSE0, [edi]
+  // #else
+  // sse0 = _mm_max_epu8(sse0, c); // __asm	pmaxub		SSE0, [esi + ebx + 1]
+  //#endif
+  //#endif
+  sse0 = _mm_min_epu8(sse0, sse2); // __asm	pminub		SSE0, SSE2
+  auto result = sse0; //  __asm	SSE_MOVE[edi], SSE0
+  // #endif	// SHLUR
+  //#endif
+
+  return result;
+}
+
+#if mode26
+__asm	align		16
+__asm	middle_loop:
+sse7 = a1; // __asm	SSE3_MOVE	SSE7, [esi]
+sse6 = s2; // __asm	SSE3_MOVE	SSE6, [esi + 1]
+sse0 = sse7; // __asm	SSE_RMOVE	SSE0, SSE7
+sse1 = sse6; // __asm	SSE_RMOVE	SSE1, SSE6
+sse5 = a3; // __asm	SSE3_MOVE	SSE5, [esi + 2]
+sse0 = _mm_min_epu8(sse0, sse6); / __asm	pminub		SSE0, SSE6
+sse2 = sse5; // __asm	SSE_RMOVE	SSE2, SSE5
+sse1 = _mm_max_epu8(sse1, sse7); // __asm	pmaxub		SSE1, SSE7
+sse2 = _mm_min_epu8(sse2, sse6); //  __asm	pminub		SSE2, SSE6
+sse4 = a5; // __asm	SSE3_MOVE	SSE4, [esi + ebx + 2]
+sse6 = _mm_max_epu8(sse6, sse5); // __asm	pmaxub		SSE6, SSE5
+sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+sse3 = sse4; // __asm	SSE_RMOVE	SSE3, SSE4
+sse1 = _mm_min_epu8(sse1, sse6); // __asm	pminub		SSE1, SSE6
+sse3 = _mm_min_epu8(sse3, sse5); // __asm	pminub		SSE3, SSE5
+sse6 = a8; // __asm	SSE3_MOVE	SSE6, [esi + 2 * ebx + 2]
+sse5 = _mm_max_epu8(sse5, sse4); // __asm	pmaxub		SSE5, SSE4
+sse0 = _mm_max_epu8(sse0, sse3); // __asm	pmaxub		SSE0, SSE3
+sse2 = sse6; // __asm	SSE_RMOVE	SSE2, SSE6
+sse1 = _mm_min_epu8(sse1, sse5); // __asm	pminub		SSE1, SSE5
+sse2 = _mm_min_epu8(sse2, sse4); // __asm	pminub		SSE2, SSE4
+sse5 = a7; // __asm	SSE3_MOVE	SSE5, [esi + 2 * ebx + 1]
+sse4 = _mm_max_epu8(sse4, sse6); // __asm	pmaxub		SSE4, SSE6
+sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+sse3 = sse5; // __asm	SSE_RMOVE	SSE3, SSE5
+sse1 = _mm_min_epu8(sse1, sse4); // __asm	pminub		SSE1, SSE4
+sse3 = _mm_min_epu8(sse3, sse6); //  __asm	pminub		SSE3, SSE6
+sse4 = a6; // __asm	SSE3_MOVE	SSE4, [esi + 2 * ebx]
+sse6 = _mm_max_epu8(sse6, sse5); // __asm	pmaxub		SSE6, SSE5
+sse0 = _mm_max_epu8(sse0, sse3); // __asm	pmaxub		SSE0, SSE3
+sse2 = sse4; // __asm	SSE_RMOVE	SSE2, SSE4
+sse1 = _mm_min_epu8(sse1, sse6); // __asm	pminub		SSE1, SSE6
+sse2 = _mm_min_epu8(sse2, sse5); // __asm	pminub		SSE2, SSE5
+sse6 = a4; // __asm	SSE3_MOVE	SSE6, [esi + ebx]
+sse5 = _mm_max_epu8(sse5, sse4); // __asm	pmaxub		SSE5, SSE4
+sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+sse3 = sse6; // __asm	SSE_RMOVE	SSE3, SSE6
+sse1 = _mm_min_epu8(sse1, sse5); // __asm	pminub		SSE1, SSE5
+sse3 = _mm_min_epu8(sse3, sse4); // __asm	pminub		SSE3, SSE4
+sse2 = sse7; // __asm	SSE_RMOVE	SSE2, SSE7
+sse4 = _mm_max_epu8(sse4, sse6); // __asm	pmaxub		SSE4, SSE6
+sse0 = _mm_max_epu8(sse0, sse3); // __asm	pmaxub		SSE0, SSE3
+sse1 = _mm_min_epu8(sse1, sse4); // __asm	pminub		SSE1, SSE4
+sse2 = _mm_min_epu8(sse2, sse6); // __asm	pminub		SSE2, SSE6
+sse7 = _mm_max_epu8(sse7, sse6); // __asm	pmaxub		SSE7, SSE6
+sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+sse1 = _mm_min_epu8(sse1, sse7); // __asm	pminub		SSE1, SSE7
+
+sse2 = sse0; //   __asm	SSE_RMOVE	SSE2, SSE0
+//#if		(ISSE > 1) || defined(SHLUR)
+//#ifdef	MODIFYPLUGIN
+//__asm	SSE3_MOVE	SSE4, [edi] (repair)
+//#else
+sse4 = c; // __asm	SSE3_MOVE	SSE4, [esi + ebx + 1]
+//#endif
+//#endif
+//#if		MODIFYPLUGIN > 0 (repair)
+//sse5 = c; // __asm	SSE3_MOVE	SSE5, [esi + ebx + 1]
+//#endif
+
+sse0 = _mm_min_epu8(sse0, sse1); // __asm	pminub		SSE0, SSE1
+sse2 = _mm_max_epu8(sse2, sse1); //  __asm	pmaxub		SSE2, SSE1
+// #if		MODIFYPLUGIN > 0 (repair)
+// sse1 = _mm_min_epu8(sse0, sse5); //__asm	pminub		SSE0, SSE5
+// sse2 = _mm_max_epu8(sse2, sse5); //__asm	pmaxub		SSE2, SSE5
+//#endif
+
+//#ifdef	SHLUR
+//sharpen(SSE4, SSE0, SSE2, rshift[eax], shift_mask[eax], SSE7, SSE3)
+//__asm	add			esi, SSE_INCREMENT
+//__asm	SSE_MOVE[edi], SSE4
+//#else
+//#if	ISSE > 1
+sse0 = _mm_max_epu8(sse0, sse4); // __asm	pmaxub		SSE0, SSE4
+//#else
+//#ifdef	MODIFYPLUGIN (repair)
+// sse0 = _mm_max_epu8(sse0, reference); // __asm	pmaxub		SSE0, [edi]
+// #else
+// sse0 = _mm_max_epu8(sse0, c); // __asm	pmaxub		SSE0, [esi + ebx + 1]
+//#endif
+//#endif
+sse0 = _mm_min_epu8(sse0, sse2); // __asm	pminub		SSE0, SSE2
+auto result = sse0; //  __asm	SSE_MOVE[edi], SSE0
+// #endif	// SHLUR
+//#endif
+#endif
+
+// Mode27_SmartRGCL.cpp
+// 26 = medianblur.Based off mode 17, but preserves corners, but not thin lines.
+// 27 = medianblur.Same as mode 26 but preserves thin lines.
 template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
@@ -3705,5 +3902,259 @@ SSE0 = _mm_min_epu8(SSE0, SSE2); // __asm	pminub		SSE0, SSE2
 Store SSE0; // __asm	SSE_MOVE[edi], SSE0
 //#endif	// SHLUR
 #endif // mod27
+
+// Mode28_SmartRGCL2.cpp
+// For my sources it gave identical result as mode 27, even if I made intentional
+// errors in source.
+template<bool aligned>
+#if defined(GCC) || defined(CLANG)
+__attribute__((__target__("sse4.1")))
+#endif
+RG_FORCEINLINE __m128i rg_mode28_sse(const Byte* pSrc, int srcPitch) {
+  LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
+  /*
+  a1 a2 a3
+  a4 c  a5
+  a6 a7 a8
+  */
+  __m128i sse0, sse1, sse2, sse3, sse4, sse5;
+  __m128i sse6, sse7;
+  sse7 = a1; // __asm	SSE3_MOVE	SSE7, [esi]
+  sse6 = a2; // __asm	SSE3_MOVE	SSE6, [esi + 1]
+  sse0 = sse7; // __asm	SSE_RMOVE	SSE0, SSE7
+  sse1 = sse6; // __asm	SSE_RMOVE	SSE1, SSE6
+  sse5 = a3; //__asm	SSE3_MOVE	SSE5, [esi + 2]
+  sse0 = _mm_min_epu8(sse0, sse6); // __asm	pminub		SSE0, SSE6
+  sse2 = sse5; // __asm	SSE_RMOVE	SSE2, SSE5
+  sse1 = _mm_max_epu8(sse1, sse7); // __asm	pmaxub		SSE1, SSE7
+  sse2 = _mm_min_epu8(sse2, sse6); // __asm	pminub		SSE2, SSE6
+  sse4 = a5; //  __asm	SSE3_MOVE	SSE4, [esi + ebx + 2]
+  sse6 = _mm_max_epu8(sse6, sse5); // __asm	pmaxub		SSE6, SSE5
+  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+  sse3 = sse4; // __asm	SSE_RMOVE	SSE3, SSE4
+  sse1 = _mm_min_epu8(sse1, sse6); // __asm	pminub		SSE1, SSE6
+  sse3 = _mm_min_epu8(sse3, sse5); // __asm	pminub		SSE3, SSE5
+  sse6 = a8; // __asm	SSE3_MOVE	SSE6, [esi + 2 * ebx + 2]
+  sse5 = _mm_max_epu8(sse5, sse4); // __asm	pmaxub		SSE5, SSE4
+  sse0 = _mm_max_epu8(sse0, sse3); // __asm	pmaxub		SSE0, SSE3
+  sse2 = sse6; // __asm	SSE_RMOVE	SSE2, SSE6
+  sse1 = _mm_min_epu8(sse1, sse5); // __asm	pminub		SSE1, SSE5
+  sse2 = _mm_min_epu8(sse2, sse4); // __asm	pminub		SSE2, SSE4
+  sse5 = a7; //  __asm	SSE3_MOVE	SSE5, [esi + 2 * ebx + 1]
+  sse4 = _mm_max_epu8(sse4, sse6); // __asm	pmaxub		SSE4, SSE6
+  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+  sse3 = sse5; //  __asm	SSE_RMOVE	SSE3, SSE5
+  sse1 = _mm_min_epu8(sse1, sse4); // __asm	pminub		SSE1, SSE4
+  sse3 = _mm_min_epu8(sse3, sse6); // __asm	pminub		SSE3, SSE6
+  sse4 = a6; // __asm	SSE3_MOVE	SSE4, [esi + 2 * ebx]
+  sse6 = _mm_max_epu8(sse6, sse5); // __asm	pmaxub		SSE6, SSE5
+  sse0 = _mm_max_epu8(sse0, sse3); // __asm	pmaxub		SSE0, SSE3
+  sse2 = sse4; //  __asm	SSE_RMOVE	SSE2, SSE4
+  sse1 = _mm_min_epu8(sse1, sse6); // __asm	pminub		SSE1, SSE6
+  sse2 = _mm_min_epu8(sse2, sse5); // __asm	pminub		SSE2, SSE5
+  sse6 = a4; //  __asm	SSE3_MOVE	SSE6, [esi + ebx]
+  sse5 = _mm_max_epu8(sse5, sse4); // __asm	pmaxub		SSE5, SSE4
+  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+  sse3 = sse6; // __asm	SSE_RMOVE	SSE3, SSE6
+  sse1 = _mm_min_epu8(sse1, sse5); // __asm	pminub		SSE1, SSE5
+  sse3 = _mm_min_epu8(sse3, sse4); // __asm	pminub		SSE3, SSE4
+  sse2 = sse7; // __asm	SSE_RMOVE	SSE2, SSE7
+  sse4 = _mm_max_epu8(sse4, sse6); // __asm	pmaxub		SSE4, SSE6
+  sse0 = _mm_max_epu8(sse0, sse3); // __asm	pmaxub		SSE0, SSE3
+  sse1 = _mm_min_epu8(sse1, sse4); // __asm	pminub		SSE1, SSE4
+  sse2 = _mm_min_epu8(sse2, sse6); // __asm	pminub		SSE2, SSE6
+  sse7 = _mm_max_epu8(sse7, sse6); // __asm	pmaxub		SSE7, SSE6
+  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+  sse1 = _mm_min_epu8(sse1, sse7); // __asm	pminub		SSE1, SSE7
+
+  sse2 = a1; // __asm	SSE3_MOVE	SSE2, [esi]
+  sse7 = a8; // __asm	SSE3_MOVE	SSE7, [esi + 2 * ebx + 2]
+  sse3 = sse2; // __asm	SSE_RMOVE	SSE3, SSE2
+  sse4 = a3; // __asm	SSE3_MOVE	SSE4, [esi + 2]
+  sse2 = _mm_min_epu8(sse2, sse7); // __asm	pminub		SSE2, SSE7
+  sse6 = a6; // __asm	SSE3_MOVE	SSE6, [esi + 2 * ebx]
+  sse5 = sse4; // __asm	SSE_RMOVE	SSE5, SSE4
+  sse3 = _mm_max_epu8(sse3, sse7); //  __asm	pmaxub		SSE3, SSE7
+  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+  sse1 = _mm_min_epu8(sse1, sse3); // __asm	pminub		SSE1, SSE3
+  sse4 = _mm_min_epu8(sse4, sse6); // __asm	pminub		SSE4, SSE6
+  
+  sse2 = a2; // __asm	SSE3_MOVE	SSE2, [esi + 1]
+
+  sse5 = _mm_max_epu8(sse5, sse6); // __asm	pmaxub		SSE5, SSE6
+  sse0 = _mm_max_epu8(sse0, sse4); // __asm	pmaxub		SSE0, SSE4
+  sse7 = a7; // __asm	SSE3_MOVE	SSE7, [esi + 2 * ebx + 1]
+  sse3 = sse2; // __asm	SSE_RMOVE	SSE3, SSE2
+  sse1 = _mm_min_epu8(sse1, sse5); // __asm	pminub		SSE1, SSE5
+  sse2 = _mm_min_epu8(sse2, sse7); // __asm	pminub		SSE2, SSE7
+  sse4 = a4; // __asm	SSE3_MOVE	SSE4, [esi + ebx]
+  sse3 = _mm_max_epu8(sse3, sse7); // __asm	pmaxub		SSE3, SSE7
+  sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+  sse7 = a5; // __asm	SSE3_MOVE	SSE7, [esi + ebx + 2]
+  sse5 = sse4; // __asm	SSE_RMOVE	SSE5, SSE4
+  sse1 = _mm_min_epu8(sse1, sse3); // __asm	pminub		SSE1, SSE3
+  sse4 = _mm_min_epu8(sse4, sse7); // __asm	pminub		SSE4, SSE7
+  sse5 = _mm_max_epu8(sse5, sse7); // __asm	pmaxub		SSE5, SSE7
+  sse0 = _mm_max_epu8(sse0, sse4); // __asm	pmaxub		SSE0, SSE4
+  sse1 = _mm_min_epu8(sse1, sse5); // __asm	pminub		SSE1, SSE5
+
+  sse2 = sse0; // __asm	SSE_RMOVE	SSE2, SSE0
+  //#if		(ISSE > 1) || defined(SHLUR)
+  //#ifdef	MODIFYPLUGIN (repair)
+  // sse4 = reference__asm	SSE3_MOVE	SSE4, [edi]
+  //#else
+  sse4 = c; // __asm	SSE3_MOVE	SSE4, [esi + ebx + 1]
+  //#endif
+  //#endif
+  //#if		MODIFYPLUGIN > 0(repair)
+  //sse5 = c; //__asm	SSE3_MOVE	SSE5, [esi + ebx + 1]
+  //#endif
+
+  sse0 = _mm_min_epu8(sse0, sse1); // __asm	pminub		SSE0, SSE1
+  sse2 = _mm_max_epu8(sse2, sse1); // __asm	pmaxub		SSE2, SSE1
+  //#if		MODIFYPLUGIN > 0 repair
+  // sse0 = _mm_min_epu8(sse0, sse5); //__asm	pminub		SSE0, SSE5
+  // sse2 = _mm_max_epu8(sse2, sse5); //__asm	pmaxub		SSE2, SSE5
+  //#endif
+
+  //#ifdef	SHLUR
+  //sharpen(SSE4, SSE0, SSE2, rshift[eax], shift_mask[eax], SSE7, SSE3)
+  //__asm	add			esi, SSE_INCREMENT
+  //__asm	SSE_MOVE[edi], SSE4
+  //#else
+  //#if	ISSE > 1
+  sse0 = _mm_max_epu8(sse0, sse4); // __asm	pmaxub		SSE0, SSE4
+  //#else
+  //#ifdef	MODIFYPLUGIN
+  //__asm	pmaxub		SSE0, [edi]
+  //#else
+  //__asm	pmaxub		SSE0, [esi + ebx + 1]
+  //#endif
+  //#endif
+  sse0 = _mm_min_epu8(sse0, sse2); // __asm	pminub		SSE0, SSE2
+  auto result = sse0; // __asm	SSE_MOVE[edi], SSE0
+  //#endif	// SHLUR
+  //#endif
+
+  return result;
+}
+
+
+#ifdef mode28
+sse7 = a1; // __asm	SSE3_MOVE	SSE7, [esi]
+sse6 = a2; // __asm	SSE3_MOVE	SSE6, [esi + 1]
+sse0 = sse7; // __asm	SSE_RMOVE	SSE0, SSE7
+sse1 = sse6; // __asm	SSE_RMOVE	SSE1, SSE6
+sse5 = a3; //__asm	SSE3_MOVE	SSE5, [esi + 2]
+sse0 = _mm_min_epu8(sse0, sse6); // __asm	pminub		SSE0, SSE6
+sse2 = sse5; // __asm	SSE_RMOVE	SSE2, SSE5
+sse1 = _mm_max_epu8(sse1, sse7); // __asm	pmaxub		SSE1, SSE7
+sse2 = _mm_min_epu8(sse2, sse6); // __asm	pminub		SSE2, SSE6
+sse4 = a5; //  __asm	SSE3_MOVE	SSE4, [esi + ebx + 2]
+sse6 = _mm_max_epu8(sse6, sse5); // __asm	pmaxub		SSE6, SSE5
+sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+sse3 = sse4; // __asm	SSE_RMOVE	SSE3, SSE4
+sse1 = _mm_min_epu8(sse1, sse6); // __asm	pminub		SSE1, SSE6
+sse3 = _mm_min_epu8(sse3, sse5); // __asm	pminub		SSE3, SSE5
+sse6 = a8; // __asm	SSE3_MOVE	SSE6, [esi + 2 * ebx + 2]
+sse5 = _mm_max_epu8(sse5, sse4); // __asm	pmaxub		SSE5, SSE4
+sse0 = _mm_max_epu8(sse0, sse3); // __asm	pmaxub		SSE0, SSE3
+sse2 = sse6; // __asm	SSE_RMOVE	SSE2, SSE6
+sse1 = _mm_min_epu8(sse1, sse5); // __asm	pminub		SSE1, SSE5
+sse2 = _mm_min_epu8(sse2, sse4); // __asm	pminub		SSE2, SSE4
+sse5 = a7; //  __asm	SSE3_MOVE	SSE5, [esi + 2 * ebx + 1]
+sse4 = _mm_max_epu8(sse4, sse6); // __asm	pmaxub		SSE4, SSE6
+sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+sse3 = sse5; //  __asm	SSE_RMOVE	SSE3, SSE5
+sse1 = _mm_min_epu8(sse1, sse4); // __asm	pminub		SSE1, SSE4
+sse3 = _mm_min_epu8(sse3, sse6); // __asm	pminub		SSE3, SSE6
+sse4 = a6; // __asm	SSE3_MOVE	SSE4, [esi + 2 * ebx]
+sse6 = _mm_max_epu8(sse6, sse5); // __asm	pmaxub		SSE6, SSE5
+sse0 = _mm_max_epu8(sse0, sse3); // __asm	pmaxub		SSE0, SSE3
+sse2 = sse4; //  __asm	SSE_RMOVE	SSE2, SSE4
+sse1 = _mm_min_epu8(sse1, sse6); // __asm	pminub		SSE1, SSE6
+sse2 = _mm_min_epu8(sse2, sse5); // __asm	pminub		SSE2, SSE5
+sse6 = a4; //  __asm	SSE3_MOVE	SSE6, [esi + ebx]
+sse5 = _mm_max_epu8(sse5, sse4); // __asm	pmaxub		SSE5, SSE4
+sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+sse3 = sse6; // __asm	SSE_RMOVE	SSE3, SSE6
+sse1 = _mm_min_epu8(sse1, sse5); // __asm	pminub		SSE1, SSE5
+sse3 = _mm_min_epu8(sse3, sse4); // __asm	pminub		SSE3, SSE4
+sse2 = sse7; // __asm	SSE_RMOVE	SSE2, SSE7
+sse4 = _mm_max_epu8(sse4, sse6); // __asm	pmaxub		SSE4, SSE6
+sse0 = _mm_max_epu8(sse0, sse3); // __asm	pmaxub		SSE0, SSE3
+sse1 = _mm_min_epu8(sse1, sse4); // __asm	pminub		SSE1, SSE4
+sse2 = _mm_min_epu8(sse2, sse6); // __asm	pminub		SSE2, SSE6
+sse7 = _mm_max_epu8(sse7, sse6); // __asm	pmaxub		SSE7, SSE6
+sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+sse1 = _mm_min_epu8(sse1, sse7); // __asm	pminub		SSE1, SSE7
+
+sse2 = a1; // __asm	SSE3_MOVE	SSE2, [esi]
+sse7 = a8; // __asm	SSE3_MOVE	SSE7, [esi + 2 * ebx + 2]
+sse3 = sse2; // __asm	SSE_RMOVE	SSE3, SSE2
+sse4 = a3; // __asm	SSE3_MOVE	SSE4, [esi + 2]
+sse2 = _mm_min_epu8(sse2, sse7); // __asm	pminub		SSE2, SSE7
+sse6 = a6; // __asm	SSE3_MOVE	SSE6, [esi + 2 * ebx]
+sse5 = sse4; // __asm	SSE_RMOVE	SSE5, SSE4
+sse3 = _mm_max_epu8(sse3, sse7); //  __asm	pmaxub		SSE3, SSE7
+sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+sse1 = _mm_min_epu8(sse1, sse3); // __asm	pminub		SSE1, SSE3
+sse4 = _mm_min_epu8(sse4, sse6); // __asm	pminub		SSE4, SSE6
+sse2 = a2; // __asm	SSE3_MOVE	SSE2, [esi + 1]
+sse5 = _mm_max_epu8(sse5, sse6); // __asm	pmaxub		SSE5, SSE6
+sse0 = _mm_max_epu8(sse0, sse4); // __asm	pmaxub		SSE0, SSE4
+sse7 = a7; // __asm	SSE3_MOVE	SSE7, [esi + 2 * ebx + 1]
+sse3 = sse2; // __asm	SSE_RMOVE	SSE3, SSE2
+sse1 = _mm_min_epu8(sse1, sse5); // __asm	pminub		SSE1, SSE5
+sse2 = _mm_min_epu8(sse2, sse7); // __asm	pminub		SSE2, SSE7
+sse4 = a4; // __asm	SSE3_MOVE	SSE4, [esi + ebx]
+sse3 = _mm_max_epu8(sse3, sse7); // __asm	pmaxub		SSE3, SSE7
+sse0 = _mm_max_epu8(sse0, sse2); // __asm	pmaxub		SSE0, SSE2
+sse7 = a5; // __asm	SSE3_MOVE	SSE7, [esi + ebx + 2]
+sse5 = sse4; // __asm	SSE_RMOVE	SSE5, SSE4
+sse1 = _mm_min_epu8(sse1, sse3); // __asm	pminub		SSE1, SSE3
+sse4 = _mm_min_epu8(sse4, sse7); // __asm	pminub		SSE4, SSE7
+sse5 = _mm_max_epu8(sse5, sse7); // __asm	pmaxub		SSE5, SSE7
+sse0 = _mm_max_epu8(sse0, sse4); // __asm	pmaxub		SSE0, SSE4
+sse1 = _mm_min_epu8(sse1, sse5); // __asm	pminub		SSE1, SSE5
+
+sse2 = sse0; // __asm	SSE_RMOVE	SSE2, SSE0
+//#if		(ISSE > 1) || defined(SHLUR)
+//#ifdef	MODIFYPLUGIN (repair)
+// sse4 = reference__asm	SSE3_MOVE	SSE4, [edi]
+//#else
+sse4 = c; // __asm	SSE3_MOVE	SSE4, [esi + ebx + 1]
+//#endif
+//#endif
+//#if		MODIFYPLUGIN > 0(repair)
+//sse5 = c; //__asm	SSE3_MOVE	SSE5, [esi + ebx + 1]
+//#endif
+
+sse0 = _mm_min_epu8(sse0, sse1); // __asm	pminub		SSE0, SSE1
+sse2 = _mm_max_epu8(sse2, sse1); // __asm	pmaxub		SSE2, SSE1
+//#if		MODIFYPLUGIN > 0 repair
+// sse0 = _mm_min_epu8(sse0, sse5); //__asm	pminub		SSE0, SSE5
+// sse2 = _mm_max_epu8(sse2, sse5); //__asm	pmaxub		SSE2, SSE5
+//#endif
+
+//#ifdef	SHLUR
+//sharpen(SSE4, SSE0, SSE2, rshift[eax], shift_mask[eax], SSE7, SSE3)
+//__asm	add			esi, SSE_INCREMENT
+//__asm	SSE_MOVE[edi], SSE4
+//#else
+//#if	ISSE > 1
+sse0 = _mm_max_epu8(sse0, sse4); // __asm	pmaxub		SSE0, SSE4
+//#else
+//#ifdef	MODIFYPLUGIN
+//__asm	pmaxub		SSE0, [edi]
+//#else
+//__asm	pmaxub		SSE0, [esi + ebx + 1]
+//#endif
+//#endif
+sse0 = _mm_min_epu8(sse0, sse2); // __asm	pminub		SSE0, SSE2
+auto result = sse0; // __asm	SSE_MOVE[edi], SSE0
+//#endif	// SHLUR
+//#endif
+#endif // mode28
 
 #endif

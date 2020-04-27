@@ -343,6 +343,9 @@ static PlaneProcessor* sse2_functions[] = {
     process_plane_sse<uint8_t, rg_mode25_sse2<false>, rg_mode25_sse2<true>>,
     doNothing,
     doNothing,
+    doNothing,
+    doNothing,
+    doNothing,
 };
 
 static PlaneProcessor* sse4_functions[] = {
@@ -373,8 +376,11 @@ static PlaneProcessor* sse4_functions[] = {
     process_plane_sse41<uint8_t, rg_mode23_sse<false>, rg_mode23_sse<true>>,
     process_plane_sse41<uint8_t, rg_mode24_sse<false>, rg_mode24_sse<true>>,
     process_plane_sse41<uint8_t, rg_mode25_sse<false>, rg_mode25_sse<true>>,
-    doNothing,
+    process_plane_sse41<uint8_t, rg_mode26_sse<false>, rg_mode26_sse<true>>,
     process_plane_sse41<uint8_t, rg_mode27_sse<false>, rg_mode27_sse<true>>,
+    process_plane_sse41<uint8_t, rg_mode28_sse<false>, rg_mode28_sse<true>>,
+    doNothing,
+    doNothing,
 };
 
 static PlaneProcessor* sse4_functions_16_10[] = {
@@ -405,6 +411,9 @@ static PlaneProcessor* sse4_functions_16_10[] = {
   process_plane_sse41<uint16_t, rg_mode23_sse_16<false>, rg_mode23_sse_16<true>>,
   process_plane_sse41<uint16_t, rg_mode24_sse_16<false>, rg_mode24_sse_16<true>>,
   process_plane_sse41<uint16_t, rg_mode25_sse_16<10, false>, rg_mode25_sse_16<10, true>>,
+  doNothing,
+  doNothing,
+  doNothing,
   doNothing,
   doNothing,
 };
@@ -439,6 +448,9 @@ static PlaneProcessor* sse4_functions_16_12[] = {
   process_plane_sse41<uint16_t, rg_mode25_sse_16<12, false>, rg_mode25_sse_16<12, true>>,
   doNothing,
   doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
 };
 
 static PlaneProcessor* sse4_functions_16_14[] = {
@@ -471,6 +483,9 @@ static PlaneProcessor* sse4_functions_16_14[] = {
   process_plane_sse41<uint16_t, rg_mode25_sse_16<14, false>, rg_mode25_sse_16<14, true>>,
   doNothing,
   doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
 };
 
 static PlaneProcessor* sse4_functions_16_16[] = {
@@ -501,6 +516,9 @@ static PlaneProcessor* sse4_functions_16_16[] = {
   process_plane_sse41<uint16_t, rg_mode23_sse_16<false>, rg_mode23_sse_16<true>>,
   process_plane_sse41<uint16_t, rg_mode24_sse_16<false>, rg_mode24_sse_16<true>>,
   process_plane_sse41<uint16_t, rg_mode25_sse_16<16, false>, rg_mode25_sse_16<16, true>>,
+  doNothing,
+  doNothing,
+  doNothing,
   doNothing,
   doNothing,
 };
@@ -537,6 +555,9 @@ static PlaneProcessor* sse4_functions_32_luma[] = {
   process_plane_sse41<float, rg_mode25_sse_32<false, false>, rg_mode25_sse_32<true, false>>, // 2nd: luma false, chroma true
   doNothing,
   doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
 };
 
 
@@ -568,6 +589,9 @@ static PlaneProcessor* sse4_functions_32_chroma[] = {
   process_plane_sse41<float, rg_mode23_sse_32<false, true>, rg_mode23_sse_32<true, true>>,
   process_plane_sse41<float, rg_mode24_sse_32<false, true>, rg_mode24_sse_32<true, true>>,
   process_plane_sse41<float, rg_mode25_sse_32<false, true>, rg_mode25_sse_32<true, true>>, // 2nd: luma false, chroma true
+  doNothing,
+  doNothing,
+  doNothing,
   doNothing,
   doNothing,
 };
@@ -603,6 +627,9 @@ static PlaneProcessor* c_functions[] = {
     process_plane_c<uint8_t, rg_mode25_cpp>,
     doNothing,
     doNothing,
+    doNothing,
+    doNothing,
+    doNothing,
 };
 
 static PlaneProcessor* c_functions_10[] = {
@@ -633,8 +660,11 @@ static PlaneProcessor* c_functions_10[] = {
   process_plane_c<uint16_t, rg_mode23_cpp_16<10>>,
   process_plane_c<uint16_t, rg_mode24_cpp_16<10>>,
   process_plane_c<uint16_t, rg_mode25_cpp_16<10>>,
-    doNothing,
-    doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
 };
 
 static PlaneProcessor* c_functions_12[] = {
@@ -665,8 +695,11 @@ static PlaneProcessor* c_functions_12[] = {
   process_plane_c<uint16_t, rg_mode23_cpp_16<12>>,
   process_plane_c<uint16_t, rg_mode24_cpp_16<12>>,
   process_plane_c<uint16_t, rg_mode25_cpp_16<12>>,
-    doNothing,
-    doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
 };
 
 static PlaneProcessor* c_functions_14[] = {
@@ -697,8 +730,11 @@ static PlaneProcessor* c_functions_14[] = {
   process_plane_c<uint16_t, rg_mode23_cpp_16<14>>,
   process_plane_c<uint16_t, rg_mode24_cpp_16<14>>,
   process_plane_c<uint16_t, rg_mode25_cpp_16<14>>,
-    doNothing,
-    doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
 };
 
 
@@ -730,8 +766,11 @@ static PlaneProcessor* c_functions_16[] = {
   process_plane_c<uint16_t, rg_mode23_cpp_16<16>>,
   process_plane_c<uint16_t, rg_mode24_cpp_16<16>>,
   process_plane_c<uint16_t, rg_mode25_cpp_16<16>>,
-    doNothing,
-    doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
 };
 
 static PlaneProcessor* c_functions_32_luma[] = {
@@ -762,8 +801,11 @@ static PlaneProcessor* c_functions_32_luma[] = {
   process_plane_c<float, rg_mode23_cpp_32<false>>,
   process_plane_c<float, rg_mode24_cpp_32<false>>,
   process_plane_c<float, rg_mode25_cpp_32<false>>, // false: luma, true: chroma
-    doNothing,
-    doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
 };
 
 static PlaneProcessor* c_functions_32_chroma[] = {
@@ -794,8 +836,11 @@ static PlaneProcessor* c_functions_32_chroma[] = {
   process_plane_c<float, rg_mode23_cpp_32<true>>,
   process_plane_c<float, rg_mode24_cpp_32<true>>,
   process_plane_c<float, rg_mode25_cpp_32<true>>, // false: luma, true: chroma
-    doNothing,
-    doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
+  doNothing,
 };
 
 
@@ -813,8 +858,8 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
         env->ThrowError("RemoveGrain works only with planar colorspaces");
     }
 
-    if (mode <= UNDEFINED_MODE || mode_ > 27 || modeU_ > 27 || modeV_ > 27) {
-        env->ThrowError("RemoveGrain mode should be between -1 and 27!");
+    if (mode <= UNDEFINED_MODE || mode_ > 30 || modeU_ > 30 || modeV_ > 30) {
+        env->ThrowError("RemoveGrain mode should be between -1 and 30!");
     }
 
     bool isPlanarRGB = vi.IsPlanarRGB() || vi.IsPlanarRGBA();

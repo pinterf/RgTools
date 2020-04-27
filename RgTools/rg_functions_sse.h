@@ -3462,6 +3462,7 @@ void	nondestructivesharpen(const Byte* pSrc, int srcPitch, BYTE* dp, int dpitch,
 #endif // 0
 
 // Mode26_SmartRGC.cpp
+// 26 = medianblur.Based off mode 17, but preserves corners, but not thin lines.
 template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))

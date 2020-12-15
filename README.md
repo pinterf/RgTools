@@ -6,6 +6,11 @@ Some routines might be slightly less efficient than original, some are faster. O
 
 This plugin is written from scratch and licensed under the [MIT license][1]. Some modes of RemoveGrain and Repair were taken from the Firesledge's Dither package.
 
+(20201215)
+- Source syntax for GCC
+- CMake build environment, builds on Linux, at least on my (pinterf) Ubuntu 18.04 WSL
+  (INTEL_INTRINSICS handling not implemented in the source, so it compiles on Intel at the moment)
+
 v1.0 (20200427)
 - RemoveGrain mode 26-28, (C, up to SSE4.1)
   by the original author:

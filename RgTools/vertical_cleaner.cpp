@@ -300,15 +300,15 @@ static void vcleaner_median_c(Byte* pDst8, const Byte *pSrc8, int dstPitch, int 
     env->BitBlt((uint8_t *)pDst, dstPitch*sizeof(pixel_t), (uint8_t *)pSrc, srcPitch*sizeof(pixel_t), rowsize, 1);
 }
 
-static __forceinline Byte satb(int value) {
+static RG_FORCEINLINE Byte satb(int value) {
     return clip(value, 0, 255);
 }
 
-static __forceinline uint16_t satb_16(int value, int max_pixel_value) {
+static RG_FORCEINLINE uint16_t satb_16(int value, int max_pixel_value) {
   return clip_16(value, 0, max_pixel_value);
 }
 
-static __forceinline float satb_32(float value) {
+static RG_FORCEINLINE float satb_32(float value) {
 #if 0
   // no clamp for float
   return clip_32(value, 0.0f, 1.0f);

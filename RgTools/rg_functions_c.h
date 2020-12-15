@@ -2,7 +2,7 @@
 #define __RG_FUNCTIONS_C_H__
 
 #include "common.h"
-#include <algorithm>  
+#include <algorithm>
 
 
 template<typename pixel_t>

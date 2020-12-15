@@ -985,6 +985,7 @@ PVideoFrame RemoveGrain::GetFrame(int n, IScriptEnvironment* env) {
 
 AVSValue __cdecl Create_RemoveGrain(AVSValue args, void*, IScriptEnvironment* env) {
     enum { CLIP, MODE, MODEU, MODEV, PLANAR, OPT };
-    return new RemoveGrain(args[CLIP].AsClip(), args[MODE].AsInt(1), args[MODEU].AsInt(RemoveGrain::UNDEFINED_MODE), args[MODEV].AsInt(RemoveGrain::UNDEFINED_MODE), 
+    AVSValue retval = new RemoveGrain(args[CLIP].AsClip(), args[MODE].AsInt(1), args[MODEU].AsInt(RemoveGrain::UNDEFINED_MODE), args[MODEV].AsInt(RemoveGrain::UNDEFINED_MODE), 
       args[PLANAR].AsBool(false), args[OPT].AsInt(0), env);
+    return retval;
 }

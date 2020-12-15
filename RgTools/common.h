@@ -11,6 +11,7 @@
 #pragma warning(disable: 4512 4244 4100)
 #include "avisynth.h"
 #pragma warning(default: 4512 4244 4100)
+#include "avs/config.h"
 #include <emmintrin.h> // SSE2
 #include <pmmintrin.h> // SSE3
 #include <tmmintrin.h> // SSSE3
@@ -18,12 +19,29 @@
 
 typedef uint8_t Byte;
 
-#if defined(CLANG)
-#define RG_FORCEINLINE __attribute__((always_inline)) inline 
+#if defined(__clang__)
+// Check clang first. clang-cl also defines __MSC_VER
+// We set MSVC because they are mostly compatible
+#   define CLANG
+#if defined(_MSC_VER)
+#   define MSVC
+#   define RG_FORCEINLINE __attribute__((always_inline)) inline
 #else
-#define RG_FORCEINLINE __forceinline
+#   define RG_FORCEINLINE __attribute__((always_inline)) inline
 #endif
-
+#elif   defined(_MSC_VER)
+#   define MSVC
+#   define MSVC_PURE
+#   define RG_FORCEINLINE __forceinline
+#elif defined(__GNUC__)
+#   define GCC
+#   define RG_FORCEINLINE __attribute__((always_inline)) inline
+#else
+#   error Unsupported compiler.
+#   define RG_FORCEINLINE inline
+#   undef __forceinline
+#   define __forceinline inline
+#endif 
 
 #define USE_MOVPS
 
@@ -52,18 +70,18 @@ static RG_FORCEINLINE int adds_c(int x, int y) {
 }
 
 template<int bits_per_pixel>
-RG_FORCEINLINE int adds_16_c(int x, int y) {
+static RG_FORCEINLINE int adds_16_c(int x, int y) {
   constexpr int pixel_max = (1 << bits_per_pixel) - 1;
   return std::min(pixel_max, x + y);
 }
 
 template<bool chroma>
-RG_FORCEINLINE float adds_32_c(float x, float y) {
+static RG_FORCEINLINE float adds_32_c(float x, float y) {
   constexpr float pixel_max = chroma ? 0.5f : 1.0f;
   return std::min(pixel_max, x + y);
 }
 
-RG_FORCEINLINE float adds_32_c_for_diff(float x, float y) {
+static RG_FORCEINLINE float adds_32_c_for_diff(float x, float y) {
   constexpr float pixel_max = 1.0f;
   return std::min(pixel_max, x + y);
 }

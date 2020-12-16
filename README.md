@@ -10,6 +10,7 @@ This plugin is written from scratch and licensed under the [MIT license][1]. Som
 - Source syntax for GCC
 - CMake build environment, builds on Linux, at least on my (pinterf) Ubuntu 18.04 WSL
   (INTEL_INTRINSICS handling not implemented in the source, so it compiles on Intel at the moment)
+- Fix: artifacts in RemoveGrain mode 19 for 10-16 bits
 
 v1.0 (20200427)
 - RemoveGrain mode 26-28, (C, up to SSE4.1)

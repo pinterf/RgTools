@@ -2223,7 +2223,7 @@ RG_FORCEINLINE __m128i rg_mode19_sse_16(const Byte* pSrc, int srcPitch) {
   auto a13    = _mm_avg_epu16 (a1, a3);
   auto a68    = _mm_avg_epu16 (a6, a8);
   auto a1368  = _mm_avg_epu16 (a13, a68);
-  auto a1368b = _mm_subs_epu16 (a1368, _mm_set1_epi8(1));
+  auto a1368b = _mm_subs_epu16 (a1368, _mm_set1_epi16(1));
   auto a25    = _mm_avg_epu16 (a2, a5);
   auto a47    = _mm_avg_epu16 (a4, a7);
   auto a2457  = _mm_avg_epu16 (a25, a47);

@@ -35,7 +35,6 @@ else()
   set(INTEL_SIMD "OFF")
 endif()
 
-option(ENABLE_PLUGINS "Build set of default external plugins" ON)
 option(ENABLE_INTEL_SIMD "Enable SIMD intrinsics for Intel processors" "${INTEL_SIMD}")
 
 if(CMAKE_CONFIGURATION_TYPES)

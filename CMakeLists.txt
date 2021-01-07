@@ -1,13 +1,13 @@
 # We need CMake 3.8 at least, because we require
 # CMAKE_CXX_STANDARD to be set to C++17.
 # Visual Studio 2019 is supported from CMake 3.14.1
-# Tested generators:
+# Possible generators:
 # "MinGW Makefiles": MSYS2/Mingw32 GCC 8.3 build
 # "Visual Studio 15 2017" optional platform generator Win32 and x64
 
 # "Visual Studio 16 2019" optional platform generator Win32 and x64
 # "Visual Studio 16 2019" + LLVM 8.0 (clang) optional platform generator Win32 and x64
-CMAKE_MINIMUM_REQUIRED( VERSION 2.8.11 )
+CMAKE_MINIMUM_REQUIRED( VERSION 3.8.2 )
 
 project("RgTools" LANGUAGES CXX)
   include(GNUInstallDirs)
@@ -192,7 +192,7 @@ ELSE()
       # macOS uses Clang's linker, doesn't like --no-undefined
       SET( CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-undefined,error" )
     else()
-      if(GNUC)
+      if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         # make sure there are no undefined symbols
         SET( CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined" )
       endif()

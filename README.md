@@ -6,6 +6,9 @@ Some routines might be slightly less efficient than original, some are faster. O
 
 This plugin is written from scratch and licensed under the [MIT license][1]. Some modes of RemoveGrain and Repair were taken from the Firesledge's Dither package.
 
+v1.2 (20210526)
+- Fix: garbage in 10+ bit Backward/ForwardClense for non SSE4.1 processors (C code part)
+
 v1.1 (20210104)
 - Source syntax for GCC
 - CMake build environment, builds on Linux, at least on my (pinterf) Ubuntu 19.10 WSL

@@ -33,8 +33,8 @@ RG_FORCEINLINE uint16_t sclense_process_pixel_c_16(uint16_t src, uint16_t ref1, 
   uint16_t minref = std::min(ref1, ref2);
   uint16_t maxref = std::max(ref1, ref2);
 
-  uint16_t mi = subs_16_c(adds_16_c<bits_per_pixel>(minref, minref), ref2);
-  uint16_t ma = subs_16_c(adds_16_c<bits_per_pixel>(maxref, maxref), ref2);
+  uint16_t mi = subs_16_c(minref, subs_16_c(ref2, minref)); // minref - (ref2 - minref)
+  uint16_t ma = adds_16_c<bits_per_pixel>(subs_16_c(maxref, ref2), maxref); // (maxref - ref2) + maxref
 
   return clip_16(src, mi, ma);
 }
@@ -44,8 +44,8 @@ RG_FORCEINLINE float sclense_process_pixel_c_32(float src, float ref1, float ref
   float minref = std::min(ref1, ref2);
   float maxref = std::max(ref1, ref2);
 
-  float mi = subs_32_c<chroma>(adds_32_c<chroma>(minref, minref), ref2);
-  float ma = subs_32_c<chroma>(adds_32_c<chroma>(maxref, maxref), ref2);
+  float mi = subs_32_c<chroma>(minref, subs_32_c<chroma>(ref2, minref)); // minref - (ref2 - minref)
+  float ma = adds_32_c<chroma>(subs_32_c<chroma>(maxref, ref2), maxref); // (maxref - ref2) + maxref
 
   return clip_32(src, mi, ma);
 }

@@ -13,7 +13,7 @@ static void process_plane_c(IScriptEnvironment* env, BYTE* pDst, const BYTE* pSr
   for (int y = 1; y < height-1; ++y) {
     reinterpret_cast<pixel_t *>(pDst)[0] = reinterpret_cast<const pixel_t *>(pSrc)[0];
     for (int x = 1; x < width-1; x+=1) {
-      pixel_t result = processor(pRef + x*sizeof(pixel_t), reinterpret_cast<const pixel_t *>(pSrc)[x], srcPitch);
+      pixel_t result = processor(pRef + x*sizeof(pixel_t), reinterpret_cast<const pixel_t *>(pSrc)[x], refPitch);
       reinterpret_cast<pixel_t *>(pDst)[x] = result;
     }
     reinterpret_cast<pixel_t *>(pDst)[width-1] = reinterpret_cast<const pixel_t *>(pSrc)[width-1];

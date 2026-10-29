@@ -1,7 +1,7 @@
 #ifndef __REPAIR_FUNCTIONS_SSE_H__
 #define __REPAIR_FUNCTIONS_SSE_H__
 
-#include "common.h"
+#include "common_sse.h"
 
 typedef __m128i (SseModeProcessor)(const Byte*, const __m128i &val, int);
 

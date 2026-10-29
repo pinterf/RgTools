@@ -36,7 +36,7 @@
 #endif // __FMA__ 
 
 
-#include "common.h"
+#include "common_sse.h"
 
 typedef unsigned char Byte;
 

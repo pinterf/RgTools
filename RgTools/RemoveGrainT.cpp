@@ -6,7 +6,7 @@
 // 2019 Rewrite and additional work by Ferenc Pintér
 
 #include "RemoveGrainT.h"
-#include "common.h"
+#include "common_sse.h"
 #include <cassert>
 #include "emmintrin.h"
 #include "immintrin.h"

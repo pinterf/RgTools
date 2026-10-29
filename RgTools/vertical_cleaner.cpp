@@ -1,4 +1,5 @@
 #include "vertical_cleaner.h"
+#include "common_sse.h"
 
 static void vcleaner_median_sse2_uint8(Byte* pDst, const Byte* pSrc, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment* env) {
   typedef uint8_t pixel_t;

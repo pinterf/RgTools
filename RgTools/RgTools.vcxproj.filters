@@ -50,6 +50,9 @@
     <ClInclude Include="common_avx2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="common_sse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="removegrain.h">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -8,7 +8,7 @@
 // cannot be templatized
 // reason: platform is function attribute, cannot mix e.g. sse2 and sse4.1
 
-#include "common.h"
+#include "common_sse.h"
 
 typedef __m128i (SseModeProcessor)(const Byte*, int);
 

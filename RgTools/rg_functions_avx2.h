@@ -1079,8 +1079,6 @@ RG_FORCEINLINE __m256i rg_mode10_avx2_32(const Byte* pSrc, int srcPitch) {
   return _mm256_castps_si256(select_on_equal_32(mindiff, d7, result, a7));
 }
 
-// mode11 after mode12
-
 //-------------------
 
 template<bool aligned>
@@ -1141,26 +1139,62 @@ RG_FORCEINLINE __m256i rg_mode12_avx2_32(const Byte* pSrc, int srcPitch) {
 }
 
 //-------------------
-/*
-template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode12_avx2(const Byte* pSrc, int srcPitch);
-template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode12_avx2_16(const Byte* pSrc, int srcPitch);
-template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode12_avx2_32(const Byte* pSrc, int srcPitch);
-*/
-//todo: actually implement is as mode 11
+// mode 11: exact (4*c + 2*(a2+a4+a5+a7) + a1+a3+a6+a8 + 8) >> 4, same as C
+// mode 12 is the faster approximation with cascaded averages (difference <= 1)
+
+// 8 bit: the sum (max 16*255+8) fits in 16 bit lanes
+RG_FORCEINLINE __m256i rg_mode11_sum_epi16_avx2(const __m256i& c, const __m256i& a1, const __m256i& a2, const __m256i& a3, const __m256i& a4,
+  const __m256i& a5, const __m256i& a6, const __m256i& a7, const __m256i& a8) {
+  auto edges = _mm256_add_epi16(_mm256_add_epi16(a2, a4), _mm256_add_epi16(a5, a7));
+  auto corners = _mm256_add_epi16(_mm256_add_epi16(a1, a3), _mm256_add_epi16(a6, a8));
+  auto sum = _mm256_add_epi16(_mm256_slli_epi16(_mm256_add_epi16(_mm256_slli_epi16(c, 1), edges), 1), corners);
+  return _mm256_srli_epi16(_mm256_add_epi16(sum, _mm256_set1_epi16(8)), 4);
+}
+
+// 10-16 bit: 32 bit lanes
+RG_FORCEINLINE __m256i rg_mode11_sum_epi32_avx2(const __m256i& c, const __m256i& a1, const __m256i& a2, const __m256i& a3, const __m256i& a4,
+  const __m256i& a5, const __m256i& a6, const __m256i& a7, const __m256i& a8) {
+  auto edges = _mm256_add_epi32(_mm256_add_epi32(a2, a4), _mm256_add_epi32(a5, a7));
+  auto corners = _mm256_add_epi32(_mm256_add_epi32(a1, a3), _mm256_add_epi32(a6, a8));
+  auto sum = _mm256_add_epi32(_mm256_slli_epi32(_mm256_add_epi32(_mm256_slli_epi32(c, 1), edges), 1), corners);
+  return _mm256_srli_epi32(_mm256_add_epi32(sum, _mm256_set1_epi32(8)), 4);
+}
+
+// unpack and pack work per 128 bit lane, the pack restores the order
 template<bool aligned>
 RG_FORCEINLINE __m256i rg_mode11_avx2(const Byte* pSrc, int srcPitch) {
-  return rg_mode12_avx2<aligned>(pSrc, srcPitch);
+  LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
+  auto zero = _mm256_setzero_si256();
+  auto lo = rg_mode11_sum_epi16_avx2(_mm256_unpacklo_epi8(c, zero), _mm256_unpacklo_epi8(a1, zero), _mm256_unpacklo_epi8(a2, zero),
+    _mm256_unpacklo_epi8(a3, zero), _mm256_unpacklo_epi8(a4, zero), _mm256_unpacklo_epi8(a5, zero), _mm256_unpacklo_epi8(a6, zero),
+    _mm256_unpacklo_epi8(a7, zero), _mm256_unpacklo_epi8(a8, zero));
+  auto hi = rg_mode11_sum_epi16_avx2(_mm256_unpackhi_epi8(c, zero), _mm256_unpackhi_epi8(a1, zero), _mm256_unpackhi_epi8(a2, zero),
+    _mm256_unpackhi_epi8(a3, zero), _mm256_unpackhi_epi8(a4, zero), _mm256_unpackhi_epi8(a5, zero), _mm256_unpackhi_epi8(a6, zero),
+    _mm256_unpackhi_epi8(a7, zero), _mm256_unpackhi_epi8(a8, zero));
+  return _mm256_packus_epi16(lo, hi);
 }
+
 template<bool aligned>
 RG_FORCEINLINE __m256i rg_mode11_avx2_16(const Byte* pSrc, int srcPitch) {
-  return rg_mode12_avx2_16<aligned>(pSrc, srcPitch);
+  LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
+  auto zero = _mm256_setzero_si256();
+  auto lo = rg_mode11_sum_epi32_avx2(_mm256_unpacklo_epi16(c, zero), _mm256_unpacklo_epi16(a1, zero), _mm256_unpacklo_epi16(a2, zero),
+    _mm256_unpacklo_epi16(a3, zero), _mm256_unpacklo_epi16(a4, zero), _mm256_unpacklo_epi16(a5, zero), _mm256_unpacklo_epi16(a6, zero),
+    _mm256_unpacklo_epi16(a7, zero), _mm256_unpacklo_epi16(a8, zero));
+  auto hi = rg_mode11_sum_epi32_avx2(_mm256_unpackhi_epi16(c, zero), _mm256_unpackhi_epi16(a1, zero), _mm256_unpackhi_epi16(a2, zero),
+    _mm256_unpackhi_epi16(a3, zero), _mm256_unpackhi_epi16(a4, zero), _mm256_unpackhi_epi16(a5, zero), _mm256_unpackhi_epi16(a6, zero),
+    _mm256_unpackhi_epi16(a7, zero), _mm256_unpackhi_epi16(a8, zero));
+  return _mm256_packus_epi32(lo, hi);
 }
+
+// float: same operation order as C (the *4 and *2 are exact, a contracted FMA gives the same result)
 template<bool aligned>
 RG_FORCEINLINE __m256i rg_mode11_avx2_32(const Byte* pSrc, int srcPitch) {
-  return rg_mode12_avx2_32<aligned>(pSrc, srcPitch);
+  LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
+  auto edges = _mm256_add_ps(_mm256_add_ps(_mm256_add_ps(a2, a4), a5), a7);
+  auto sum = _mm256_add_ps(_mm256_mul_ps(c, _mm256_set1_ps(4.0f)), _mm256_mul_ps(edges, _mm256_set1_ps(2.0f)));
+  sum = _mm256_add_ps(_mm256_add_ps(_mm256_add_ps(_mm256_add_ps(sum, a1), a3), a6), a8);
+  return _mm256_castps_si256(_mm256_mul_ps(sum, _mm256_set1_ps(1.0f / 16.0f)));
 }
 
 //-------------------

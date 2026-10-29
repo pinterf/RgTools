@@ -1526,31 +1526,58 @@ RG_FORCEINLINE __m128i rg_mode10_sse_32(const Byte* pSrc, int srcPitch) {
 
 //-------------------
 
-template<bool aligned>
-RG_FORCEINLINE __m128i rg_mode12_sse2(const Byte* pSrc, int srcPitch);
+// mode 11: exact (4*c + 2*(a2+a4+a5+a7) + a1+a3+a6+a8 + 8) >> 4, same as C
+// mode 12 is the faster approximation with cascaded averages (difference <= 1)
 
-template<bool aligned>
+// 8 bit: the sum (max 16*255+8) fits in 16 bit lanes
+RG_FORCEINLINE __m128i rg_mode11_sum_epi16(const __m128i& c, const __m128i& a1, const __m128i& a2, const __m128i& a3, const __m128i& a4,
+  const __m128i& a5, const __m128i& a6, const __m128i& a7, const __m128i& a8) {
+  auto edges = _mm_add_epi16(_mm_add_epi16(a2, a4), _mm_add_epi16(a5, a7));
+  auto corners = _mm_add_epi16(_mm_add_epi16(a1, a3), _mm_add_epi16(a6, a8));
+  auto sum = _mm_add_epi16(_mm_slli_epi16(_mm_add_epi16(_mm_slli_epi16(c, 1), edges), 1), corners);
+  return _mm_srli_epi16(_mm_add_epi16(sum, _mm_set1_epi16(8)), 4);
+}
+
+RG_FORCEINLINE __m128i rg_mode11_epu8(const __m128i& c, const __m128i& a1, const __m128i& a2, const __m128i& a3, const __m128i& a4,
+  const __m128i& a5, const __m128i& a6, const __m128i& a7, const __m128i& a8) {
+  auto zero = _mm_setzero_si128();
+  auto lo = rg_mode11_sum_epi16(_mm_unpacklo_epi8(c, zero), _mm_unpacklo_epi8(a1, zero), _mm_unpacklo_epi8(a2, zero),
+    _mm_unpacklo_epi8(a3, zero), _mm_unpacklo_epi8(a4, zero), _mm_unpacklo_epi8(a5, zero), _mm_unpacklo_epi8(a6, zero),
+    _mm_unpacklo_epi8(a7, zero), _mm_unpacklo_epi8(a8, zero));
+  auto hi = rg_mode11_sum_epi16(_mm_unpackhi_epi8(c, zero), _mm_unpackhi_epi8(a1, zero), _mm_unpackhi_epi8(a2, zero),
+    _mm_unpackhi_epi8(a3, zero), _mm_unpackhi_epi8(a4, zero), _mm_unpackhi_epi8(a5, zero), _mm_unpackhi_epi8(a6, zero),
+    _mm_unpackhi_epi8(a7, zero), _mm_unpackhi_epi8(a8, zero));
+  return _mm_packus_epi16(lo, hi);
+}
+
+// 10-16 bit: 32 bit lanes
+RG_FORCEINLINE __m128i rg_mode11_sum_epi32(const __m128i& c, const __m128i& a1, const __m128i& a2, const __m128i& a3, const __m128i& a4,
+  const __m128i& a5, const __m128i& a6, const __m128i& a7, const __m128i& a8) {
+  auto edges = _mm_add_epi32(_mm_add_epi32(a2, a4), _mm_add_epi32(a5, a7));
+  auto corners = _mm_add_epi32(_mm_add_epi32(a1, a3), _mm_add_epi32(a6, a8));
+  auto sum = _mm_add_epi32(_mm_slli_epi32(_mm_add_epi32(_mm_slli_epi32(c, 1), edges), 1), corners);
+  return _mm_srli_epi32(_mm_add_epi32(sum, _mm_set1_epi32(8)), 4);
+}
+
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i rg_mode12_sse(const Byte* pSrc, int srcPitch);
+RG_FORCEINLINE __m128i rg_mode11_epu16(const __m128i& c, const __m128i& a1, const __m128i& a2, const __m128i& a3, const __m128i& a4,
+  const __m128i& a5, const __m128i& a6, const __m128i& a7, const __m128i& a8) {
+  auto zero = _mm_setzero_si128();
+  auto lo = rg_mode11_sum_epi32(_mm_unpacklo_epi16(c, zero), _mm_unpacklo_epi16(a1, zero), _mm_unpacklo_epi16(a2, zero),
+    _mm_unpacklo_epi16(a3, zero), _mm_unpacklo_epi16(a4, zero), _mm_unpacklo_epi16(a5, zero), _mm_unpacklo_epi16(a6, zero),
+    _mm_unpacklo_epi16(a7, zero), _mm_unpacklo_epi16(a8, zero));
+  auto hi = rg_mode11_sum_epi32(_mm_unpackhi_epi16(c, zero), _mm_unpackhi_epi16(a1, zero), _mm_unpackhi_epi16(a2, zero),
+    _mm_unpackhi_epi16(a3, zero), _mm_unpackhi_epi16(a4, zero), _mm_unpackhi_epi16(a5, zero), _mm_unpackhi_epi16(a6, zero),
+    _mm_unpackhi_epi16(a7, zero), _mm_unpackhi_epi16(a8, zero));
+  return _mm_packus_epi32(lo, hi);
+}
 
-template<bool aligned>
-#if defined(GCC) || defined(CLANG)
-__attribute__((__target__("sse4.1")))
-#endif
-RG_FORCEINLINE __m128i rg_mode12_sse_16(const Byte* pSrc, int srcPitch);
-
-template<bool aligned>
-#if defined(GCC) || defined(CLANG)
-__attribute__((__target__("sse4.1")))
-#endif
-RG_FORCEINLINE __m128i rg_mode12_sse_32(const Byte* pSrc, int srcPitch);
-
-//todo: actually implement is as mode 11
 template<bool aligned>
 RG_FORCEINLINE __m128i rg_mode11_sse2(const Byte* pSrc, int srcPitch) {
-  return rg_mode12_sse2<aligned>(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
+  return rg_mode11_epu8(c, a1, a2, a3, a4, a5, a6, a7, a8);
 }
 
 template<bool aligned>
@@ -1558,7 +1585,8 @@ template<bool aligned>
 __attribute__((__target__("sse4.1")))
 #endif
 RG_FORCEINLINE __m128i rg_mode11_sse(const Byte* pSrc, int srcPitch) {
-  return rg_mode12_sse<aligned>(pSrc, srcPitch);
+  LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
+  return rg_mode11_epu8(c, a1, a2, a3, a4, a5, a6, a7, a8);
 }
 
 template<bool aligned>
@@ -1566,15 +1594,21 @@ template<bool aligned>
 __attribute__((__target__("sse4.1")))
 #endif
 RG_FORCEINLINE __m128i rg_mode11_sse_16(const Byte* pSrc, int srcPitch) {
-  return rg_mode12_sse_16<aligned>(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
+  return rg_mode11_epu16(c, a1, a2, a3, a4, a5, a6, a7, a8);
 }
 
+// float: same operation order as C (the *4 and *2 are exact, a contracted FMA gives the same result)
 template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
 RG_FORCEINLINE __m128i rg_mode11_sse_32(const Byte* pSrc, int srcPitch) {
-  return rg_mode12_sse_32<aligned>(pSrc, srcPitch);
+  LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
+  auto edges = _mm_add_ps(_mm_add_ps(_mm_add_ps(a2, a4), a5), a7);
+  auto sum = _mm_add_ps(_mm_mul_ps(c, _mm_set1_ps(4.0f)), _mm_mul_ps(edges, _mm_set1_ps(2.0f)));
+  sum = _mm_add_ps(_mm_add_ps(_mm_add_ps(_mm_add_ps(sum, a1), a3), a6), a8);
+  return _mm_castps_si128(_mm_mul_ps(sum, _mm_set1_ps(1.0f / 16.0f)));
 }
 
 //-------------------

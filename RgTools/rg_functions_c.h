@@ -752,7 +752,6 @@ RG_FORCEINLINE float rg_mode10_cpp_32(const Byte* pSrc, int srcPitch) {
 
 RG_FORCEINLINE Byte rg_mode11_cpp(const Byte* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
-    // fixme: SSE does not work like this!
     int	sum = 4 * c + 2 * (a2 + a4 + a5 + a7) + a1 + a3 + a6 + a8;
     int	val = (sum + 8) >> 4;
 

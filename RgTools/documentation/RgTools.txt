@@ -133,93 +133,16 @@ So the new modes which does not exist in RgTool 0.92-
 29 - SmartRG18
 30 - SoftRG18
 
-Visual Studio 2019 16.0 Build
-=============================
-Do not use Cmake, use existing .sln solution file
+Build
+=====
+Windows, Visual Studio (no CMake for MSVC, use the solutions):
+  - Visual Studio 2026: RgTools.slnx, configurations Release (MSVC v145) and Rel_Clang (ClangCL, the Clang
+    toolset that comes with Visual Studio), Win32 and x64.
+  - Visual Studio 2022: RgTools.sln, configuration Release_v141_xp (Windows XP and Windows 7), Win32 and x64.
+    Needs the "C++ Windows XP Support for VS 2017 (v141) tools" component.
 
-LLVM Clang 8.0 Build
-====================
-Do not use Cmake for building makefile, use existing .sln solution file.
-
-  - Install LLVM 8.0 (latest as of March 29, 2019: http://releases.llvm.org/download.html, Windows pre-built libraries)
-  - Install Clang Power Tools & LLVM Compiler Toolchain
-    - https://marketplace.visualstudio.com/items?itemName=caphyon.ClangPowerTools
-    - https://marketplace.visualstudio.com/items?itemName=LLVMExtensions.llvm-toolchain
-  - (When using CMakeGUI) After Configure/Specify generator for this project, type LLVM for "Optional Toolset to use (-T option)"
-  - Knows issues: 
-    - Generating assembler output is broken on 32 bits
-
-GCC 8.3 Build
-=============
-  - Howto: MSYS2/GCC: for windows based build environment see step-by-step instructions: 
-    https://github.com/orlp/dev-on-windows/wiki/Installing-GCC--&-MSYS2
-  - CMake: choose generator "MinGW Makefiles" from CMakeGUI or 
-      del CMakeCache.txt
-      "c:\Program Files\CMake\bin\cmake.exe" -G "MinGW Makefiles" .
-    then build with
-      mingw32-make install 
-      (e.g. c:\msys64\mingw64\bin\mingw32-make.exe install)
-  - todo: fix target directory
-
-Clang 8.0 warning!
-==================
-Don't use Clang 8.0 until they release the patch made on April 14, 2019
-Due to a bug related to _mm_avg_epu8 and its family, the code is several times slower than in Microsoft VS 2019 16.0.
-
-// Bad codegen example. MSVC is 3x faster
-// https://godbolt.org/z/xyGcIE
-
-//-------------------
-template<bool aligned>
-#if defined(GCC) || defined(CLANG)
-__attribute__((__target__("fma,avx2")))
-#endif
-RG_FORCEINLINE __m256i rg_mode15_and16_avx2_demo(const Byte* pSrc, int srcPitch) {
-  LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
-    // debug
-  auto avg12 = _mm256_avg_epu8(a1, a2);
-  auto avg123 = _mm256_avg_epu8(avg12, a3);
-  return avg123;
-}
-
-/*
-LLVM trunk (9.0) - Good
-        vmovdqu ymm0, ymmword ptr [rdi - 1]
-        vpavgb  ymm0, ymm0, ymmword ptr [rdi]
-        vpavgb  ymm0, ymm0, ymmword ptr [rdi + 1]
-*/
-/*
-LLVM 8.0 - Wrong
-        vpmovzxbw       ymm0, xmmword ptr [rdi + 15] # ymm0 = mem[0],zero,mem[1],zero,mem[2],zero,mem[3],zero,mem[4],zero,mem[5],zero,mem[6],zero,mem[7],zero,mem[8],zero,mem[9],zero,mem[10],zero,mem[11],zero,mem[12],zero,mem[13],zero,mem[14],zero,mem[15],zero
-        vpmovzxbw       ymm1, xmmword ptr [rdi - 1] # ymm1 = mem[0],zero,mem[1],zero,mem[2],zero,mem[3],zero,mem[4],zero,mem[5],zero,mem[6],zero,mem[7],zero,mem[8],zero,mem[9],zero,mem[10],zero,mem[11],zero,mem[12],zero,mem[13],zero,mem[14],zero,mem[15],zero
-        vpmovzxbw       ymm2, xmmword ptr [rdi + 16] # ymm2 = mem[0],zero,mem[1],zero,mem[2],zero,mem[3],zero,mem[4],zero,mem[5],zero,mem[6],zero,mem[7],zero,mem[8],zero,mem[9],zero,mem[10],zero,mem[11],zero,mem[12],zero,mem[13],zero,mem[14],zero,mem[15],zero
-        vpaddw  ymm0, ymm0, ymm2
-        vpmovzxbw       ymm2, xmmword ptr [rdi] # ymm2 = mem[0],zero,mem[1],zero,mem[2],zero,mem[3],zero,mem[4],zero,mem[5],zero,mem[6],zero,mem[7],zero,mem[8],zero,mem[9],zero,mem[10],zero,mem[11],zero,mem[12],zero,mem[13],zero,mem[14],zero,mem[15],zero
-        vpmovzxbw       ymm3, xmmword ptr [rdi + 17] # ymm3 = mem[0],zero,mem[1],zero,mem[2],zero,mem[3],zero,mem[4],zero,mem[5],zero,mem[6],zero,mem[7],zero,mem[8],zero,mem[9],zero,mem[10],zero,mem[11],zero,mem[12],zero,mem[13],zero,mem[14],zero,mem[15],zero
-        vpmovzxbw       ymm4, xmmword ptr [rdi + 1] # ymm4 = mem[0],zero,mem[1],zero,mem[2],zero,mem[3],zero,mem[4],zero,mem[5],zero,mem[6],zero,mem[7],zero,mem[8],zero,mem[9],zero,mem[10],zero,mem[11],zero,mem[12],zero,mem[13],zero,mem[14],zero,mem[15],zero
-        vpaddw  ymm1, ymm1, ymm2
-        vpcmpeqd        ymm2, ymm2, ymm2
-        vpsubw  ymm0, ymm0, ymm2
-        vpsubw  ymm1, ymm1, ymm2
-        vpsrlw  ymm1, ymm1, 1
-        vpsrlw  ymm0, ymm0, 1
-        vpbroadcastw    ymm5, word ptr [rip + .LCPI0_0] # ymm5 = [255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255]
-        vpand   ymm0, ymm0, ymm5
-        vpaddw  ymm0, ymm3, ymm0
-        vpand   ymm1, ymm1, ymm5
-        vpaddw  ymm1, ymm4, ymm1
-        vpsubw  ymm0, ymm0, ymm2
-        vpsubw  ymm1, ymm1, ymm2
-        vpsrlw  ymm1, ymm1, 1
-        vpsrlw  ymm0, ymm0, 1
-        vmovdqa ymm2, ymmword ptr [rip + .LCPI0_1] # ymm2 = [255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255]
-        vpand   ymm0, ymm0, ymm2
-        vextracti128    xmm3, ymm0, 1
-        vpackuswb       xmm0, xmm0, xmm3
-        vpand   ymm1, ymm1, ymm2
-        vextracti128    xmm2, ymm1, 1
-        vpackuswb       xmm1, xmm1, xmm2
-        vinserti128     ymm0, ymm1, xmm0, 1
-
-*/
-
+Windows MinGW (MSYS2 GCC or Clang), Linux, macOS (CMake, Ninja or Makefiles):
+    cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=Release
+    cmake --build build
+    cmake --install build      (Linux: installs to <libdir>/avisynth)
+  The target processor is detected: x86 enables ENABLE_INTEL_SIMD, aarch64 ENABLE_NEON_SIMD.

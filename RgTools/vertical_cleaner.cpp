@@ -1,7 +1,7 @@
 #include "vertical_cleaner.h"
 
 template<typename pixel_t>
-static void vcleaner_median_c(Byte* pDst8, const Byte *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {
+static void vcleaner_median_c(Byte* pDst8, const Byte *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
     env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 1);
 
     pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
@@ -47,7 +47,7 @@ static RG_FORCEINLINE float satb_32(float value) {
 #endif
 }
 
-static void vcleaner_relaxed_median_c(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {
+static void vcleaner_relaxed_median_c(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
   env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 2);
 
   pSrc += srcPitch*2;
@@ -76,8 +76,7 @@ static void vcleaner_relaxed_median_c(Byte* pDst, const Byte *pSrc, int dstPitch
   env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 2);
 }
 
-template<int bits_per_pixel>
-static void vcleaner_relaxed_median_c_16(Byte* pDst8, const Byte *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {
+static void vcleaner_relaxed_median_c_16(Byte* pDst8, const Byte *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
     env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 2);
 
     uint16_t *pDst = reinterpret_cast<uint16_t *>(pDst8);
@@ -114,7 +113,7 @@ static void vcleaner_relaxed_median_c_16(Byte* pDst8, const Byte *pSrc8, int dst
 }
 
 template<bool chroma>
-static void vcleaner_relaxed_median_c_32(Byte* pDst8, const Byte *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {
+static void vcleaner_relaxed_median_c_32(Byte* pDst8, const Byte *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
   env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 2);
 
   float *pDst = reinterpret_cast<float *>(pDst8);
@@ -154,11 +153,11 @@ static void vcleaner_relaxed_median_c_32(Byte* pDst8, const Byte *pSrc8, int dst
 }
 
 
-void vcleaner_copy_plane(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {
+void vcleaner_copy_plane(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
     env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, height);
 }
 
-void vcleaner_do_nothing(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {
+void vcleaner_do_nothing(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
 
 }
 
@@ -169,33 +168,12 @@ static VCleanerProcessor* c_functions[] = {
     vcleaner_relaxed_median_c
 };
 
-// distinct templates for 10-12-14-16 bit for const max_pixel_value
-static VCleanerProcessor* c_functions_10[] = {
-  vcleaner_do_nothing,
-  vcleaner_copy_plane,
-  vcleaner_median_c<uint16_t>,
-  vcleaner_relaxed_median_c_16<10>
-};
-
-static VCleanerProcessor* c_functions_12[] = {
-  vcleaner_do_nothing,
-  vcleaner_copy_plane,
-  vcleaner_median_c<uint16_t>,
-  vcleaner_relaxed_median_c_16<12>
-};
-
-static VCleanerProcessor* c_functions_14[] = {
-  vcleaner_do_nothing,
-  vcleaner_copy_plane,
-  vcleaner_median_c<uint16_t>,
-  vcleaner_relaxed_median_c_16<14>
-};
-
+// 10-16 bit (the max pixel value comes from bits_per_pixel)
 static VCleanerProcessor* c_functions_16[] = {
   vcleaner_do_nothing,
   vcleaner_copy_plane,
   vcleaner_median_c<uint16_t>,
-  vcleaner_relaxed_median_c_16<16>
+  vcleaner_relaxed_median_c_16
 };
 
 static VCleanerProcessor* c_functions_32[] = {
@@ -215,10 +193,7 @@ static VCleanerProcessor* c_functions_32_chroma[] = {
 #ifdef INTEL_INTRINSICS
 // vertical_cleaner_sse.cpp
 extern VCleanerProcessor* vcleaner_sse2_functions[];
-extern VCleanerProcessor* vcleaner_sse4_functions_uint16_10[];
-extern VCleanerProcessor* vcleaner_sse4_functions_uint16_12[];
-extern VCleanerProcessor* vcleaner_sse4_functions_uint16_14[];
-extern VCleanerProcessor* vcleaner_sse4_functions_uint16_16[];
+extern VCleanerProcessor* vcleaner_sse4_functions_uint16[];
 extern VCleanerProcessor* vcleaner_sse2_functions_32[];
 extern VCleanerProcessor* vcleaner_sse2_functions_32_chroma[];
 #endif
@@ -230,45 +205,35 @@ static void dispatch_median(int mode, Byte* pDst, const Byte *pSrc, int dstPitch
   if (pixelsize == 1) {
 #ifdef INTEL_INTRINSICS
     if ((env->GetCPUFlags() & CPUF_SSE2) && rowsize >= 16 && is_16byte_aligned(pSrc)) {
-      vcleaner_sse2_functions[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env);
+      vcleaner_sse2_functions[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, bits_per_pixel, env);
       return;
     }
 #endif
-    c_functions[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env);
+    c_functions[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, bits_per_pixel, env);
   }
   else if (pixelsize == 2) {
 #ifdef INTEL_INTRINSICS
     if ((env->GetCPUFlags() & CPUF_SSE4) && rowsize >= 16 && is_16byte_aligned(pSrc)) {
-      switch (bits_per_pixel) {
-      case 10: vcleaner_sse4_functions_uint16_10[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env); break;
-      case 12: vcleaner_sse4_functions_uint16_12[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env); break;
-      case 14: vcleaner_sse4_functions_uint16_14[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env); break;
-      case 16: vcleaner_sse4_functions_uint16_16[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env); break;
-      }
+      vcleaner_sse4_functions_uint16[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, bits_per_pixel, env);
       return;
     }
 #endif
-    switch (bits_per_pixel) {
-    case 10: c_functions_10[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env); break;
-    case 12: c_functions_12[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env); break;
-    case 14: c_functions_14[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env); break;
-    case 16: c_functions_16[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env); break;
-    }
+    c_functions_16[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, bits_per_pixel, env);
   }
   else { // if (pixelsize == 4
 #ifdef INTEL_INTRINSICS
     if ((env->GetCPUFlags() & CPUF_SSE2) && rowsize >= 16 && is_16byte_aligned(pSrc)) {
       if (chroma)
-        vcleaner_sse2_functions_32_chroma[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env);
+        vcleaner_sse2_functions_32_chroma[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, bits_per_pixel, env);
       else
-        vcleaner_sse2_functions_32[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env);
+        vcleaner_sse2_functions_32[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, bits_per_pixel, env);
       return;
     }
 #endif
     if (chroma)
-      c_functions_32_chroma[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env);
+      c_functions_32_chroma[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, bits_per_pixel, env);
     else
-      c_functions_32[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, env);
+      c_functions_32[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, bits_per_pixel, env);
   }
 }
 

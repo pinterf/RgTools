@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-typedef void (VCleanerProcessor)(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env);
+typedef void (VCleanerProcessor)(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env);
 
 // mode -1 and 0 entries of the function tables, shared by the C and SIMD tables
 VCleanerProcessor vcleaner_do_nothing;

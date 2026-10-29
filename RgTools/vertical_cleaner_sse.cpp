@@ -8,7 +8,7 @@
 
 namespace {
 
-static void vcleaner_median_sse2_uint8(Byte* pDst, const Byte* pSrc, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment* env) {
+static void vcleaner_median_sse2_uint8(Byte* pDst, const Byte* pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
   typedef uint8_t pixel_t;
   env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
 
@@ -43,7 +43,7 @@ static void vcleaner_median_sse2_uint8(Byte* pDst, const Byte* pSrc, int dstPitc
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-static void vcleaner_median_sse4_uint16(Byte* pDst, const Byte* pSrc, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment* env) {
+static void vcleaner_median_sse4_uint16(Byte* pDst, const Byte* pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
   typedef uint16_t pixel_t;
 
   env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
@@ -75,7 +75,7 @@ static void vcleaner_median_sse4_uint16(Byte* pDst, const Byte* pSrc, int dstPit
   env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
 }
 
-static void vcleaner_median_sse2_float(Byte* pDst, const Byte* pSrc, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment* env) {
+static void vcleaner_median_sse2_float(Byte* pDst, const Byte* pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
   typedef float pixel_t;
   env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
 
@@ -106,7 +106,7 @@ static void vcleaner_median_sse2_float(Byte* pDst, const Byte* pSrc, int dstPitc
   env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
 }
 
-static void vcleaner_relaxed_median_sse2(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {
+static void vcleaner_relaxed_median_sse2(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
     env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 2);
 
     pSrc += srcPitch*2;
@@ -153,11 +153,10 @@ static void vcleaner_relaxed_median_sse2(Byte* pDst, const Byte *pSrc, int dstPi
     env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 2);
 }
 
-template<int bits_per_pixel>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-static void vcleaner_relaxed_median_sse4_uint16(Byte* pDst8, const Byte *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {
+static void vcleaner_relaxed_median_sse4_uint16(Byte* pDst8, const Byte *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
   env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 2);
 
   uint16_t *pDst = reinterpret_cast<uint16_t *>(pDst8);
@@ -167,6 +166,8 @@ static void vcleaner_relaxed_median_sse4_uint16(Byte* pDst8, const Byte *pSrc8, 
   srcPitch /= sizeof(uint16_t);
 
   const int width = rowsize / sizeof(uint16_t);
+  // 16 bit: the min with 0xFFFF is a no-op (_mm_adds_epu16 saturates there)
+  const __m128i pixel_max = _mm_set1_epi16((short)((1u << bits_per_pixel) - 1));
 
   pSrc += srcPitch*2;
   pDst += dstPitch*2;
@@ -184,12 +185,8 @@ static void vcleaner_relaxed_median_sse4_uint16(Byte* pDst8, const Byte *pSrc8, 
 
       __m128i pt = _mm_adds_epu16(pdiff, p1);
       __m128i nt = _mm_adds_epu16(ndiff, n1);
-      if (bits_per_pixel < 16) // for 16 bit _mm_adds limits to FFFF
-      {
-        __m128i pixel_max = _mm_set1_epi16((short)((1u << bits_per_pixel) - 1));
-        pt = _mm_min_epu16(pt, pixel_max);
-        nt = _mm_min_epu16(nt, pixel_max);
-      }
+      pt = _mm_min_epu16(pt, pixel_max);
+      nt = _mm_min_epu16(nt, pixel_max);
 
       __m128i upper = _mm_min_epu16(pt, nt);
       upper = _mm_max_epu16(upper, p1);
@@ -219,7 +216,7 @@ static void vcleaner_relaxed_median_sse4_uint16(Byte* pDst8, const Byte *pSrc8, 
 }
 
 template<bool chroma>
-static void vcleaner_relaxed_median_sse_32(Byte* pDst8, const Byte *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env) {
+static void vcleaner_relaxed_median_sse_32(Byte* pDst8, const Byte *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
   env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 2);
 
   float *pDst = reinterpret_cast<float *>(pDst8);
@@ -278,32 +275,12 @@ static void vcleaner_relaxed_median_sse_32(Byte* pDst8, const Byte *pSrc8, int d
 
 } // namespace
 
-VCleanerProcessor* vcleaner_sse4_functions_uint16_10[] = {
+// 10-16 bit (the max pixel value comes from bits_per_pixel)
+VCleanerProcessor* vcleaner_sse4_functions_uint16[] = {
   vcleaner_do_nothing,
   vcleaner_copy_plane,
   vcleaner_median_sse4_uint16,
-  vcleaner_relaxed_median_sse4_uint16<10>
-};
-
-VCleanerProcessor* vcleaner_sse4_functions_uint16_12[] = {
-  vcleaner_do_nothing,
-  vcleaner_copy_plane,
-  vcleaner_median_sse4_uint16,
-  vcleaner_relaxed_median_sse4_uint16<12>
-};
-
-VCleanerProcessor* vcleaner_sse4_functions_uint16_14[] = {
-  vcleaner_do_nothing,
-  vcleaner_copy_plane,
-  vcleaner_median_sse4_uint16,
-  vcleaner_relaxed_median_sse4_uint16<14>
-};
-
-VCleanerProcessor* vcleaner_sse4_functions_uint16_16[] = {
-  vcleaner_do_nothing,
-  vcleaner_copy_plane,
-  vcleaner_median_sse4_uint16,
-  vcleaner_relaxed_median_sse4_uint16<16>
+  vcleaner_relaxed_median_sse4_uint16
 };
 
 VCleanerProcessor* vcleaner_sse2_functions_32[] = {

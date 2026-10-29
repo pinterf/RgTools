@@ -1,7 +1,7 @@
 // RgTools core test: the filter cores without a host (no AviSynth), at any bit depth.
 //
 // Every filter and mode on random planes (8 bit, 9..16 bit, 32 bit float; values weighted to 0 and the maximum),
-// YUV 4:2:0 (luma and chroma plane) and Gray, plane sizes from 1x1. Each SIMD level the CPU has is compared to C
+// YUV 4:2:0, 4:1:1, 4:4:0, 4:1:0 (luma and chroma plane) and Gray, plane sizes from 1x1. Each SIMD level the CPU has is compared to C
 // (bit-exact). The hash of all C outputs is printed: it must be the same on every platform (x86, aarch64).
 // Exit code: 0 if all SIMD outputs equal the C output.
 
@@ -84,14 +84,15 @@ uint64_t fnv1a(uint64_t h, const uint8_t* p, size_t n) {
   return h;
 }
 
-RgFormat make_format(RgColorFamily family, int bits, int width, int height) {
+RgFormat make_format(RgColorFamily family, int ssw, int ssh, int bits, int width, int height) {
   RgFormat f = {};
   f.family = family;
   f.bits_per_pixel = bits;
   f.pixelsize = pixelsize_of(bits);
   f.width = width;
   f.height = height;
-  f.ssw = f.ssh = family == RgColorFamily::YUV ? 1 : 0;
+  f.ssw = ssw;
+  f.ssh = ssh;
   f.has_alpha = false;
   return f;
 }
@@ -164,20 +165,33 @@ void check(Stats& st, const std::string& cfg, const RgFormat& f, int num_inputs,
 
 const int g_bits[] = { 8, 9, 10, 11, 12, 13, 14, 15, 16, 32 };
 const int g_sizes[][2] = { { 1, 1 }, { 2, 3 }, { 4, 4 }, { 5, 7 }, { 17, 6 }, { 18, 5 }, { 33, 9 }, { 34, 8 }, { 66, 10 }, { 130, 9 } };
-const RgColorFamily g_families[] = { RgColorFamily::YUV, RgColorFamily::Gray };
+struct Family { const char* name; RgColorFamily family; int ssw, ssh; };
+const Family g_families[] = {
+  { "YUV420", RgColorFamily::YUV, 1, 1 }, { "YUV411", RgColorFamily::YUV, 2, 0 }, { "YUV440", RgColorFamily::YUV, 0, 1 },
+  { "YUV410", RgColorFamily::YUV, 2, 2 }, { "Gray", RgColorFamily::Gray, 0, 0 } };
 
+// the frame size is a multiple of the subsampling (as in the hosts)
 template<class Body>
 void for_formats(Body body) {
-  for (RgColorFamily fam : g_families)
+  for (const Family& fam : g_families)
     for (int bits : g_bits)
-      for (auto& s : g_sizes)
-        body(make_format(fam, bits, s[0], s[1]));
+      for (auto& s : g_sizes) {
+        const int w = (s[0] + (1 << fam.ssw) - 1) >> fam.ssw << fam.ssw;
+        const int h = (s[1] + (1 << fam.ssh) - 1) >> fam.ssh << fam.ssh;
+        body(make_format(fam.family, fam.ssw, fam.ssh, bits, w, h));
+      }
+}
+
+const char* family_name(const RgFormat& f) {
+  for (const Family& fam : g_families)
+    if (fam.family == f.family && fam.ssw == f.ssw && fam.ssh == f.ssh)
+      return fam.name;
+  return "?";
 }
 
 std::string cfg_name(const char* filter, int mode, const RgFormat& f) {
   char buf[128];
-  snprintf(buf, sizeof(buf), "%s mode %d, %s %d bit %dx%d", filter, mode, f.family == RgColorFamily::Gray ? "Gray" : "YUV420",
-    f.bits_per_pixel, f.width, f.height);
+  snprintf(buf, sizeof(buf), "%s mode %d, %s %d bit %dx%d", filter, mode, family_name(f), f.bits_per_pixel, f.width, f.height);
   return buf;
 }
 

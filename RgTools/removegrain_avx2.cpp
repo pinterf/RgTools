@@ -43,7 +43,7 @@ static void process_plane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, BYTE*
         _mm256_storeu_si256(reinterpret_cast<__m256i*>(pDst + x), result); // store as unaligned
       }
       
-      if (mod_width != width) {
+      if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
         __m256i result = processor((uint8_t *)(pSrc + width - 1 - pixels_at_at_time), srcPitchOrig);
         _mm256_storeu_si256(reinterpret_cast<__m256i*>(pDst + width - 1 - pixels_at_at_time), result);
       }
@@ -90,7 +90,7 @@ static void process_halfplane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, B
           _mm256_storeu_si256(reinterpret_cast<__m256i*>(pDst + x), result);
         }
 
-        if (mod_width != width) {
+        if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
           __m256i result = processor((uint8_t *)(pSrc+width-1-pixels_at_at_time), srcPitchOrig);
           _mm256_storeu_si256(reinterpret_cast<__m256i*>(pDst+width-1-pixels_at_at_time), result);
         }

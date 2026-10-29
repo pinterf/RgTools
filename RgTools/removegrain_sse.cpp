@@ -39,7 +39,7 @@ static void process_plane_sse(IScriptEnvironment* env, const BYTE* pSrc8, BYTE* 
         _mm_store_si128(reinterpret_cast<__m128i*>(pDst + x), result);
       }
       
-      if (mod_width != width) {
+      if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
         __m128i result = processor((uint8_t *)(pSrc + width - 1 - pixels_at_at_time), srcPitchOrig);
         _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + width - 1 - pixels_at_at_time), result);
       }
@@ -87,7 +87,7 @@ static void process_plane_sse41(IScriptEnvironment* env, const BYTE* pSrc8, BYTE
       _mm_store_si128(reinterpret_cast<__m128i*>(pDst + x), result);
     }
 
-    if (mod_width != width) {
+    if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
       __m128i result = processor((uint8_t*)(pSrc + width - 1 - pixels_at_at_time), srcPitchOrig);
       _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + width - 1 - pixels_at_at_time), result);
     }
@@ -130,7 +130,7 @@ static void process_halfplane_sse(IScriptEnvironment* env, const BYTE* pSrc8, BY
           _mm_store_si128(reinterpret_cast<__m128i*>(pDst + x), result);
         }
 
-        if (mod_width != width) {
+        if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
           __m128i result = processor((uint8_t *)(pSrc+width-1-pixels_at_at_time), srcPitchOrig);
           _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst+width-1-pixels_at_at_time), result);
         }
@@ -178,7 +178,7 @@ static void process_halfplane_sse41(IScriptEnvironment* env, const BYTE* pSrc8, 
       _mm_store_si128(reinterpret_cast<__m128i*>(pDst + x), result);
     }
 
-    if (mod_width != width) {
+    if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
       __m128i result = processor((uint8_t*)(pSrc + width - 1 - pixels_at_at_time), srcPitchOrig);
       _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + width - 1 - pixels_at_at_time), result);
     }

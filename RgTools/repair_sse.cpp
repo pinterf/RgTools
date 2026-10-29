@@ -44,7 +44,7 @@ static void process_plane_sse(IScriptEnvironment* env, BYTE* pDst8, const BYTE* 
             _mm_store_si128(reinterpret_cast<__m128i*>(pDst+x), result);
         }
 
-        if (mod_width != width) {
+        if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
             __m128i val = simd_loadu_si128((uint8_t *)(pSrc + width - 1 - pixels_at_at_time));
             __m128i result = processor((uint8_t *)(pRef + width - 1 - pixels_at_at_time), val, refPitchOrig);
             _mm_storeu_si128(reinterpret_cast<__m128i*>((uint8_t *)(pDst + width - 1 - pixels_at_at_time)), result);
@@ -101,7 +101,7 @@ static void process_plane_sse3(IScriptEnvironment* env, BYTE* pDst8, const BYTE*
       _mm_store_si128(reinterpret_cast<__m128i*>(pDst + x), result);
     }
 
-    if (mod_width != width) {
+    if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
       __m128i val = simd_loadu_si128_sse3((uint8_t*)(pSrc + width - 1 - pixels_at_at_time));
       __m128i result = processor((uint8_t*)(pRef + width - 1 - pixels_at_at_time), val, refPitchOrig);
       _mm_storeu_si128(reinterpret_cast<__m128i*>((uint8_t*)(pDst + width - 1 - pixels_at_at_time)), result);
@@ -158,7 +158,7 @@ static void process_plane_sse41(IScriptEnvironment* env, BYTE* pDst8, const BYTE
       _mm_store_si128(reinterpret_cast<__m128i*>(pDst + x), result);
     }
 
-    if (mod_width != width) {
+    if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
       __m128i val = simd_loadu_si128_sse3((uint8_t*)(pSrc + width - 1 - pixels_at_at_time));
       __m128i result = processor((uint8_t*)(pRef + width - 1 - pixels_at_at_time), val, refPitchOrig);
       _mm_storeu_si128(reinterpret_cast<__m128i*>((uint8_t*)(pDst + width - 1 - pixels_at_at_time)), result);

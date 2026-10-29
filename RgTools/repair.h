@@ -1,15 +1,11 @@
 #ifndef __REPAIR_H__
 #define __REPAIR_H__
 
+// Repair: AviSynth front end
+
 #include "common.h"
 #include "rg_avs.h"
-
-
-typedef void (RepairPlaneProcessor)(IScriptEnvironment* env, BYTE* pDst, const BYTE* pSrc, const BYTE* pRef, int dstPitch, int srcPitch, int refPitch, int rowsize, int height, int bits_per_pixel);
-
-// mode -1 and 0 entries of the function tables, shared by the C and SIMD tables
-RepairPlaneProcessor repair_do_nothing;
-RepairPlaneProcessor repair_copy_plane;
+#include "repair_core.h"
 
 
 class Repair : public GenericVideoFilter {
@@ -22,22 +18,10 @@ public:
       return cachehints == CACHE_GET_MTMODE ? MT_NICE_FILTER : 0;
     }
 
-    const static int UNDEFINED_MODE = -2;
-
 private:
     PClip ref_;
-
-    int mode_;
-    int modeU_;
-    int modeV_;
-
-    int pixelsize;
-    int bits_per_pixel;
-
+    RepairCore core_;
     bool has_at_least_v8;
-
-    RepairPlaneProcessor **functions;
-    RepairPlaneProcessor** functions_chroma; // for float
 };
 
 

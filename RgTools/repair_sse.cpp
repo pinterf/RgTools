@@ -1,6 +1,7 @@
 // Repair: x86 SSE2 / SSE4.1 plane loops and function tables
 
-#include "repair.h"
+#include "repair_core.h"
+#include "common.h"
 
 #ifdef INTEL_INTRINSICS
 
@@ -9,8 +10,8 @@
 namespace {
 
 template<typename pixel_t, auto processor, auto processor_a>
-static void process_plane_sse(IScriptEnvironment* env, BYTE* pDst8, const BYTE* pSrc8, const BYTE* pRef8, int dstPitch, int srcPitch, int refPitch, int rowsize, int height, int /*bits_per_pixel*/) {
-    env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 1); // FIXME: change single row copy to memcpy (top and bottom rows)
+static void process_plane_sse(uint8_t* pDst8, const uint8_t* pSrc8, const uint8_t* pRef8, int dstPitch, int srcPitch, int refPitch, int rowsize, int height, int /*bits_per_pixel*/) {
+    rg_copy_rows(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 1);
 
     pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
     const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
@@ -58,7 +59,7 @@ static void process_plane_sse(IScriptEnvironment* env, BYTE* pDst8, const BYTE* 
         pRef += refPitch;
     }
 
-    env->BitBlt((uint8_t *)(pDst), dstPitch*sizeof(pixel_t), (uint8_t *)(pSrc), srcPitch*sizeof(pixel_t), rowsize, 1);  // FIXME: change single row copy to memcpy
+    rg_copy_rows((uint8_t *)(pDst), dstPitch*sizeof(pixel_t), (uint8_t *)(pSrc), srcPitch*sizeof(pixel_t), rowsize, 1);
 }
 
 #if 0
@@ -66,8 +67,8 @@ template<typename pixel_t, auto processor, auto processor_a>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse3")))
 #endif
-static void process_plane_sse3(IScriptEnvironment* env, BYTE* pDst8, const BYTE* pSrc8, const BYTE* pRef8, int dstPitch, int srcPitch, int refPitch, int rowsize, int height, int bits_per_pixel) {
-  env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 1);
+static void process_plane_sse3(uint8_t* pDst8, const uint8_t* pSrc8, const uint8_t* pRef8, int dstPitch, int srcPitch, int refPitch, int rowsize, int height, int bits_per_pixel) {
+  rg_copy_rows(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 1);
 
   pixel_t* pDst = reinterpret_cast<pixel_t*>(pDst8);
   const pixel_t* pSrc = reinterpret_cast<const pixel_t*>(pSrc8);
@@ -115,7 +116,7 @@ static void process_plane_sse3(IScriptEnvironment* env, BYTE* pDst8, const BYTE*
     pRef += refPitch;
   }
 
-  env->BitBlt((uint8_t*)(pDst), dstPitch * sizeof(pixel_t), (uint8_t*)(pSrc), srcPitch * sizeof(pixel_t), rowsize, 1);
+  rg_copy_rows((uint8_t*)(pDst), dstPitch * sizeof(pixel_t), (uint8_t*)(pSrc), srcPitch * sizeof(pixel_t), rowsize, 1);
 }
 #endif
 
@@ -123,8 +124,8 @@ template<typename pixel_t, auto processor, auto processor_a>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-static void process_plane_sse41(IScriptEnvironment* env, BYTE* pDst8, const BYTE* pSrc8, const BYTE* pRef8, int dstPitch, int srcPitch, int refPitch, int rowsize, int height, int bits_per_pixel) {
-  env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 1);
+static void process_plane_sse41(uint8_t* pDst8, const uint8_t* pSrc8, const uint8_t* pRef8, int dstPitch, int srcPitch, int refPitch, int rowsize, int height, int bits_per_pixel) {
+  rg_copy_rows(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 1);
 
   pixel_t* pDst = reinterpret_cast<pixel_t*>(pDst8);
   const pixel_t* pSrc = reinterpret_cast<const pixel_t*>(pSrc8);
@@ -181,7 +182,7 @@ static void process_plane_sse41(IScriptEnvironment* env, BYTE* pDst8, const BYTE
     pRef += refPitch;
   }
 
-  env->BitBlt((uint8_t*)(pDst), dstPitch * sizeof(pixel_t), (uint8_t*)(pSrc), srcPitch * sizeof(pixel_t), rowsize, 1);
+  rg_copy_rows((uint8_t*)(pDst), dstPitch * sizeof(pixel_t), (uint8_t*)(pSrc), srcPitch * sizeof(pixel_t), rowsize, 1);
 }
 
 } // namespace

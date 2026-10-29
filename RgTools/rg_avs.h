@@ -33,6 +33,7 @@ static inline RgFormat rg_format_from_vi(const VideoInfo& vi) {
   const bool yuv = format.family == RgColorFamily::YUV;
   format.ssw = yuv ? vi.GetPlaneWidthSubsampling(PLANAR_U) : 0;
   format.ssh = yuv ? vi.GetPlaneHeightSubsampling(PLANAR_U) : 0;
+  format.has_alpha = vi.IsYUVA() || vi.IsPlanarRGBA();
   return format;
 }
 

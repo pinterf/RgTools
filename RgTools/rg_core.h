@@ -32,6 +32,7 @@ struct RgFormat {
   int height;
   int ssw;            // chroma subsampling shifts of YUV (0 otherwise)
   int ssh;
+  bool has_alpha;     // YUVA, planar RGBA (the alpha plane is copied by the hosts)
 };
 
 // One plane of a frame

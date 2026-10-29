@@ -310,6 +310,11 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
     modeV_ = modeU_;
   }
 
+  // luma (or the RGB planes) is always processed: same bit depth and color family in any case
+  if (vi.BitsPerComponent() != refVi.BitsPerComponent() || vi.IsRGB() != refVi.IsRGB()) {
+    env->ThrowError("Both clips should have the same colorspace!");
+  }
+  // processed chroma: same subsampling as well
   if (vi.IsPlanar() && !vi.IsY() && (modeU_ != -1 || modeV_ != -1)) {
     if (!vi.IsSameColorspace(refVi)) {
       env->ThrowError("Both clips should have the same colorspace!");

@@ -1,24 +1,11 @@
 #ifndef __CLENSE_H__
 #define __CLENSE_H__
 
+// Clense, ForwardClense, BackwardClense: AviSynth front end
+
 #include "common.h"
 #include "rg_avs.h"
-
-template<typename pixel_t>
-using CModeProcessor = pixel_t (*)(pixel_t, pixel_t, pixel_t, int); // src, ref1, ref2, max_pixel_value (10-16 bit)
-
-enum class ClenseMode {
-    FORWARD,
-    BACKWARD,
-    BOTH
-};
-
-typedef void (ClenseProcessor)(uint8_t* pDst, const uint8_t *pSrc, const uint8_t* pRef1, const uint8_t* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int width, int height, int bits_per_pixel, IScriptEnvironment *env);
-
-#ifdef INTEL_INTRINSICS
-// clense_sse.cpp
-ClenseProcessor* clense_sse_processor(ClenseMode mode, int pixelsize, bool chroma);
-#endif
+#include "clense_core.h"
 
 class Clense : public GenericVideoFilter {
 
@@ -35,23 +22,15 @@ public:
 private:
     PClip previous_;
     PClip next_;
-    bool grey_;
-    bool sse2_;
-    bool sse4_;
     ClenseMode mode_;
     bool reduceflicker_;
 
-    int pixelsize;
-    int bits_per_pixel;
-
+    ClenseCore core_;
     bool has_at_least_v8;
 
     // for reduceflicker
     PVideoFrame lastDstFrame;
     int lastRequestedFrameNo;
-
-    ClenseProcessor* processor_;
-    ClenseProcessor* processor_chroma_; // for 32 bit
 };
 
 

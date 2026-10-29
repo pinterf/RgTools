@@ -8,6 +8,12 @@
 #include <cstdint>
 #include <cstring>
 
+// INTEL_INTRINSICS: the x86 SIMD code is compiled. CMake defines it (ENABLE_INTEL_SIMD),
+// the MSVC solution does not: derive it from the target there.
+#if defined(_MSC_VER) && !defined(INTEL_INTRINSICS) && !defined(NEON_INTRINSICS) && (defined(_M_IX86) || defined(_M_X64))
+#define INTEL_INTRINSICS
+#endif
+
 // CPU features the cores use. The host maps its own flags (AviSynth: env->GetCPUFlags(), SetMaxCPU honoured).
 enum RgCpu : int {
   RG_CPU_SSE2  = 1,
@@ -22,6 +28,10 @@ struct RgFormat {
   RgColorFamily family;
   int bits_per_pixel; // 8, 10..16, 32 (float)
   int pixelsize;      // bytes per sample: 1, 2, 4
+  int width;          // pixels, of the first plane (Y, G)
+  int height;
+  int ssw;            // chroma subsampling shifts of YUV (0 otherwise)
+  int ssh;
 };
 
 // One plane of a frame

@@ -28,6 +28,11 @@ static inline RgFormat rg_format_from_vi(const VideoInfo& vi) {
   format.family = vi.IsY() ? RgColorFamily::Gray : (vi.IsPlanarRGB() || vi.IsPlanarRGBA()) ? RgColorFamily::RGB : RgColorFamily::YUV;
   format.bits_per_pixel = vi.BitsPerComponent();
   format.pixelsize = vi.ComponentSize();
+  format.width = vi.width;
+  format.height = vi.height;
+  const bool yuv = format.family == RgColorFamily::YUV;
+  format.ssw = yuv ? vi.GetPlaneWidthSubsampling(PLANAR_U) : 0;
+  format.ssh = yuv ? vi.GetPlaneHeightSubsampling(PLANAR_U) : 0;
   return format;
 }
 

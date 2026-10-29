@@ -1,6 +1,7 @@
 // Clense, ForwardClense, BackwardClense: x86 SSE2 / SSE4.1 kernels
 
-#include "clense.h"
+#include "clense_core.h"
+#include "common.h"
 
 #ifdef INTEL_INTRINSICS
 
@@ -127,10 +128,7 @@ RG_FORCEINLINE void sclense_process_line_sse2_32(uint8_t* pDst, const uint8_t *p
 }
 
 template<decltype(clense_process_line_sse2) processor>
-void process_plane_sse(uint8_t* pDst, const uint8_t *pSrc, const uint8_t* pRef1, const uint8_t* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
-    if (!is_16byte_aligned(pSrc) || !is_16byte_aligned(pRef1) || !is_16byte_aligned(pRef2)) {
-        env->ThrowError("Invalid memory alignment. Used unaligned crop?"); //omg I feel so dumb
-    }
+void process_plane_sse(uint8_t* pDst, const uint8_t *pSrc, const uint8_t* pRef1, const uint8_t* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, int bits_per_pixel) {
     auto mod16Width = (rowsize / 16) * 16;
 
     for (int y = 0; y < height; ++y) {
@@ -150,10 +148,7 @@ template<decltype(clense_process_line_sse4_16) processor>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-void process_plane_sse41(uint8_t* pDst, const uint8_t* pSrc, const uint8_t* pRef1, const uint8_t* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment* env) {
-  if (!is_16byte_aligned(pSrc) || !is_16byte_aligned(pRef1) || !is_16byte_aligned(pRef2)) {
-    env->ThrowError("Invalid memory alignment. Used unaligned crop?"); //omg I feel so dumb
-  }
+void process_plane_sse41(uint8_t* pDst, const uint8_t* pSrc, const uint8_t* pRef1, const uint8_t* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, int bits_per_pixel) {
   auto mod16Width = (rowsize / 16) * 16;
 
   for (int y = 0; y < height; ++y) {

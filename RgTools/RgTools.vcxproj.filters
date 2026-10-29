@@ -27,6 +27,9 @@
     <ClCompile Include="clense_sse.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="clense_core.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="removegrain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -60,6 +63,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="clense.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="clense_core.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="common.h">

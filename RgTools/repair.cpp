@@ -1,11 +1,12 @@
 #include "repair.h"
 #include "repair_functions_c.h"
 
-template<typename pixel_t, CModeProcessor<pixel_t> processor>
-static void process_plane_c(IScriptEnvironment* env, BYTE* pDst, const BYTE* pSrc, const BYTE* pRef, int dstPitch, int srcPitch, int refPitch, int rowsize, int height) {
+template<typename pixel_t, auto processor>
+static void process_plane_c(IScriptEnvironment* env, BYTE* pDst, const BYTE* pSrc, const BYTE* pRef, int dstPitch, int srcPitch, int refPitch, int rowsize, int height, int bits_per_pixel) {
   env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1); 
 
   const int width = rowsize / sizeof(pixel_t);
+  const int max_pixel_value = sizeof(pixel_t) == 2 ? (1 << bits_per_pixel) - 1 : 0;
 
   pSrc += srcPitch;
   pDst += dstPitch;
@@ -13,7 +14,11 @@ static void process_plane_c(IScriptEnvironment* env, BYTE* pDst, const BYTE* pSr
   for (int y = 1; y < height-1; ++y) {
     reinterpret_cast<pixel_t *>(pDst)[0] = reinterpret_cast<const pixel_t *>(pSrc)[0];
     for (int x = 1; x < width-1; x+=1) {
-      pixel_t result = processor(pRef + x*sizeof(pixel_t), reinterpret_cast<const pixel_t *>(pSrc)[x], refPitch);
+      pixel_t result;
+      if constexpr (std::is_invocable_v<decltype(processor), const Byte*, pixel_t, int, int>)
+        result = processor(pRef + x*sizeof(pixel_t), reinterpret_cast<const pixel_t *>(pSrc)[x], refPitch, max_pixel_value);
+      else
+        result = processor(pRef + x*sizeof(pixel_t), reinterpret_cast<const pixel_t *>(pSrc)[x], refPitch);
       reinterpret_cast<pixel_t *>(pDst)[x] = result;
     }
     reinterpret_cast<pixel_t *>(pDst)[width-1] = reinterpret_cast<const pixel_t *>(pSrc)[width-1];
@@ -27,11 +32,11 @@ static void process_plane_c(IScriptEnvironment* env, BYTE* pDst, const BYTE* pSr
 }
 
 
-void repair_do_nothing(IScriptEnvironment* env, BYTE* pDst, const BYTE* pSrc, const BYTE* pRef, int dstPitch, int srcPitch, int refPitch, int rowsize, int height) {
+void repair_do_nothing(IScriptEnvironment* env, BYTE* pDst, const BYTE* pSrc, const BYTE* pRef, int dstPitch, int srcPitch, int refPitch, int rowsize, int height, int /*bits_per_pixel*/) {
 
 }
 
-void repair_copy_plane(IScriptEnvironment* env, BYTE* pDst, const BYTE* pSrc, const BYTE* pRef, int dstPitch, int srcPitch, int refPitch, int rowsize, int height) {
+void repair_copy_plane(IScriptEnvironment* env, BYTE* pDst, const BYTE* pSrc, const BYTE* pRef, int dstPitch, int srcPitch, int refPitch, int rowsize, int height, int /*bits_per_pixel*/) {
   env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, height);
 }
 
@@ -68,105 +73,7 @@ static RepairPlaneProcessor* c_functions[] = {
   process_plane_c<uint8_t,repair_mode28_cpp>
 };
 
-static RepairPlaneProcessor* c_functions_10[] = {
-  repair_do_nothing,
-  repair_copy_plane,
-  process_plane_c<uint16_t,repair_mode1_cpp_16>,
-  process_plane_c<uint16_t,repair_mode2_cpp_16>,
-  process_plane_c<uint16_t,repair_mode3_cpp_16>,
-  process_plane_c<uint16_t,repair_mode4_cpp_16>,
-  process_plane_c<uint16_t,repair_mode5_cpp_16>, 
-  process_plane_c<uint16_t,repair_mode6_cpp_16<10>>, 
-  process_plane_c<uint16_t,repair_mode7_cpp_16>, 
-  process_plane_c<uint16_t,repair_mode8_cpp_16<10>>, 
-  process_plane_c<uint16_t,repair_mode9_cpp_16>, 
-  process_plane_c<uint16_t,repair_mode10_cpp_16>,
-  process_plane_c<uint16_t,repair_mode1_cpp_16>,
-  process_plane_c<uint16_t,repair_mode12_cpp_16>,
-  process_plane_c<uint16_t,repair_mode13_cpp_16>,
-  process_plane_c<uint16_t,repair_mode14_cpp_16>,
-  process_plane_c<uint16_t,repair_mode15_cpp_16>,
-  process_plane_c<uint16_t,repair_mode16_cpp_16<10>>,
-  process_plane_c<uint16_t,repair_mode17_cpp_16>,
-  process_plane_c<uint16_t,repair_mode18_cpp_16>,
-  process_plane_c<uint16_t,repair_mode19_cpp_16<10>>, 
-  process_plane_c<uint16_t,repair_mode20_cpp_16<10>>, 
-  process_plane_c<uint16_t,repair_mode21_cpp_16<10>>, 
-  process_plane_c<uint16_t,repair_mode22_cpp_16<10>>, 
-  process_plane_c<uint16_t,repair_mode23_cpp_16<10>>, 
-  process_plane_c<uint16_t,repair_mode24_cpp_16<10>>,
-  repair_do_nothing,
-  process_plane_c<uint16_t,repair_mode26_cpp_16>,
-  process_plane_c<uint16_t,repair_mode27_cpp_16>,
-  process_plane_c<uint16_t,repair_mode28_cpp_16>,
-};
-
-static RepairPlaneProcessor* c_functions_12[] = {
-  repair_do_nothing,
-  repair_copy_plane,
-  process_plane_c<uint16_t,repair_mode1_cpp_16>,
-  process_plane_c<uint16_t,repair_mode2_cpp_16>,
-  process_plane_c<uint16_t,repair_mode3_cpp_16>,
-  process_plane_c<uint16_t,repair_mode4_cpp_16>,
-  process_plane_c<uint16_t,repair_mode5_cpp_16>, 
-  process_plane_c<uint16_t,repair_mode6_cpp_16<12>>, 
-  process_plane_c<uint16_t,repair_mode7_cpp_16>, 
-  process_plane_c<uint16_t,repair_mode8_cpp_16<12>>, 
-  process_plane_c<uint16_t,repair_mode9_cpp_16>, 
-  process_plane_c<uint16_t,repair_mode10_cpp_16>,
-  process_plane_c<uint16_t,repair_mode1_cpp_16>,
-  process_plane_c<uint16_t,repair_mode12_cpp_16>,
-  process_plane_c<uint16_t,repair_mode13_cpp_16>,
-  process_plane_c<uint16_t,repair_mode14_cpp_16>,
-  process_plane_c<uint16_t,repair_mode15_cpp_16>,
-  process_plane_c<uint16_t,repair_mode16_cpp_16<12>>,
-  process_plane_c<uint16_t,repair_mode17_cpp_16>,
-  process_plane_c<uint16_t,repair_mode18_cpp_16>,
-  process_plane_c<uint16_t,repair_mode19_cpp_16<12>>, 
-  process_plane_c<uint16_t,repair_mode20_cpp_16<12>>, 
-  process_plane_c<uint16_t,repair_mode21_cpp_16<12>>, 
-  process_plane_c<uint16_t,repair_mode22_cpp_16<12>>, 
-  process_plane_c<uint16_t,repair_mode23_cpp_16<12>>, 
-  process_plane_c<uint16_t,repair_mode24_cpp_16<12>>,
-  repair_do_nothing,
-  process_plane_c<uint16_t,repair_mode26_cpp_16>,
-  process_plane_c<uint16_t,repair_mode27_cpp_16>,
-  process_plane_c<uint16_t,repair_mode28_cpp_16>,
-};
-
-static RepairPlaneProcessor* c_functions_14[] = {
-  repair_do_nothing,
-  repair_copy_plane,
-  process_plane_c<uint16_t,repair_mode1_cpp_16>,
-  process_plane_c<uint16_t,repair_mode2_cpp_16>,
-  process_plane_c<uint16_t,repair_mode3_cpp_16>,
-  process_plane_c<uint16_t,repair_mode4_cpp_16>,
-  process_plane_c<uint16_t,repair_mode5_cpp_16>, 
-  process_plane_c<uint16_t,repair_mode6_cpp_16<14>>, 
-  process_plane_c<uint16_t,repair_mode7_cpp_16>, 
-  process_plane_c<uint16_t,repair_mode8_cpp_16<14>>, 
-  process_plane_c<uint16_t,repair_mode9_cpp_16>, 
-  process_plane_c<uint16_t,repair_mode10_cpp_16>,
-  process_plane_c<uint16_t,repair_mode1_cpp_16>,
-  process_plane_c<uint16_t,repair_mode12_cpp_16>,
-  process_plane_c<uint16_t,repair_mode13_cpp_16>,
-  process_plane_c<uint16_t,repair_mode14_cpp_16>,
-  process_plane_c<uint16_t,repair_mode15_cpp_16>,
-  process_plane_c<uint16_t,repair_mode16_cpp_16<14>>,
-  process_plane_c<uint16_t,repair_mode17_cpp_16>,
-  process_plane_c<uint16_t,repair_mode18_cpp_16>,
-  process_plane_c<uint16_t,repair_mode19_cpp_16<14>>, 
-  process_plane_c<uint16_t,repair_mode20_cpp_16<14>>, 
-  process_plane_c<uint16_t,repair_mode21_cpp_16<14>>, 
-  process_plane_c<uint16_t,repair_mode22_cpp_16<14>>, 
-  process_plane_c<uint16_t,repair_mode23_cpp_16<14>>, 
-  process_plane_c<uint16_t,repair_mode24_cpp_16<14>>,
-  repair_do_nothing,
-  process_plane_c<uint16_t,repair_mode26_cpp_16>,
-  process_plane_c<uint16_t,repair_mode27_cpp_16>,
-  process_plane_c<uint16_t,repair_mode28_cpp_16>,
-};
-
+// 10-16 bit (the max pixel value comes from bits_per_pixel)
 static RepairPlaneProcessor* c_functions_16[] = {
   repair_do_nothing,
   repair_copy_plane,
@@ -175,9 +82,9 @@ static RepairPlaneProcessor* c_functions_16[] = {
   process_plane_c<uint16_t,repair_mode3_cpp_16>,
   process_plane_c<uint16_t,repair_mode4_cpp_16>,
   process_plane_c<uint16_t,repair_mode5_cpp_16>, 
-  process_plane_c<uint16_t,repair_mode6_cpp_16<16>>, 
+  process_plane_c<uint16_t,repair_mode6_cpp_16>, 
   process_plane_c<uint16_t,repair_mode7_cpp_16>, 
-  process_plane_c<uint16_t,repair_mode8_cpp_16<16>>, 
+  process_plane_c<uint16_t,repair_mode8_cpp_16>, 
   process_plane_c<uint16_t,repair_mode9_cpp_16>, 
   process_plane_c<uint16_t,repair_mode10_cpp_16>,
   process_plane_c<uint16_t,repair_mode1_cpp_16>,
@@ -185,15 +92,15 @@ static RepairPlaneProcessor* c_functions_16[] = {
   process_plane_c<uint16_t,repair_mode13_cpp_16>,
   process_plane_c<uint16_t,repair_mode14_cpp_16>,
   process_plane_c<uint16_t,repair_mode15_cpp_16>,
-  process_plane_c<uint16_t,repair_mode16_cpp_16<16>>,
+  process_plane_c<uint16_t,repair_mode16_cpp_16>,
   process_plane_c<uint16_t,repair_mode17_cpp_16>,
   process_plane_c<uint16_t,repair_mode18_cpp_16>,
-  process_plane_c<uint16_t,repair_mode19_cpp_16<16>>, 
-  process_plane_c<uint16_t,repair_mode20_cpp_16<16>>, 
-  process_plane_c<uint16_t,repair_mode21_cpp_16<16>>, 
-  process_plane_c<uint16_t,repair_mode22_cpp_16<16>>, 
-  process_plane_c<uint16_t,repair_mode23_cpp_16<16>>, 
-  process_plane_c<uint16_t,repair_mode24_cpp_16<16>>,
+  process_plane_c<uint16_t,repair_mode19_cpp_16>, 
+  process_plane_c<uint16_t,repair_mode20_cpp_16>, 
+  process_plane_c<uint16_t,repair_mode21_cpp_16>, 
+  process_plane_c<uint16_t,repair_mode22_cpp_16>, 
+  process_plane_c<uint16_t,repair_mode23_cpp_16>, 
+  process_plane_c<uint16_t,repair_mode24_cpp_16>,
   repair_do_nothing,
   process_plane_c<uint16_t,repair_mode26_cpp_16>,
   process_plane_c<uint16_t,repair_mode27_cpp_16>,
@@ -270,10 +177,7 @@ static RepairPlaneProcessor* c_functions_32_chroma[] = {
 // repair_sse.cpp
 extern RepairPlaneProcessor* repair_sse4_functions[];
 extern RepairPlaneProcessor* repair_sse2_functions[];
-extern RepairPlaneProcessor* repair_sse4_functions_16_10[];
-extern RepairPlaneProcessor* repair_sse4_functions_16_12[];
-extern RepairPlaneProcessor* repair_sse4_functions_16_14[];
-extern RepairPlaneProcessor* repair_sse4_functions_16_16[];
+extern RepairPlaneProcessor* repair_sse4_functions_16[];
 extern RepairPlaneProcessor* repair_sse4_functions_32[];
 extern RepairPlaneProcessor* repair_sse4_functions_32_chroma[];
 #endif
@@ -358,21 +262,10 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
 #endif
   }
   else if (pixelsize == 2) {
-    switch (bits_per_pixel) {
-    case 10: functions = c_functions_10; break;
-    case 12: functions = c_functions_12; break;
-    case 14: functions = c_functions_14; break;
-    case 16: functions = c_functions_16; break;
-    default: env->ThrowError("Illegal bit-depth: %d!", bits_per_pixel);
-    }
+    functions = c_functions_16;
 #ifdef INTEL_INTRINSICS
     if (use_sse41 && worst_case_width >= (16 / sizeof(uint16_t) + 1)) {
-      switch (bits_per_pixel) {
-      case 10: functions = repair_sse4_functions_16_10; break;
-      case 12: functions = repair_sse4_functions_16_12; break;
-      case 14: functions = repair_sse4_functions_16_14; break;
-      case 16: functions = repair_sse4_functions_16_16; break;
-      }
+      functions = repair_sse4_functions_16;
     }
 #endif
   }
@@ -390,10 +283,10 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
 
 
 // A plane of less than 3 rows has border rows only: it is copied (the plane functions need an inner row).
-static void process_plane(RepairPlaneProcessor* f, int mode, IScriptEnvironment* env, BYTE* pDst, const BYTE* pSrc, const BYTE* pRef, int dstPitch, int srcPitch, int refPitch, int rowsize, int height) {
+static void process_plane(RepairPlaneProcessor* f, int mode, IScriptEnvironment* env, BYTE* pDst, const BYTE* pSrc, const BYTE* pRef, int dstPitch, int srcPitch, int refPitch, int rowsize, int height, int bits_per_pixel) {
   if (mode > 0 && height < 3)
     f = repair_copy_plane;
-  f(env, pDst, pSrc, pRef, dstPitch, srcPitch, refPitch, rowsize, height);
+  f(env, pDst, pSrc, pRef, dstPitch, srcPitch, refPitch, rowsize, height, bits_per_pixel);
 }
 
 PVideoFrame Repair::GetFrame(int n, IScriptEnvironment* env) {
@@ -412,7 +305,7 @@ PVideoFrame Repair::GetFrame(int n, IScriptEnvironment* env) {
 
       process_plane(functions[mode_ + 1], mode_, env, dstFrame->GetWritePtr(plane), srcFrame->GetReadPtr(plane), refFrame->GetReadPtr(plane),
         dstFrame->GetPitch(plane), srcFrame->GetPitch(plane), refFrame->GetPitch(plane),
-        srcFrame->GetRowSize(plane), srcFrame->GetHeight(plane));
+        srcFrame->GetRowSize(plane), srcFrame->GetHeight(plane), bits_per_pixel);
     }
   }
   else {
@@ -421,7 +314,7 @@ PVideoFrame Repair::GetFrame(int n, IScriptEnvironment* env) {
 
     process_plane(functions[mode_ + 1], mode_, env, dstFrame->GetWritePtr(PLANAR_Y), srcFrame->GetReadPtr(PLANAR_Y), refFrame->GetReadPtr(PLANAR_Y),
       dstFrame->GetPitch(PLANAR_Y), srcFrame->GetPitch(PLANAR_Y), refFrame->GetPitch(PLANAR_Y),
-      srcFrame->GetRowSize(PLANAR_Y), srcFrame->GetHeight(PLANAR_Y));
+      srcFrame->GetRowSize(PLANAR_Y), srcFrame->GetHeight(PLANAR_Y), bits_per_pixel);
 
     if (vi.IsPlanar() && !vi.IsY()) {
       if (!is_16byte_aligned(srcFrame->GetReadPtr(PLANAR_U)) || !is_16byte_aligned(refFrame->GetReadPtr(PLANAR_U)))
@@ -431,20 +324,20 @@ PVideoFrame Repair::GetFrame(int n, IScriptEnvironment* env) {
         // for float
         process_plane(functions_chroma[modeU_ + 1], modeU_, env, dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetReadPtr(PLANAR_U), refFrame->GetReadPtr(PLANAR_U),
           dstFrame->GetPitch(PLANAR_U), srcFrame->GetPitch(PLANAR_U), refFrame->GetPitch(PLANAR_U),
-          srcFrame->GetRowSize(PLANAR_U), srcFrame->GetHeight(PLANAR_U));
+          srcFrame->GetRowSize(PLANAR_U), srcFrame->GetHeight(PLANAR_U), bits_per_pixel);
 
         process_plane(functions_chroma[modeV_ + 1], modeV_, env, dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetReadPtr(PLANAR_V), refFrame->GetReadPtr(PLANAR_V),
           dstFrame->GetPitch(PLANAR_V), srcFrame->GetPitch(PLANAR_V), refFrame->GetPitch(PLANAR_V),
-          srcFrame->GetRowSize(PLANAR_V), srcFrame->GetHeight(PLANAR_V));
+          srcFrame->GetRowSize(PLANAR_V), srcFrame->GetHeight(PLANAR_V), bits_per_pixel);
       }
       else {
         process_plane(functions[modeU_ + 1], modeU_, env, dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetReadPtr(PLANAR_U), refFrame->GetReadPtr(PLANAR_U),
           dstFrame->GetPitch(PLANAR_U), srcFrame->GetPitch(PLANAR_U), refFrame->GetPitch(PLANAR_U),
-          srcFrame->GetRowSize(PLANAR_U), srcFrame->GetHeight(PLANAR_U));
+          srcFrame->GetRowSize(PLANAR_U), srcFrame->GetHeight(PLANAR_U), bits_per_pixel);
 
         process_plane(functions[modeV_ + 1], modeV_, env, dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetReadPtr(PLANAR_V), refFrame->GetReadPtr(PLANAR_V),
           dstFrame->GetPitch(PLANAR_V), srcFrame->GetPitch(PLANAR_V), refFrame->GetPitch(PLANAR_V),
-          srcFrame->GetRowSize(PLANAR_V), srcFrame->GetHeight(PLANAR_V));
+          srcFrame->GetRowSize(PLANAR_V), srcFrame->GetHeight(PLANAR_V), bits_per_pixel);
       }
     }
   }

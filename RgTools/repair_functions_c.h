@@ -6,6 +6,7 @@
 #include <algorithm>  
 
 template<typename pixel_t>
+// 10-16 bit kernels that depend on the max pixel value take it as a 4th parameter (int)
 using CModeProcessor = pixel_t (*)(const Byte*, pixel_t val, int);
 
 RG_FORCEINLINE Byte repair_mode1_cpp(const Byte* pSrc, Byte val, int srcPitch) {
@@ -276,8 +277,7 @@ RG_FORCEINLINE Byte repair_mode6_cpp(const Byte* pSrc, Byte val, int srcPitch) {
     return clip(val, mil1, mal1);
 }
 
-template<int bits_per_pixel>
-RG_FORCEINLINE uint16_t repair_mode6_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode6_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch, int pixel_max) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(std::max(a1, a8), c);
@@ -302,7 +302,6 @@ RG_FORCEINLINE uint16_t repair_mode6_cpp_16(const Byte* pSrc, uint16_t val, int 
   uint16_t clipped3 = clip_16(val, mil3, mal3);
   uint16_t clipped4 = clip_16(val, mil4, mal4);
 
-  const int pixel_max = (1 << bits_per_pixel) - 1;
   int c1 = clip_16((std::abs(val-clipped1)<<1)+d1, 0, pixel_max);
   int c2 = clip_16((std::abs(val-clipped2)<<1)+d2, 0, pixel_max);
   int c3 = clip_16((std::abs(val-clipped3)<<1)+d3, 0, pixel_max);
@@ -527,8 +526,7 @@ RG_FORCEINLINE Byte repair_mode8_cpp(const Byte* pSrc, Byte val, int srcPitch) {
     return clipped1;
 }
 
-template<int bits_per_pixel>
-RG_FORCEINLINE uint16_t repair_mode8_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode8_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch, int pixel_max) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(std::max(a1, a8), c);
@@ -553,7 +551,6 @@ RG_FORCEINLINE uint16_t repair_mode8_cpp_16(const Byte* pSrc, uint16_t val, int 
   uint16_t clipped3 = clip_16(val, mil3, mal3);
   uint16_t clipped4 = clip_16(val, mil4, mal4);
 
-  const int pixel_max = (1 << bits_per_pixel) - 1;
   int c1 = clip_16(std::abs(val-clipped1)+(d1<<1), 0, pixel_max);
   int c2 = clip_16(std::abs(val-clipped2)+(d2<<1), 0, pixel_max);
   int c3 = clip_16(std::abs(val-clipped3)+(d3<<1), 0, pixel_max);
@@ -1133,8 +1130,7 @@ RG_FORCEINLINE Byte repair_mode16_cpp(const Byte* pSrc, Byte val, int srcPitch) 
     return clip(val, mi, ma);
 }
 
-template<int bits_per_pixel>
-RG_FORCEINLINE uint16_t repair_mode16_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode16_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch, int pixel_max) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1154,7 +1150,6 @@ RG_FORCEINLINE uint16_t repair_mode16_cpp_16(const Byte* pSrc, uint16_t val, int
   auto d3 = mal3 - mil3;
   auto d4 = mal4 - mil4;
 
-  const int pixel_max = (1 << bits_per_pixel) - 1;
   auto c1 = clip_16((std::abs (c - clip_16(c, mil1, mal1)) << 1) + d1, 0, pixel_max);
   auto c2 = clip_16((std::abs (c - clip_16(c, mil2, mal2)) << 1) + d2, 0, pixel_max);
   auto c3 = clip_16((std::abs (c - clip_16(c, mil3, mal3)) << 1) + d3, 0, pixel_max);
@@ -1479,8 +1474,7 @@ RG_FORCEINLINE Byte repair_mode19_cpp(const Byte* pSrc, Byte val, int srcPitch) 
     return clip(val, clip(c-mindiff, 0, 255), clip(c+mindiff, 0, 255));
 }
 
-template<int bits_per_pixel>
-RG_FORCEINLINE uint16_t repair_mode19_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode19_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch, int pixel_max) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto d1 = std::abs(c - a1);
@@ -1494,7 +1488,6 @@ RG_FORCEINLINE uint16_t repair_mode19_cpp_16(const Byte* pSrc, uint16_t val, int
 
   auto mindiff = std::min(std::min(std::min(std::min(std::min(std::min(std::min(d1, d2), d3), d4), d5), d6), d7), d8);
 
-  const int pixel_max = (1 << bits_per_pixel) - 1;
   return clip_16(val, clip_16(c-mindiff, 0, pixel_max), clip_16(c+mindiff, 0, pixel_max));
 }
 
@@ -1557,8 +1550,7 @@ RG_FORCEINLINE Byte repair_mode20_cpp(const Byte* pSrc, Byte val, int srcPitch) 
     return clip(val, clip(c-maxdiff, 0, 255), clip(c+maxdiff, 0, 255));
 }
 
-template<int bits_per_pixel>
-RG_FORCEINLINE uint16_t repair_mode20_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode20_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch, int max_pixel) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   uint16_t d1 = std::abs(c - a1);
@@ -1590,7 +1582,6 @@ RG_FORCEINLINE uint16_t repair_mode20_cpp_16(const Byte* pSrc, uint16_t val, int
 
   maxdiff = clip_16(maxdiff, mindiff, d8);
 
-  const int max_pixel = (1 << bits_per_pixel) - 1;
   return clip_16(val, clip_16(c-maxdiff, 0, max_pixel), clip_16(c+maxdiff, 0, max_pixel));
 }
 
@@ -1672,8 +1663,7 @@ RG_FORCEINLINE Byte repair_mode21_cpp(const Byte* pSrc, Byte val, int srcPitch) 
     return clip(val, clip(c-u, 0, 255), clip(c+u, 0, 255));
 }
 
-template<int bits_per_pixel>
-RG_FORCEINLINE uint16_t repair_mode21_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode21_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch, int max_pixel) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1688,7 +1678,6 @@ RG_FORCEINLINE uint16_t repair_mode21_cpp_16(const Byte* pSrc, uint16_t val, int
   auto mal4 = std::max(a4, a5);
   auto mil4 = std::min(a4, a5);
 
-  const int max_pixel = (1 << bits_per_pixel) - 1;
   auto d1 = clip_16(mal1 - c, 0, max_pixel);
   auto d2 = clip_16(mal2 - c, 0, max_pixel);
   auto d3 = clip_16(mal3 - c, 0, max_pixel);
@@ -1768,8 +1757,7 @@ RG_FORCEINLINE Byte repair_mode22_cpp(const Byte* pSrc, Byte val, int srcPitch) 
     return clip(c, clip(val-mindiff, 0, 255), clip(val+mindiff, 0, 255));
 }
 
-template<int bits_per_pixel>
-RG_FORCEINLINE uint16_t repair_mode22_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode22_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch, int max_pixel) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto d1 = std::abs(val - a1);
@@ -1783,7 +1771,6 @@ RG_FORCEINLINE uint16_t repair_mode22_cpp_16(const Byte* pSrc, uint16_t val, int
 
   auto mindiff = std::min(std::min(std::min(std::min(std::min(std::min(std::min(d1, d2), d3), d4), d5), d6), d7), d8);
 
-  const int max_pixel = (1 << bits_per_pixel) - 1;
   return clip_16(c, clip_16(val-mindiff, 0, max_pixel), clip_16(val+mindiff, 0, max_pixel));
 }
 
@@ -1846,8 +1833,7 @@ RG_FORCEINLINE Byte repair_mode23_cpp(const Byte* pSrc, Byte val, int srcPitch) 
     return clip(c, clip(val-maxdiff, 0, 255), clip(val+maxdiff, 0, 255));
 }
 
-template<int bits_per_pixel>
-RG_FORCEINLINE uint16_t repair_mode23_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode23_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch, int max_pixel) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   uint16_t d1 = std::abs(val - a1);
@@ -1879,7 +1865,6 @@ RG_FORCEINLINE uint16_t repair_mode23_cpp_16(const Byte* pSrc, uint16_t val, int
 
   maxdiff = clip_16(maxdiff, mindiff, d8);
 
-  const int max_pixel = (1 << bits_per_pixel) - 1;
   return clip_16(c, clip_16(val-maxdiff, 0, max_pixel), clip_16(val+maxdiff, 0, max_pixel));
 }
 
@@ -1960,8 +1945,7 @@ RG_FORCEINLINE Byte repair_mode24_cpp(const Byte* pSrc, Byte val, int srcPitch) 
     return clip(c, clip(val-u, 0, 255), clip(val+u, 0, 255));
 }
 
-template<int bits_per_pixel>
-RG_FORCEINLINE uint16_t repair_mode24_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode24_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch, int max_pixel) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1976,7 +1960,6 @@ RG_FORCEINLINE uint16_t repair_mode24_cpp_16(const Byte* pSrc, uint16_t val, int
   auto mal4 = std::max(a4, a5);
   auto mil4 = std::min(a4, a5);
 
-  const int max_pixel = (1 << bits_per_pixel) - 1;
   auto d1 = clip_16(mal1 - val, 0, max_pixel);
   auto d2 = clip_16(mal2 - val, 0, max_pixel);
   auto d3 = clip_16(mal3 - val, 0, max_pixel);
@@ -1997,7 +1980,7 @@ RG_FORCEINLINE uint16_t repair_mode24_cpp_16(const Byte* pSrc, uint16_t val, int
   return clip_16(c, clip_16(val-u, 0, max_pixel), clip_16(val+u, 0, max_pixel));
 /* all these "clip" and "clip_16" could be rewritten to (like in RemoveGrain part) 
    to subs and adds
-  return clip_16(c, subs_16_c(val, u), adds_16_c<bits_per_pixel>(val, u));
+  return clip_16(c, subs_16_c(val, u), adds_16_c(val, u, max_pixel));
 */
 }
 

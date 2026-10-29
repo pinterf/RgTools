@@ -8,8 +8,8 @@
 
 namespace {
 
-template<typename pixel_t, SseModeProcessor processor, SseModeProcessor processor_a>
-static void process_plane_sse(IScriptEnvironment* env, BYTE* pDst8, const BYTE* pSrc8, const BYTE* pRef8, int dstPitch, int srcPitch, int refPitch, int rowsize, int height) {
+template<typename pixel_t, auto processor, auto processor_a>
+static void process_plane_sse(IScriptEnvironment* env, BYTE* pDst8, const BYTE* pSrc8, const BYTE* pRef8, int dstPitch, int srcPitch, int refPitch, int rowsize, int height, int /*bits_per_pixel*/) {
     env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 1); // FIXME: change single row copy to memcpy (top and bottom rows)
 
     pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
@@ -62,11 +62,11 @@ static void process_plane_sse(IScriptEnvironment* env, BYTE* pDst8, const BYTE* 
 }
 
 #if 0
-template<typename pixel_t, SseModeProcessor processor, SseModeProcessor processor_a>
+template<typename pixel_t, auto processor, auto processor_a>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse3")))
 #endif
-static void process_plane_sse3(IScriptEnvironment* env, BYTE* pDst8, const BYTE* pSrc8, const BYTE* pRef8, int dstPitch, int srcPitch, int refPitch, int rowsize, int height) {
+static void process_plane_sse3(IScriptEnvironment* env, BYTE* pDst8, const BYTE* pSrc8, const BYTE* pRef8, int dstPitch, int srcPitch, int refPitch, int rowsize, int height, int bits_per_pixel) {
   env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 1);
 
   pixel_t* pDst = reinterpret_cast<pixel_t*>(pDst8);
@@ -119,11 +119,11 @@ static void process_plane_sse3(IScriptEnvironment* env, BYTE* pDst8, const BYTE*
 }
 #endif
 
-template<typename pixel_t, SseModeProcessor processor, SseModeProcessor processor_a>
+template<typename pixel_t, auto processor, auto processor_a>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-static void process_plane_sse41(IScriptEnvironment* env, BYTE* pDst8, const BYTE* pSrc8, const BYTE* pRef8, int dstPitch, int srcPitch, int refPitch, int rowsize, int height) {
+static void process_plane_sse41(IScriptEnvironment* env, BYTE* pDst8, const BYTE* pSrc8, const BYTE* pRef8, int dstPitch, int srcPitch, int refPitch, int rowsize, int height, int bits_per_pixel) {
   env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 1);
 
   pixel_t* pDst = reinterpret_cast<pixel_t*>(pDst8);
@@ -137,6 +137,9 @@ static void process_plane_sse41(IScriptEnvironment* env, BYTE* pDst8, const BYTE
 
   const int width = rowsize / sizeof(pixel_t);
   const int pixels_at_at_time = 16 / sizeof(pixel_t);
+  // 10-16 bit kernels that depend on the max pixel value get it as a 4th parameter
+  constexpr bool with_max = std::is_invocable_v<decltype(processor), const Byte*, const __m128i&, int, const __m128i&>;
+  const __m128i pixel_max = _mm_set1_epi16(sizeof(pixel_t) == 2 ? (short)((1u << bits_per_pixel) - 1) : 0);
 
   pSrc += srcPitch;
   pDst += dstPitch;
@@ -148,19 +151,25 @@ static void process_plane_sse41(IScriptEnvironment* env, BYTE* pDst8, const BYTE
 
     // unaligned first 16 bytes, last pixel overlaps with the next aligned loop
     __m128i val = simd_loadu_si128_sse3((uint8_t*)(pSrc + 1));
-    __m128i result = processor((uint8_t*)(pRef + 1), val, refPitchOrig);
+    __m128i result;
+    if constexpr (with_max) result = processor((uint8_t*)(pRef + 1), val, refPitchOrig, pixel_max);
+    else result = processor((uint8_t*)(pRef + 1), val, refPitchOrig);
     _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + 1), result);
 
     //aligned
     for (int x = pixels_at_at_time; x < mod_width - 1; x += pixels_at_at_time) {
       __m128i val = simd_loadu_si128_sse3((uint8_t*)(pSrc + x));
-      __m128i result = processor_a((uint8_t*)(pRef + x), val, refPitchOrig);
+      __m128i result;
+      if constexpr (with_max) result = processor_a((uint8_t*)(pRef + x), val, refPitchOrig, pixel_max);
+      else result = processor_a((uint8_t*)(pRef + x), val, refPitchOrig);
       _mm_store_si128(reinterpret_cast<__m128i*>(pDst + x), result);
     }
 
     if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
       __m128i val = simd_loadu_si128_sse3((uint8_t*)(pSrc + width - 1 - pixels_at_at_time));
-      __m128i result = processor((uint8_t*)(pRef + width - 1 - pixels_at_at_time), val, refPitchOrig);
+      __m128i result;
+      if constexpr (with_max) result = processor((uint8_t*)(pRef + width - 1 - pixels_at_at_time), val, refPitchOrig, pixel_max);
+      else result = processor((uint8_t*)(pRef + width - 1 - pixels_at_at_time), val, refPitchOrig);
       _mm_storeu_si128(reinterpret_cast<__m128i*>((uint8_t*)(pDst + width - 1 - pixels_at_at_time)), result);
     }
 
@@ -243,40 +252,8 @@ RepairPlaneProcessor* repair_sse2_functions[] = {
     process_plane_sse<uint8_t, repair_mode28_sse2<false>, repair_mode28_sse2<true>>,
 };
 
-RepairPlaneProcessor* repair_sse4_functions_16_10[] = {
-  repair_do_nothing,
-  repair_copy_plane,
-  process_plane_sse41<uint16_t, repair_mode1_sse_16<false>, repair_mode1_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode2_sse_16<false>, repair_mode2_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode3_sse_16<false>, repair_mode3_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode4_sse_16<false>, repair_mode4_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode5_sse_16<false>, repair_mode5_sse_16<true>>, 
-  process_plane_sse41<uint16_t, repair_mode6_sse_16<10, false>, repair_mode6_sse_16<10, true>>, 
-  process_plane_sse41<uint16_t, repair_mode7_sse_16<false>, repair_mode7_sse_16<true>>, 
-  process_plane_sse41<uint16_t, repair_mode8_sse_16<10, false>, repair_mode8_sse_16<10, true>>, 
-  process_plane_sse41<uint16_t, repair_mode9_sse_16<false>, repair_mode9_sse_16<true>>, 
-  process_plane_sse41<uint16_t, repair_mode10_sse_16<false>, repair_mode10_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode1_sse_16<false>, repair_mode1_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode12_sse_16<false>, repair_mode12_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode13_sse_16<false>, repair_mode13_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode14_sse_16<false>, repair_mode14_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode15_sse_16<false>, repair_mode15_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode16_sse_16<10, false>, repair_mode16_sse_16<10, true>>,
-  process_plane_sse41<uint16_t, repair_mode17_sse_16<false>, repair_mode17_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode18_sse_16<false>, repair_mode18_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode19_sse_16<10, false>, repair_mode19_sse_16<10, true>>, 
-  process_plane_sse41<uint16_t, repair_mode20_sse_16<10, false>, repair_mode20_sse_16<10, true>>, 
-  process_plane_sse41<uint16_t, repair_mode21_sse_16<10, false>, repair_mode21_sse_16<10, true>>, 
-  process_plane_sse41<uint16_t, repair_mode22_sse_16<10, false>, repair_mode22_sse_16<10, true>>, 
-  process_plane_sse41<uint16_t, repair_mode23_sse_16<10, false>, repair_mode23_sse_16<10, true>>, 
-  process_plane_sse41<uint16_t, repair_mode24_sse_16<10, false>, repair_mode24_sse_16<10, true>>,
-  repair_do_nothing,
-  process_plane_sse41<uint16_t, repair_mode26_sse_16<false>,  repair_mode26_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode27_sse_16<false>,  repair_mode27_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode28_sse_16<false>,  repair_mode28_sse_16<true>>,
-};
-
-RepairPlaneProcessor* repair_sse4_functions_16_12[] = {
+// 10-16 bit (the max pixel value comes from bits_per_pixel)
+RepairPlaneProcessor* repair_sse4_functions_16[] = {
   repair_do_nothing,
   repair_copy_plane,
   process_plane_sse41<uint16_t, repair_mode1_sse_16<false>,  repair_mode1_sse_16<true>>,
@@ -284,9 +261,9 @@ RepairPlaneProcessor* repair_sse4_functions_16_12[] = {
   process_plane_sse41<uint16_t, repair_mode3_sse_16<false>,  repair_mode3_sse_16<true>>,
   process_plane_sse41<uint16_t, repair_mode4_sse_16<false>,  repair_mode4_sse_16<true>>,
   process_plane_sse41<uint16_t, repair_mode5_sse_16<false>,  repair_mode5_sse_16<true>>, 
-  process_plane_sse41<uint16_t, repair_mode6_sse_16<12, false>,  repair_mode6_sse_16<12, true>>, 
+  process_plane_sse41<uint16_t, repair_mode6_sse_16<false>,  repair_mode6_sse_16<true>>, 
   process_plane_sse41<uint16_t, repair_mode7_sse_16<false>,  repair_mode7_sse_16<true>>, 
-  process_plane_sse41<uint16_t, repair_mode8_sse_16<12, false>,  repair_mode8_sse_16<12, true>>, 
+  process_plane_sse41<uint16_t, repair_mode8_sse_16<false>,  repair_mode8_sse_16<true>>, 
   process_plane_sse41<uint16_t, repair_mode9_sse_16<false>,  repair_mode9_sse_16<true>>, 
   process_plane_sse41<uint16_t, repair_mode10_sse_16<false>,  repair_mode10_sse_16<true>>,
   process_plane_sse41<uint16_t, repair_mode1_sse_16<false>,  repair_mode1_sse_16<true>>,
@@ -294,81 +271,15 @@ RepairPlaneProcessor* repair_sse4_functions_16_12[] = {
   process_plane_sse41<uint16_t, repair_mode13_sse_16<false>,  repair_mode13_sse_16<true>>,
   process_plane_sse41<uint16_t, repair_mode14_sse_16<false>,  repair_mode14_sse_16<true>>,
   process_plane_sse41<uint16_t, repair_mode15_sse_16<false>,  repair_mode15_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode16_sse_16<12, false>,  repair_mode16_sse_16<12, true>>,
+  process_plane_sse41<uint16_t, repair_mode16_sse_16<false>,  repair_mode16_sse_16<true>>,
   process_plane_sse41<uint16_t, repair_mode17_sse_16<false>,  repair_mode17_sse_16<true>>,
   process_plane_sse41<uint16_t, repair_mode18_sse_16<false>,  repair_mode18_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode19_sse_16<12, false>,  repair_mode19_sse_16<12, true>>, 
-  process_plane_sse41<uint16_t, repair_mode20_sse_16<12, false>,  repair_mode20_sse_16<12, true>>, 
-  process_plane_sse41<uint16_t, repair_mode21_sse_16<12, false>,  repair_mode21_sse_16<12, true>>, 
-  process_plane_sse41<uint16_t, repair_mode22_sse_16<12, false>,  repair_mode22_sse_16<12, true>>, 
-  process_plane_sse41<uint16_t, repair_mode23_sse_16<12, false>,  repair_mode23_sse_16<12, true>>, 
-  process_plane_sse41<uint16_t, repair_mode24_sse_16<12, false>,  repair_mode24_sse_16<12, true>>,
-  repair_do_nothing,
-  process_plane_sse41<uint16_t, repair_mode26_sse_16<false>,  repair_mode26_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode27_sse_16<false>,  repair_mode27_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode28_sse_16<false>,  repair_mode28_sse_16<true>>,
-};
-
-RepairPlaneProcessor* repair_sse4_functions_16_14[] = {
-  repair_do_nothing,
-  repair_copy_plane,
-  process_plane_sse41<uint16_t, repair_mode1_sse_16<false>,  repair_mode1_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode2_sse_16<false>,  repair_mode2_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode3_sse_16<false>,  repair_mode3_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode4_sse_16<false>,  repair_mode4_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode5_sse_16<false>,  repair_mode5_sse_16<true>>, 
-  process_plane_sse41<uint16_t, repair_mode6_sse_16<14, false>,  repair_mode6_sse_16<14, true>>, 
-  process_plane_sse41<uint16_t, repair_mode7_sse_16<false>,  repair_mode7_sse_16<true>>, 
-  process_plane_sse41<uint16_t, repair_mode8_sse_16<14, false>,  repair_mode8_sse_16<14, true>>, 
-  process_plane_sse41<uint16_t, repair_mode9_sse_16<false>,  repair_mode9_sse_16<true>>, 
-  process_plane_sse41<uint16_t, repair_mode10_sse_16<false>,  repair_mode10_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode1_sse_16<false>,  repair_mode1_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode12_sse_16<false>,  repair_mode12_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode13_sse_16<false>,  repair_mode13_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode14_sse_16<false>,  repair_mode14_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode15_sse_16<false>,  repair_mode15_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode16_sse_16<14, false>,  repair_mode16_sse_16<14, true>>,
-  process_plane_sse41<uint16_t, repair_mode17_sse_16<false>,  repair_mode17_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode18_sse_16<false>,  repair_mode18_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode19_sse_16<14, false>,  repair_mode19_sse_16<14, true>>, 
-  process_plane_sse41<uint16_t, repair_mode20_sse_16<14, false>,  repair_mode20_sse_16<14, true>>, 
-  process_plane_sse41<uint16_t, repair_mode21_sse_16<14, false>,  repair_mode21_sse_16<14, true>>, 
-  process_plane_sse41<uint16_t, repair_mode22_sse_16<14, false>,  repair_mode22_sse_16<14, true>>, 
-  process_plane_sse41<uint16_t, repair_mode23_sse_16<14, false>,  repair_mode23_sse_16<14, true>>, 
-  process_plane_sse41<uint16_t, repair_mode24_sse_16<14, false>,  repair_mode24_sse_16<14, true>>,
-  repair_do_nothing,
-  process_plane_sse41<uint16_t, repair_mode26_sse_16<false>,  repair_mode26_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode27_sse_16<false>,  repair_mode27_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode28_sse_16<false>,  repair_mode28_sse_16<true>>,
-};
-
-RepairPlaneProcessor* repair_sse4_functions_16_16[] = {
-  repair_do_nothing,
-  repair_copy_plane,
-  process_plane_sse41<uint16_t, repair_mode1_sse_16<false>,  repair_mode1_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode2_sse_16<false>,  repair_mode2_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode3_sse_16<false>,  repair_mode3_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode4_sse_16<false>,  repair_mode4_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode5_sse_16<false>,  repair_mode5_sse_16<true>>, 
-  process_plane_sse41<uint16_t, repair_mode6_sse_16<16, false>,  repair_mode6_sse_16<16, true>>, 
-  process_plane_sse41<uint16_t, repair_mode7_sse_16<false>,  repair_mode7_sse_16<true>>, 
-  process_plane_sse41<uint16_t, repair_mode8_sse_16<16, false>,  repair_mode8_sse_16<16, true>>, 
-  process_plane_sse41<uint16_t, repair_mode9_sse_16<false>,  repair_mode9_sse_16<true>>, 
-  process_plane_sse41<uint16_t, repair_mode10_sse_16<false>,  repair_mode10_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode1_sse_16<false>,  repair_mode1_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode12_sse_16<false>,  repair_mode12_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode13_sse_16<false>,  repair_mode13_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode14_sse_16<false>,  repair_mode14_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode15_sse_16<false>,  repair_mode15_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode16_sse_16<16, false>,  repair_mode16_sse_16<16, true>>,
-  process_plane_sse41<uint16_t, repair_mode17_sse_16<false>,  repair_mode17_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode18_sse_16<false>,  repair_mode18_sse_16<true>>,
-  process_plane_sse41<uint16_t, repair_mode19_sse_16<16, false>,  repair_mode19_sse_16<16, true>>, 
-  process_plane_sse41<uint16_t, repair_mode20_sse_16<16, false>,  repair_mode20_sse_16<16, true>>, 
-  process_plane_sse41<uint16_t, repair_mode21_sse_16<16, false>,  repair_mode21_sse_16<16, true>>, 
-  process_plane_sse41<uint16_t, repair_mode22_sse_16<16, false>,  repair_mode22_sse_16<16, true>>, 
-  process_plane_sse41<uint16_t, repair_mode23_sse_16<16, false>,  repair_mode23_sse_16<16, true>>, 
-  process_plane_sse41<uint16_t, repair_mode24_sse_16<16, false>,  repair_mode24_sse_16<16, true>>,
+  process_plane_sse41<uint16_t, repair_mode19_sse_16<false>,  repair_mode19_sse_16<true>>, 
+  process_plane_sse41<uint16_t, repair_mode20_sse_16<false>,  repair_mode20_sse_16<true>>, 
+  process_plane_sse41<uint16_t, repair_mode21_sse_16<false>,  repair_mode21_sse_16<true>>, 
+  process_plane_sse41<uint16_t, repair_mode22_sse_16<false>,  repair_mode22_sse_16<true>>, 
+  process_plane_sse41<uint16_t, repair_mode23_sse_16<false>,  repair_mode23_sse_16<true>>, 
+  process_plane_sse41<uint16_t, repair_mode24_sse_16<false>,  repair_mode24_sse_16<true>>,
   repair_do_nothing,
   process_plane_sse41<uint16_t, repair_mode26_sse_16<false>,  repair_mode26_sse_16<true>>,
   process_plane_sse41<uint16_t, repair_mode27_sse_16<false>,  repair_mode27_sse_16<true>>,

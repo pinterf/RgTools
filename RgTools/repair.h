@@ -4,7 +4,7 @@
 #include "common.h"
 
 
-typedef void (RepairPlaneProcessor)(IScriptEnvironment* env, BYTE* pDst, const BYTE* pSrc, const BYTE* pRef, int dstPitch, int srcPitch, int refPitch, int rowsize, int height);
+typedef void (RepairPlaneProcessor)(IScriptEnvironment* env, BYTE* pDst, const BYTE* pSrc, const BYTE* pRef, int dstPitch, int srcPitch, int refPitch, int rowsize, int height, int bits_per_pixel);
 
 // mode -1 and 0 entries of the function tables, shared by the C and SIMD tables
 RepairPlaneProcessor repair_do_nothing;

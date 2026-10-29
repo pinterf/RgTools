@@ -90,6 +90,16 @@ static RG_FORCEINLINE float adds_32_c_for_diff(float x, float y) {
 }
 
 
+// rounding average, as _mm_avg_epu8 / _mm_avg_epu16
+static RG_FORCEINLINE int avg_c(int x, int y) {
+  return (x + y + 1) >> 1;
+}
+
+// as _mm_avg_ps
+static RG_FORCEINLINE float avg_32_c(float x, float y) {
+  return (x + y) * 0.5f;
+}
+
 template<typename T>
 static RG_FORCEINLINE Byte clip(T val, T minimum, T maximum) {
     return std::max(std::min(val, maximum), minimum);

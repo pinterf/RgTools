@@ -778,33 +778,34 @@ RG_FORCEINLINE float rg_mode11_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-//rounding does not match
 RG_FORCEINLINE Byte rg_mode12_cpp(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_CPP(pSrc, srcPitch);
+  LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-
-    int	sum = 4 * c + 2 * (a2 + a4 + a5 + a7) + a1 + a3 + a6 + a8;
-    int	val = (sum + 8) >> 4;
-
-    return val;
+  // faster approximation of mode 11 (difference <= 1): cascaded averages, the same as SIMD
+  auto a123 = avg_c(a2, avg_c(a1, a3));
+  auto a678 = avg_c(a7, avg_c(a6, a8));
+  auto a4c5 = avg_c(c, avg_c(a4, a5));
+  return avg_c(a4c5, subs_c(avg_c(a123, a678), 1));
 }
 
 RG_FORCEINLINE uint16_t rg_mode12_cpp_16(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
-  int	sum = 4 * c + 2 * (a2 + a4 + a5 + a7) + a1 + a3 + a6 + a8;
-  int	val = (sum + 8) >> 4;
-
-  return val;
+  // faster approximation of mode 11 (difference <= 1): cascaded averages, the same as SIMD
+  auto a123 = avg_c(a2, avg_c(a1, a3));
+  auto a678 = avg_c(a7, avg_c(a6, a8));
+  auto a4c5 = avg_c(c, avg_c(a4, a5));
+  return avg_c(a4c5, subs_16_c(avg_c(a123, a678), 1));
 }
 
 RG_FORCEINLINE float rg_mode12_cpp_32(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
-  float	sum = 4 * c + 2 * (a2 + a4 + a5 + a7) + a1 + a3 + a6 + a8;
-  float	val = sum / 16.0f; // (sum + 8) >> 4;
-
-  return val;
+  // cascaded averages, the same as SIMD (no -1 rounding correction at float)
+  auto a123 = avg_32_c(a2, avg_32_c(a1, a3));
+  auto a678 = avg_32_c(a7, avg_32_c(a6, a8));
+  auto a4c5 = avg_32_c(c, avg_32_c(a4, a5));
+  return avg_32_c(a4c5, avg_32_c(a123, a678));
 }
 
 // ------------
@@ -853,7 +854,6 @@ RG_FORCEINLINE float rg_mode13_and14_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-//rounding does not match
 RG_FORCEINLINE Byte rg_mode15_and16_cpp(const Byte* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
@@ -863,7 +863,8 @@ RG_FORCEINLINE Byte rg_mode15_and16_cpp(const Byte* pSrc, int srcPitch) {
 
     auto mindiff = std::min(std::min(d1, d2), d3);
 
-    auto average = (a1 + 2*a2 + a3 + a6 + 2*a7 + a8) / 8;
+    // (a1 + 2*a2 + a3 + a6 + 2*a7 + a8) / 8 with cascaded averages, the same as SIMD
+    auto average = avg_c(avg_c(avg_c(a1, a2), avg_c(a2, a3)), subs_c(avg_c(avg_c(a6, a7), avg_c(a7, a8)), 1));
 
     if (mindiff == d2) return clip(average, (int)std::min(a2, a7), (int)std::max(a2, a7));
     if (mindiff == d3) return clip(average, (int)std::min(a3, a6), (int)std::max(a3, a6));
@@ -879,7 +880,8 @@ RG_FORCEINLINE uint16_t rg_mode15_and16_cpp_16(const Byte* pSrc, int srcPitch) {
 
   auto mindiff = std::min(std::min(d1, d2), d3);
 
-  auto average = (a1 + 2*a2 + a3 + a6 + 2*a7 + a8 + 4) / 8;
+  // (a1 + 2*a2 + a3 + a6 + 2*a7 + a8) / 8 with cascaded averages, the same as SIMD
+  auto average = avg_c(avg_c(avg_c(a1, a2), avg_c(a2, a3)), subs_16_c(avg_c(avg_c(a6, a7), avg_c(a7, a8)), 1));
 
   if (mindiff == d2) return clip_16(average, (int)std::min(a2, a7), (int)std::max(a2, a7));
   if (mindiff == d3) return clip_16(average, (int)std::min(a3, a6), (int)std::max(a3, a6));
@@ -895,7 +897,8 @@ RG_FORCEINLINE float rg_mode15_and16_cpp_32(const Byte* pSrc, int srcPitch) {
 
   auto mindiff = std::min(std::min(d1, d2), d3);
 
-  auto average = (a1 + 2*a2 + a3 + a6 + 2*a7 + a8) / 8.0f;
+  // (a1 + 2*a2 + a3 + a6 + 2*a7 + a8) / 8 with cascaded averages, the same as SIMD
+  auto average = avg_32_c(avg_32_c(avg_32_c(a1, a2), avg_32_c(a2, a3)), avg_32_c(avg_32_c(a6, a7), avg_32_c(a7, a8)));
 
   if (mindiff == d2) return clip_32(average, std::min(a2, a7), std::max(a2, a7));
   if (mindiff == d3) return clip_32(average, std::min(a3, a6), std::max(a3, a6));
@@ -1031,37 +1034,28 @@ RG_FORCEINLINE float rg_mode18_cpp_32(const Byte* pSrc, int srcPitch) {
 // ------------
 
 RG_FORCEINLINE Byte rg_mode19_cpp(const Byte* pSrc, int srcPitch) {
-    LOAD_SQUARE_CPP(pSrc, srcPitch);
-    //this one is faster but rounded a bit differently. It's not like anyone will be using C anyway
-    //int sum = a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8;
-    //int val = (sum + 4) >> 3;
+  LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    int	val = ((((((a1 + a3 + 1) >> 1) + ((a6 + a8 + 1) >> 1) + 1) >> 1) - 1)
-    						       +  ((((a2 + a5 + 1) >> 1) + ((a4 + a7 + 1) >> 1) + 1) >> 1)
-    						       + 1) >> 1;
-
-    return val;
+  // (a1 + ... + a8) / 8 with cascaded averages, the same as SIMD
+  auto a1368 = subs_c(avg_c(avg_c(a1, a3), avg_c(a6, a8)), 1);
+  auto a2457 = avg_c(avg_c(a2, a5), avg_c(a4, a7));
+  return avg_c(a1368, a2457);
 }
 
 RG_FORCEINLINE uint16_t rg_mode19_cpp_16(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
-  //this one is faster but rounded a bit differently. It's not like anyone will be using C anyway
-  //int sum = a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8;
-  //int val = (sum + 4) >> 3;
 
-  int	val = ((((((a1 + a3 + 1) >> 1) + ((a6 + a8 + 1) >> 1) + 1) >> 1) - 1)
-    +  ((((a2 + a5 + 1) >> 1) + ((a4 + a7 + 1) >> 1) + 1) >> 1)
-    + 1) >> 1;
-
-  return val;
+  // (a1 + ... + a8) / 8 with cascaded averages, the same as SIMD
+  auto a1368 = subs_16_c(avg_c(avg_c(a1, a3), avg_c(a6, a8)), 1);
+  auto a2457 = avg_c(avg_c(a2, a5), avg_c(a4, a7));
+  return avg_c(a1368, a2457);
 }
 
 RG_FORCEINLINE float rg_mode19_cpp_32(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
-  float	val = (a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8) / 8.0f;
-
-  return val;
+  // cascaded averages, the same as SIMD
+  return avg_32_c(avg_32_c(avg_32_c(a1, a3), avg_32_c(a6, a8)), avg_32_c(avg_32_c(a2, a5), avg_32_c(a4, a7)));
 }
 
 // ------------
@@ -1078,19 +1072,20 @@ RG_FORCEINLINE Byte rg_mode20_cpp(const Byte* pSrc, int srcPitch) {
 RG_FORCEINLINE uint16_t rg_mode20_cpp_16(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
-  int sum = a1 + a2 + a3 + a4 + c + a5 + a6 + a7 + a8;
-  int val = (sum + 4) / 9;
-
-  return val;
+  // (sum + 4) / 9 as in SIMD: fixed point 1/9 with 15 bits, 32 bit unsigned product, saturated to 16 bit
+  constexpr int FACTOR = 15;
+  constexpr uint32_t onenineth = ((1u << FACTOR) + 4) / 9;
+  uint32_t sum = a1 + a2 + a3 + a4 + c + a5 + a6 + a7 + a8;
+  uint32_t val = ((sum + 4) * onenineth) >> FACTOR;
+  return (uint16_t)std::min(val, 65535u);
 }
 
 RG_FORCEINLINE float rg_mode20_cpp_32(const Byte* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
-  float val = (a1 + a2 + a3 + a4 + c + a5 + a6 + a7 + a8) / 9.0f;
-  // (sum + 4) / 9;
-
-  return val;
+  // sum / 9, the summing order and the multiplication with 1/9 are the same as SIMD
+  float sum = ((a1 + a2) + (a3 + a4)) + ((a5 + a6) + (a7 + a8));
+  return (sum + c) * (1 / 9.0f);
 }
 
 // ------------

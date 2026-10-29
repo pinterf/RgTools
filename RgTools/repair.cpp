@@ -388,6 +388,13 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
 }
 
 
+// A plane of less than 3 rows has border rows only: it is copied (the plane functions need an inner row).
+static void process_plane(RepairPlaneProcessor* f, int mode, IScriptEnvironment* env, BYTE* pDst, const BYTE* pSrc, const BYTE* pRef, int dstPitch, int srcPitch, int refPitch, int rowsize, int height) {
+  if (mode > 0 && height < 3)
+    f = repair_copy_plane;
+  f(env, pDst, pSrc, pRef, dstPitch, srcPitch, refPitch, rowsize, height);
+}
+
 PVideoFrame Repair::GetFrame(int n, IScriptEnvironment* env) {
   auto srcFrame = child->GetFrame(n, env);
   auto refFrame = ref_->GetFrame(n, env);
@@ -402,7 +409,7 @@ PVideoFrame Repair::GetFrame(int n, IScriptEnvironment* env) {
     for (int p = 0; p < 3; ++p) {
       const int plane = planes[p];
 
-      functions[mode_ + 1](env, dstFrame->GetWritePtr(plane), srcFrame->GetReadPtr(plane), refFrame->GetReadPtr(plane),
+      process_plane(functions[mode_ + 1], mode_, env, dstFrame->GetWritePtr(plane), srcFrame->GetReadPtr(plane), refFrame->GetReadPtr(plane),
         dstFrame->GetPitch(plane), srcFrame->GetPitch(plane), refFrame->GetPitch(plane),
         srcFrame->GetRowSize(plane), srcFrame->GetHeight(plane));
     }
@@ -411,7 +418,7 @@ PVideoFrame Repair::GetFrame(int n, IScriptEnvironment* env) {
     if(!is_16byte_aligned(srcFrame->GetReadPtr(PLANAR_Y)) || !is_16byte_aligned(refFrame->GetReadPtr(PLANAR_Y)))
       env->ThrowError("Repair: Invalid memory alignment. Unaligned crop?");
 
-    functions[mode_ + 1](env, dstFrame->GetWritePtr(PLANAR_Y), srcFrame->GetReadPtr(PLANAR_Y), refFrame->GetReadPtr(PLANAR_Y),
+    process_plane(functions[mode_ + 1], mode_, env, dstFrame->GetWritePtr(PLANAR_Y), srcFrame->GetReadPtr(PLANAR_Y), refFrame->GetReadPtr(PLANAR_Y),
       dstFrame->GetPitch(PLANAR_Y), srcFrame->GetPitch(PLANAR_Y), refFrame->GetPitch(PLANAR_Y),
       srcFrame->GetRowSize(PLANAR_Y), srcFrame->GetHeight(PLANAR_Y));
 
@@ -421,20 +428,20 @@ PVideoFrame Repair::GetFrame(int n, IScriptEnvironment* env) {
 
       if (functions_chroma != nullptr) {
         // for float
-        functions_chroma[modeU_ + 1](env, dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetReadPtr(PLANAR_U), refFrame->GetReadPtr(PLANAR_U),
+        process_plane(functions_chroma[modeU_ + 1], modeU_, env, dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetReadPtr(PLANAR_U), refFrame->GetReadPtr(PLANAR_U),
           dstFrame->GetPitch(PLANAR_U), srcFrame->GetPitch(PLANAR_U), refFrame->GetPitch(PLANAR_U),
           srcFrame->GetRowSize(PLANAR_U), srcFrame->GetHeight(PLANAR_U));
 
-        functions_chroma[modeV_ + 1](env, dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetReadPtr(PLANAR_V), refFrame->GetReadPtr(PLANAR_V),
+        process_plane(functions_chroma[modeV_ + 1], modeV_, env, dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetReadPtr(PLANAR_V), refFrame->GetReadPtr(PLANAR_V),
           dstFrame->GetPitch(PLANAR_V), srcFrame->GetPitch(PLANAR_V), refFrame->GetPitch(PLANAR_V),
           srcFrame->GetRowSize(PLANAR_V), srcFrame->GetHeight(PLANAR_V));
       }
       else {
-        functions[modeU_ + 1](env, dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetReadPtr(PLANAR_U), refFrame->GetReadPtr(PLANAR_U),
+        process_plane(functions[modeU_ + 1], modeU_, env, dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetReadPtr(PLANAR_U), refFrame->GetReadPtr(PLANAR_U),
           dstFrame->GetPitch(PLANAR_U), srcFrame->GetPitch(PLANAR_U), refFrame->GetPitch(PLANAR_U),
           srcFrame->GetRowSize(PLANAR_U), srcFrame->GetHeight(PLANAR_U));
 
-        functions[modeV_ + 1](env, dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetReadPtr(PLANAR_V), refFrame->GetReadPtr(PLANAR_V),
+        process_plane(functions[modeV_ + 1], modeV_, env, dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetReadPtr(PLANAR_V), refFrame->GetReadPtr(PLANAR_V),
           dstFrame->GetPitch(PLANAR_V), srcFrame->GetPitch(PLANAR_V), refFrame->GetPitch(PLANAR_V),
           srcFrame->GetRowSize(PLANAR_V), srcFrame->GetHeight(PLANAR_V));
       }

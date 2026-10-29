@@ -224,6 +224,9 @@ extern VCleanerProcessor* vcleaner_sse2_functions_32_chroma[];
 #endif
 
 static void dispatch_median(int mode, Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int pixelsize, int bits_per_pixel, bool chroma, IScriptEnvironment *env) {
+  // a plane without an inner row (mode 1: 1 border row, mode 2: 2 border rows at the top and the bottom) is copied
+  if ((mode == 1 && height < 3) || (mode == 2 && height < 5))
+    mode = 0;
   if (pixelsize == 1) {
 #ifdef INTEL_INTRINSICS
     if ((env->GetCPUFlags() & CPUF_SSE2) && rowsize >= 16 && is_16byte_aligned(pSrc)) {

@@ -452,6 +452,13 @@ RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_
 }
 
 
+// A plane of less than 3 rows has border rows only: it is copied (the plane functions need an inner row).
+static void process_plane(PlaneProcessor* f, int mode, IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch) {
+  if (mode > 0 && height < 3)
+    f = rg_copy_plane;
+  f(env, pSrc, pDst, rowsize, height, srcPitch, dstPitch);
+}
+
 PVideoFrame RemoveGrain::GetFrame(int n, IScriptEnvironment* env) {
   auto srcFrame = child->GetFrame(n, env);
   auto dstFrame = has_at_least_v8 ? env->NewVideoFrameP(vi, &srcFrame) : env->NewVideoFrame(vi);
@@ -466,7 +473,7 @@ PVideoFrame RemoveGrain::GetFrame(int n, IScriptEnvironment* env) {
     for (int p = 0; p < 3; ++p) {
       const int plane = planes[p];
 
-      functions[mode_ + 1](env, srcFrame->GetReadPtr(plane), dstFrame->GetWritePtr(plane), srcFrame->GetRowSize(plane),
+      process_plane(functions[mode_ + 1], mode_, env, srcFrame->GetReadPtr(plane), dstFrame->GetWritePtr(plane), srcFrame->GetRowSize(plane),
         srcFrame->GetHeight(plane), srcFrame->GetPitch(plane), dstFrame->GetPitch(plane));
     }
   }
@@ -474,7 +481,7 @@ PVideoFrame RemoveGrain::GetFrame(int n, IScriptEnvironment* env) {
     if (!is_16byte_aligned(srcFrame->GetReadPtr(PLANAR_Y)))
       env->ThrowError("RemoveGrain: Invalid memory alignment. Unaligned crop?");
 
-    functions[mode_ + 1](env, srcFrame->GetReadPtr(PLANAR_Y), dstFrame->GetWritePtr(PLANAR_Y), srcFrame->GetRowSize(PLANAR_Y),
+    process_plane(functions[mode_ + 1], mode_, env, srcFrame->GetReadPtr(PLANAR_Y), dstFrame->GetWritePtr(PLANAR_Y), srcFrame->GetRowSize(PLANAR_Y),
       srcFrame->GetHeight(PLANAR_Y), srcFrame->GetPitch(PLANAR_Y), dstFrame->GetPitch(PLANAR_Y));
 
     if (vi.IsPlanar() && !vi.IsY()) {
@@ -483,16 +490,16 @@ PVideoFrame RemoveGrain::GetFrame(int n, IScriptEnvironment* env) {
 
       if (functions_chroma != nullptr) {
         // for float
-        functions_chroma[modeU_ + 1](env, srcFrame->GetReadPtr(PLANAR_U), dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetRowSize(PLANAR_U),
+        process_plane(functions_chroma[modeU_ + 1], modeU_, env, srcFrame->GetReadPtr(PLANAR_U), dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetRowSize(PLANAR_U),
           srcFrame->GetHeight(PLANAR_U), srcFrame->GetPitch(PLANAR_U), dstFrame->GetPitch(PLANAR_U));
-        functions_chroma[modeV_ + 1](env, srcFrame->GetReadPtr(PLANAR_V), dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetRowSize(PLANAR_V),
+        process_plane(functions_chroma[modeV_ + 1], modeV_, env, srcFrame->GetReadPtr(PLANAR_V), dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetRowSize(PLANAR_V),
           srcFrame->GetHeight(PLANAR_V), srcFrame->GetPitch(PLANAR_V), dstFrame->GetPitch(PLANAR_V));
       }
       else {
-        functions[modeU_ + 1](env, srcFrame->GetReadPtr(PLANAR_U), dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetRowSize(PLANAR_U),
+        process_plane(functions[modeU_ + 1], modeU_, env, srcFrame->GetReadPtr(PLANAR_U), dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetRowSize(PLANAR_U),
           srcFrame->GetHeight(PLANAR_U), srcFrame->GetPitch(PLANAR_U), dstFrame->GetPitch(PLANAR_U));
 
-        functions[modeV_ + 1](env, srcFrame->GetReadPtr(PLANAR_V), dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetRowSize(PLANAR_V),
+        process_plane(functions[modeV_ + 1], modeV_, env, srcFrame->GetReadPtr(PLANAR_V), dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetRowSize(PLANAR_V),
           srcFrame->GetHeight(PLANAR_V), srcFrame->GetPitch(PLANAR_V), dstFrame->GetPitch(PLANAR_V));
       }
     }

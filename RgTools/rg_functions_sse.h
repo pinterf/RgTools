@@ -875,12 +875,11 @@ RG_FORCEINLINE __m128i rg_mode6_sse_32(const Byte* pSrc, int srcPitch) {
   auto absdiff3 = abs_diff_32(c, clipped3);
   auto absdiff4 = abs_diff_32(c, clipped4);
 
-  auto c1 = _mm_add_ps(_mm_add_ps(absdiff1, absdiff1), d1); // saturated add not needed, plus: absdiff is simply doubled
-  auto c2 = _mm_add_ps(_mm_add_ps(absdiff2, absdiff2), d2);
-  auto c3 = _mm_add_ps(_mm_add_ps(absdiff3, absdiff3), d3);
-  auto c4 = _mm_add_ps(_mm_add_ps(absdiff4, absdiff4), d4);
-
-  // no max_pixel_value clamp for float
+  // clamped to 1.0 like the saturating integer versions (and C, AVX2)
+  auto c1 = _mm_adds_ps_for_diff(_mm_add_ps(absdiff1, absdiff1), d1);
+  auto c2 = _mm_adds_ps_for_diff(_mm_add_ps(absdiff2, absdiff2), d2);
+  auto c3 = _mm_adds_ps_for_diff(_mm_add_ps(absdiff3, absdiff3), d3);
+  auto c4 = _mm_adds_ps_for_diff(_mm_add_ps(absdiff4, absdiff4), d4);
 
   auto mindiff = _mm_min_ps(c1, c2);
   mindiff = _mm_min_ps(mindiff, c3);

@@ -37,13 +37,15 @@
 
 #ifdef AVS_POSIX
 // this is also defined in avs/posix.h
+#ifndef AVS_HAIKU
 #define __declspec(x)
+#endif
 #endif
 
 #ifdef __cplusplus
-#  define EXTERN_C extern "C"
+#  define AVS_EXTERN_C extern "C"
 #else
-#  define EXTERN_C
+#  define AVS_EXTERN_C
 #endif
 
 #ifdef AVS_WINDOWS
@@ -92,16 +94,25 @@
 
 #ifdef BUILDING_AVSCORE
 #ifdef AVS_WINDOWS
-#  define AVSC_EXPORT __declspec(dllexport)
-#  define AVSC_API(ret, name) EXTERN_C AVSC_EXPORT ret AVSC_CC name
+#  ifndef AVS_STATIC_LIB
+#    define AVSC_EXPORT __declspec(dllexport)
+#  else
+#    define AVSC_EXPORT
+#  endif
+#  define AVSC_API(ret, name) AVS_EXTERN_C AVSC_EXPORT ret AVSC_CC name
 #else
-#  define AVSC_EXPORT EXTERN_C
-#  define AVSC_API(ret, name) EXTERN_C ret AVSC_CC name
+#  define AVSC_EXPORT AVS_EXTERN_C
+#  define AVSC_API(ret, name) AVS_EXTERN_C ret AVSC_CC name
 #endif
 #else
-#  define AVSC_EXPORT EXTERN_C __declspec(dllexport)
+#  define AVSC_EXPORT AVS_EXTERN_C __declspec(dllexport)
+#  ifndef AVS_STATIC_LIB
+#    define AVSC_IMPORT __declspec(dllimport)
+#  else
+#    define AVSC_IMPORT
+#  endif
 #  ifndef AVSC_NO_DECLSPEC
-#    define AVSC_API(ret, name) EXTERN_C __declspec(dllimport) ret AVSC_CC name
+#    define AVSC_API(ret, name) AVS_EXTERN_C AVSC_IMPORT ret AVSC_CC name
 #  else
 #    define AVSC_API(ret, name) typedef ret (AVSC_CC *name##_func)
 #  endif

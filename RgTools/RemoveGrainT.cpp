@@ -54,8 +54,8 @@ class TemporalRepair : public GenericVideoFilter
 
     const int planes_y[3] = { PLANAR_Y, PLANAR_U, PLANAR_V };
     const int planes_r[3] = { PLANAR_G, PLANAR_B, PLANAR_R };
-    const int* planes = (vi.IsYUV() || vi.IsYUVA()) ? planes_y : planes_r;
-    const int num_planes = std::min(vi.NumComponents(), 3); // no Alpha plane processing
+    const int* planes = (vi.IsPlanarRGB() || vi.IsPlanarRGBA()) ? planes_r : planes_y;
+    const int num_planes = rg_num_planes(vi); // no Alpha plane processing
 
     for (int i = 0; i < num_planes; ++i) {
       const int plane = planes[i];
@@ -66,7 +66,7 @@ class TemporalRepair : public GenericVideoFilter
     }
 
     // alpha: modes 0, 4 from the original clip, modes 1, 2, 3 from the clip
-    if (vi.NumComponents() == 4)
+    if (rg_has_alpha(vi))
       copy_plane(df, core_.smooth() ? cf : of, PLANAR_A, env);
 
     return df;

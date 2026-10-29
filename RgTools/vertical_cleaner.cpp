@@ -26,7 +26,7 @@ PVideoFrame VerticalCleaner::GetFrame(int n, IScriptEnvironment* env) {
     const int planes_y[3] = { PLANAR_Y, PLANAR_U, PLANAR_V };
     const int planes_r[3] = { PLANAR_G, PLANAR_B, PLANAR_R };
     const int* planes = (vi.IsPlanarRGB() || vi.IsPlanarRGBA()) ? planes_r : planes_y;
-    const int num_planes = vi.IsY() ? 1 : 3;
+    const int num_planes = rg_num_planes(vi);
 
     for (int i = 0; i < num_planes; ++i) {
         const int plane = planes[i];
@@ -35,7 +35,7 @@ PVideoFrame VerticalCleaner::GetFrame(int n, IScriptEnvironment* env) {
         core_.process_plane(i, p);
     }
 
-    if (vi.IsYUVA() || vi.IsPlanarRGBA())
+    if (rg_has_alpha(vi))
     { // copy alpha
       env->BitBlt(dstFrame->GetWritePtr(PLANAR_A), dstFrame->GetPitch(PLANAR_A), srcFrame->GetReadPtr(PLANAR_A), srcFrame->GetPitch(PLANAR_A), srcFrame->GetRowSize(PLANAR_A_ALIGNED), srcFrame->GetHeight(PLANAR_A));
     }

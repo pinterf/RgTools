@@ -111,6 +111,7 @@
     </ClCompile>
     <ClCompile Include="repair.cpp" />
     <ClCompile Include="repair_core.cpp" />
+    <ClCompile Include="repair_neon.cpp" />
     <ClCompile Include="repair_sse.cpp" />
     <ClCompile Include="vertical_cleaner.cpp" />
     <ClCompile Include="vertical_cleaner_core.cpp" />
@@ -142,6 +143,7 @@
     <ClInclude Include="repair.h" />
     <ClInclude Include="repair_core.h" />
     <ClInclude Include="repair_functions_c.h" />
+    <ClInclude Include="repair_functions_neon.h" />
     <ClInclude Include="repair_functions_sse.h" />
     <ClInclude Include="rg_functions_avx2.h" />
     <ClInclude Include="rg_functions_c.h" />

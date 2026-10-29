@@ -60,6 +60,9 @@
     <ClCompile Include="repair_core.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="repair_neon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="repair_sse.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -111,6 +114,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="repair_functions_c.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="repair_functions_neon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="repair_functions_sse.h">

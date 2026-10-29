@@ -39,6 +39,9 @@
     <ClCompile Include="RemoveGrainT.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RemoveGrainT_core.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="RemoveGrainT_sse.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -81,6 +84,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="RemoveGrainT.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RemoveGrainT_core.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="repair.h">

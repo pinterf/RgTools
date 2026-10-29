@@ -102,6 +102,7 @@
     <ClCompile Include="removegrain.cpp" />
     <ClCompile Include="removegrain_sse.cpp" />
     <ClCompile Include="RemoveGrainT.cpp" />
+    <ClCompile Include="RemoveGrainT_core.cpp" />
     <ClCompile Include="RemoveGrainT_sse.cpp" />
     <ClCompile Include="removegrain_avx2.cpp">
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
@@ -132,6 +133,7 @@
     <ClInclude Include="rg_avs.h" />
     <ClInclude Include="rg_core.h" />
     <ClInclude Include="RemoveGrainT.h" />
+    <ClInclude Include="RemoveGrainT_core.h" />
     <ClInclude Include="repair.h" />
     <ClInclude Include="repair_functions_c.h" />
     <ClInclude Include="repair_functions_sse.h" />

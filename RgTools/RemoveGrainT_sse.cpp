@@ -1,6 +1,7 @@
 // TemporalRepair: x86 SSE2 / SSE4.1 kernels
 
-#include "RemoveGrainT.h"
+#include "RemoveGrainT_core.h"
+#include "common.h"
 #include "common.h"
 
 #ifdef INTEL_INTRINSICS
@@ -12,7 +13,7 @@
 namespace {
 
 typedef void (temporal_repair_processor_simd)(uint8_t* dp, const uint8_t* sp1, const uint8_t* sp2, const uint8_t* pp, const uint8_t* np);
-typedef __m128i (smooth_temporal_repair_processor_simd)(BYTE* dp, const BYTE* previous, const intptr_t pfpitch, const BYTE* sp, const intptr_t ofpitch, const BYTE* next, const intptr_t nfpitch);
+typedef __m128i (smooth_temporal_repair_processor_simd)(uint8_t* dp, const uint8_t* previous, const intptr_t pfpitch, const uint8_t* sp, const intptr_t ofpitch, const uint8_t* next, const intptr_t nfpitch);
 
 RG_FORCEINLINE void RepairPixel_mode0_sse2(uint8_t *dest, const uint8_t *src1, const uint8_t *src2, const uint8_t *previous, const uint8_t *next)
 {
@@ -211,7 +212,7 @@ RG_FORCEINLINE void BRepairPixel_mode4_sse41_32(uint8_t* dest, const uint8_t* sr
 
 // unaligned, aligned
 template<typename pixel_t, temporal_repair_processor_simd processor, temporal_repair_processor_simd processor_a>
-void temporal_repair_mode0and4_sse2(BYTE* dp8, int dpitch, const BYTE* sp1_8, int spitch1, const BYTE* sp2_8, int spitch2, const BYTE* pp8, int ppitch, const BYTE* np8, int npitch, int width, int height)
+void temporal_repair_mode0and4_sse2(uint8_t* dp8, int dpitch, const uint8_t* sp1_8, int spitch1, const uint8_t* sp2_8, int spitch2, const uint8_t* pp8, int ppitch, const uint8_t* np8, int npitch, int width, int height)
 {
   dpitch /= sizeof(pixel_t);
   spitch1 /= sizeof(pixel_t);
@@ -254,7 +255,7 @@ template<typename pixel_t, temporal_repair_processor_simd processor, temporal_re
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-void temporal_repair_mode0and4_sse41(BYTE* dp8, int dpitch, const BYTE* sp1_8, int spitch1, const BYTE* sp2_8, int spitch2, const BYTE* pp8, int ppitch, const BYTE* np8, int npitch, int width, int height)
+void temporal_repair_mode0and4_sse41(uint8_t* dp8, int dpitch, const uint8_t* sp1_8, int spitch1, const uint8_t* sp2_8, int spitch2, const uint8_t* pp8, int ppitch, const uint8_t* np8, int npitch, int width, int height)
 {
   dpitch /= sizeof(pixel_t);
   spitch1 /= sizeof(pixel_t);
@@ -542,10 +543,10 @@ RG_FORCEINLINE __m128 SmoothTRepair3_32_sse2(uint8_t* dest, __m128& pmax, __m128
 }
 
 RG_FORCEINLINE __m128i temporal_repair_processor_mode1_8_sse2(
-  BYTE* dp,
-  const BYTE* previous, const intptr_t pfpitch,
-  const BYTE* sp, const intptr_t ofpitch,
-  const BYTE* next, const intptr_t nfpitch
+  uint8_t* dp,
+  const uint8_t* previous, const intptr_t pfpitch,
+  const uint8_t* sp, const intptr_t ofpitch,
+  const uint8_t* next, const intptr_t nfpitch
 )
 {
   __m128i lowermax = _mm_undefined_si128();
@@ -581,10 +582,10 @@ RG_FORCEINLINE __m128i temporal_repair_processor_mode1_8_sse2(
 __attribute__((__target__("sse4.1")))
 #endif
 RG_FORCEINLINE __m128i temporal_repair_processor_mode1_16_sse41(
-  BYTE* dp,
-  const BYTE* previous, const intptr_t pfpitch,
-  const BYTE* sp, const intptr_t ofpitch,
-  const BYTE* next, const intptr_t nfpitch
+  uint8_t* dp,
+  const uint8_t* previous, const intptr_t pfpitch,
+  const uint8_t* sp, const intptr_t ofpitch,
+  const uint8_t* next, const intptr_t nfpitch
 )
 {
   constexpr int pixelsize = sizeof(uint16_t);
@@ -620,10 +621,10 @@ RG_FORCEINLINE __m128i temporal_repair_processor_mode1_16_sse41(
 
 template<bool chroma>
 RG_FORCEINLINE __m128i temporal_repair_processor_mode1_32_sse2(
-  BYTE* dp,
-  const BYTE* previous, const intptr_t pfpitch,
-  const BYTE* sp, const intptr_t ofpitch,
-  const BYTE* next, const intptr_t nfpitch
+  uint8_t* dp,
+  const uint8_t* previous, const intptr_t pfpitch,
+  const uint8_t* sp, const intptr_t ofpitch,
+  const uint8_t* next, const intptr_t nfpitch
 )
 {
   constexpr int pixelsize = sizeof(float);
@@ -658,10 +659,10 @@ RG_FORCEINLINE __m128i temporal_repair_processor_mode1_32_sse2(
 }
 
 RG_FORCEINLINE __m128i temporal_repair_processor_mode2_8_sse2(
-  BYTE* dp,
-  const BYTE* previous, const intptr_t pfpitch,
-  const BYTE* sp, const intptr_t ofpitch,
-  const BYTE* next, const intptr_t nfpitch
+  uint8_t* dp,
+  const uint8_t* previous, const intptr_t pfpitch,
+  const uint8_t* sp, const intptr_t ofpitch,
+  const uint8_t* next, const intptr_t nfpitch
 )
 {
   __m128i lowermax = _mm_undefined_si128();
@@ -697,10 +698,10 @@ RG_FORCEINLINE __m128i temporal_repair_processor_mode2_8_sse2(
 __attribute__((__target__("sse4.1")))
 #endif
 RG_FORCEINLINE __m128i temporal_repair_processor_mode2_16_sse41(
-  BYTE* dp,
-  const BYTE* previous, const intptr_t pfpitch,
-  const BYTE* sp, const intptr_t ofpitch,
-  const BYTE* next, const intptr_t nfpitch
+  uint8_t* dp,
+  const uint8_t* previous, const intptr_t pfpitch,
+  const uint8_t* sp, const intptr_t ofpitch,
+  const uint8_t* next, const intptr_t nfpitch
 )
 {
   constexpr int pixelsize = sizeof(uint16_t);
@@ -736,10 +737,10 @@ RG_FORCEINLINE __m128i temporal_repair_processor_mode2_16_sse41(
 
 template<bool chroma>
 RG_FORCEINLINE __m128i temporal_repair_processor_mode2_32_sse2(
-  BYTE* dp,
-  const BYTE* previous, const intptr_t pfpitch,
-  const BYTE* sp, const intptr_t ofpitch,
-  const BYTE* next, const intptr_t nfpitch
+  uint8_t* dp,
+  const uint8_t* previous, const intptr_t pfpitch,
+  const uint8_t* sp, const intptr_t ofpitch,
+  const uint8_t* next, const intptr_t nfpitch
 )
 {
   constexpr int pixelsize = sizeof(float);
@@ -774,10 +775,10 @@ RG_FORCEINLINE __m128i temporal_repair_processor_mode2_32_sse2(
 }
 
 RG_FORCEINLINE __m128i temporal_repair_processor_mode3_8_sse2(
-  BYTE* dp,
-  const BYTE* previous, const intptr_t pfpitch,
-  const BYTE* sp, const intptr_t ofpitch,
-  const BYTE* next, const intptr_t nfpitch
+  uint8_t* dp,
+  const uint8_t* previous, const intptr_t pfpitch,
+  const uint8_t* sp, const intptr_t ofpitch,
+  const uint8_t* next, const intptr_t nfpitch
   )
 {
   __m128i pdiffmax = _mm_undefined_si128();
@@ -813,10 +814,10 @@ RG_FORCEINLINE __m128i temporal_repair_processor_mode3_8_sse2(
 __attribute__((__target__("sse4.1")))
 #endif
 RG_FORCEINLINE __m128i temporal_repair_processor_mode3_16_sse41(
-  BYTE* dp,
-  const BYTE* previous, const intptr_t pfpitch,
-  const BYTE* sp, const intptr_t ofpitch,
-  const BYTE* next, const intptr_t nfpitch
+  uint8_t* dp,
+  const uint8_t* previous, const intptr_t pfpitch,
+  const uint8_t* sp, const intptr_t ofpitch,
+  const uint8_t* next, const intptr_t nfpitch
 )
 {
   constexpr int pixelsize = sizeof(uint16_t);
@@ -852,10 +853,10 @@ RG_FORCEINLINE __m128i temporal_repair_processor_mode3_16_sse41(
 
 template<bool chroma>
 RG_FORCEINLINE __m128i temporal_repair_processor_mode3_32_sse2(
-  BYTE* dp,
-  const BYTE* previous, const intptr_t pfpitch,
-  const BYTE* sp, const intptr_t ofpitch,
-  const BYTE* next, const intptr_t nfpitch
+  uint8_t* dp,
+  const uint8_t* previous, const intptr_t pfpitch,
+  const uint8_t* sp, const intptr_t ofpitch,
+  const uint8_t* next, const intptr_t nfpitch
 )
 {
   constexpr int pixelsize = sizeof(float);
@@ -892,7 +893,7 @@ RG_FORCEINLINE __m128i temporal_repair_processor_mode3_32_sse2(
 // unaligned, aligned
 // FIXME: no difference at the moment
 template<typename pixel_t, smooth_temporal_repair_processor_simd processor, smooth_temporal_repair_processor_simd processor_a>
-void smooth_temporal_repair_mode1to3_sse2(BYTE* dp, const BYTE* previous, const BYTE* sp, const BYTE* next, intptr_t* pitches, int width, int height)
+void smooth_temporal_repair_mode1to3_sse2(uint8_t* dp, const uint8_t* previous, const uint8_t* sp, const uint8_t* next, intptr_t* pitches, int width, int height)
 {
   // #   X    X
   // X new_dp X
@@ -958,7 +959,7 @@ template<typename pixel_t, smooth_temporal_repair_processor_simd processor, smoo
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-void smooth_temporal_repair_mode1to3_sse41(BYTE* dp, const BYTE* previous, const BYTE* sp, const BYTE* next, intptr_t* pitches, int width, int height)
+void smooth_temporal_repair_mode1to3_sse41(uint8_t* dp, const uint8_t* previous, const uint8_t* sp, const uint8_t* next, intptr_t* pitches, int width, int height)
 {
   // #   X    X
   // X new_dp X

@@ -38,11 +38,8 @@ public:
 private:
   RgFormat format_ = {};
   bool grey_ = false;
-  bool simd_ = false;
   ClenseProcessor* processor_ = nullptr;
   ClenseProcessor* processor_chroma_ = nullptr; // float: chroma range -0.5..0.5
-  ClenseProcessor* processor_c_ = nullptr;      // planes not 16 byte aligned
-  ClenseProcessor* processor_chroma_c_ = nullptr;
 };
 
 #endif

@@ -35,9 +35,6 @@ PVideoFrame Repair::GetFrame(int n, IScriptEnvironment* env) {
 
   for (int i = 0; i < num_planes; ++i) {
     const int plane = planes[i];
-    // the SSE2 kernels of the inner part use aligned loads (YUV: checked at the first plane and at U)
-    if (!rgb && i < 2 && (!is_16byte_aligned(srcFrame->GetReadPtr(plane)) || !is_16byte_aligned(refFrame->GetReadPtr(plane))))
-      env->ThrowError("Repair: Invalid memory alignment. Unaligned crop?");
     const RgPlane p = { srcFrame->GetReadPtr(plane), srcFrame->GetPitch(plane), dstFrame->GetWritePtr(plane), dstFrame->GetPitch(plane),
       srcFrame->GetRowSize(plane), srcFrame->GetHeight(plane) };
     core_.process_plane(i, p, refFrame->GetReadPtr(plane), refFrame->GetPitch(plane));

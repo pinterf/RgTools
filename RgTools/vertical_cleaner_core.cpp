@@ -207,7 +207,7 @@ static void dispatch_median(int mode, uint8_t* pDst, const uint8_t *pSrc, int ds
     mode = 0;
   if (pixelsize == 1) {
 #ifdef INTEL_INTRINSICS
-    if ((cpu_flags & RG_CPU_SSE2) && rowsize >= 16 && is_16byte_aligned(pSrc)) {
+    if ((cpu_flags & RG_CPU_SSE2) && rowsize >= 16) {
       vcleaner_sse2_functions[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, bits_per_pixel);
       return;
     }
@@ -216,7 +216,7 @@ static void dispatch_median(int mode, uint8_t* pDst, const uint8_t *pSrc, int ds
   }
   else if (pixelsize == 2) {
 #ifdef INTEL_INTRINSICS
-    if ((cpu_flags & RG_CPU_SSE41) && rowsize >= 16 && is_16byte_aligned(pSrc)) {
+    if ((cpu_flags & RG_CPU_SSE41) && rowsize >= 16) {
       vcleaner_sse4_functions_uint16[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, bits_per_pixel);
       return;
     }
@@ -225,7 +225,7 @@ static void dispatch_median(int mode, uint8_t* pDst, const uint8_t *pSrc, int ds
   }
   else { // if (pixelsize == 4
 #ifdef INTEL_INTRINSICS
-    if ((cpu_flags & RG_CPU_SSE2) && rowsize >= 16 && is_16byte_aligned(pSrc)) {
+    if ((cpu_flags & RG_CPU_SSE2) && rowsize >= 16) {
       if (chroma)
         vcleaner_sse2_functions_32_chroma[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, bits_per_pixel);
       else

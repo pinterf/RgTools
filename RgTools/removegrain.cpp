@@ -29,12 +29,8 @@ PVideoFrame RemoveGrain::GetFrame(int n, IScriptEnvironment* env) {
   const int* planes = rgb ? planes_r : planes_y;
   const int num_planes = rg_num_planes(vi);
 
-  // remark: no special alignment required for AVX2
   for (int i = 0; i < num_planes; ++i) {
     const int plane = planes[i];
-    // YUV: checked at the first plane and at U
-    if (!rgb && i < 2 && !is_16byte_aligned(srcFrame->GetReadPtr(plane)))
-      env->ThrowError("RemoveGrain: Invalid memory alignment. Unaligned crop?");
     const RgPlane p = { srcFrame->GetReadPtr(plane), srcFrame->GetPitch(plane), dstFrame->GetWritePtr(plane), dstFrame->GetPitch(plane),
       srcFrame->GetRowSize(plane), srcFrame->GetHeight(plane) };
     core_.process_plane(i, p);

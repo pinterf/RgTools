@@ -35,7 +35,9 @@ struct RgFormat {
   bool has_alpha;     // YUVA, planar RGBA (the alpha plane is copied by the hosts)
 };
 
-// One plane of a frame
+// One plane of a frame. The SSE kernels use 16 byte aligned loads and stores: the hosts give aligned planes and
+// pitches (AviSynth+: 64 bytes; VapourSynth: 32 bytes, 64 on AVX-512 capable CPUs). A kernel must not rely on
+// more than 32 byte alignment (e.g. aligned AVX-512 loads) without checking.
 struct RgPlane {
   const uint8_t* src;
   int src_pitch;      // bytes

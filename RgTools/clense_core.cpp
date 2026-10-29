@@ -91,9 +91,6 @@ const char* ClenseCore::init(const ClenseParams& params, const RgFormat& format,
     if (format.pixelsize != 4)
       processor_chroma_ = processor_;
 
-    processor_c_ = processor_;
-    processor_chroma_c_ = processor_chroma_;
-    simd_ = false;
 #ifdef INTEL_INTRINSICS
     // the narrowest plane (subsampled chroma) must be wider than one vector
     int worst_case_width = format.width;
@@ -106,7 +103,6 @@ const char* ClenseCore::init(const ClenseParams& params, const RgFormat& format,
     if (format.pixelsize == 2 ? sse4 : sse2) {
       processor_ = clense_sse_processor(mode, format.pixelsize, false);
       processor_chroma_ = format.pixelsize == 4 ? clense_sse_processor(mode, format.pixelsize, true) : processor_;
-      simd_ = true;
     }
 #endif
     return nullptr;
@@ -118,9 +114,5 @@ void ClenseCore::process_plane(int plane_index, const RgPlane& plane, const uint
       return; // grey: U and V are not processed and not copied (random content, for speed; as documented for RemoveGrain)
 
     ClenseProcessor* processor = chroma ? processor_chroma_ : processor_;
-    // the SIMD kernels use aligned loads and stores
-    if (simd_ && !(is_16byte_aligned(plane.src) && is_16byte_aligned(ref1) && is_16byte_aligned(ref2) && is_16byte_aligned(plane.dst)))
-      processor = chroma ? processor_chroma_c_ : processor_c_;
-
     processor(plane.dst, plane.src, ref1, ref2, plane.dst_pitch, plane.src_pitch, ref1_pitch, ref2_pitch, plane.rowsize, plane.height, format_.bits_per_pixel);
 }

@@ -112,10 +112,6 @@ static RG_FORCEINLINE float clip_32(T val, T minimum, T maximum) {
   return std::max(std::min(val, maximum), minimum);
 }
 
-static RG_FORCEINLINE bool is_16byte_aligned(const void *ptr) {
-    return (((uintptr_t)ptr) & 15) == 0;
-}
-
 // sharpen, neighbourdiff: helpers for mode 25
 
 // good for all integer

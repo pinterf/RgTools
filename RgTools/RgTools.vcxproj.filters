@@ -30,6 +30,9 @@
     <ClCompile Include="removegrain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="removegrain_sse.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="RemoveGrainT.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

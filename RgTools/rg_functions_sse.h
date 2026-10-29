@@ -10,6 +10,9 @@
 
 #include "common_sse.h"
 
+// kernels, included only from removegrain_sse.cpp: internal linkage, compiled with that file's ISA flags
+namespace {
+
 typedef __m128i (SseModeProcessor)(const Byte*, int);
 
 //(x&y)+((x^y)/2) for (a+b)/2
@@ -4592,5 +4595,7 @@ auto result = sse0; // __asm	SSE_MOVE[edi], SSE0
 //#endif	// SHLUR
 //#endif
 #endif // mode28
+
+} // namespace
 
 #endif

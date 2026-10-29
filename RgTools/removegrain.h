@@ -6,6 +6,10 @@
 
 typedef void (PlaneProcessor)(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch);
 
+// mode -1 and 0 entries of the C and SSE function tables (the AVX2 tables have their own)
+PlaneProcessor rg_do_nothing;
+PlaneProcessor rg_copy_plane;
+
 
 class RemoveGrain : public GenericVideoFilter {
 public:

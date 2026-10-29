@@ -1,5 +1,13 @@
-#include "rg_functions_avx2.h"
+// RemoveGrain: x86 AVX2 plane loops and function tables
+
 #include "removegrain.h"
+
+#ifdef INTEL_INTRINSICS
+
+#include "rg_functions_avx2.h" // kernels, in an anonymous namespace
+
+namespace {
+
 
 // AVX2: not using special aligned templates, loadu is fast is aligned
 template<typename pixel_t, SseModeProcessor processor>
@@ -129,7 +137,9 @@ static void copyPlane(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int
 }
 
 
-PlaneProcessor* avx2_functions[] = {
+} // namespace
+
+PlaneProcessor* rg_avx2_functions[] = {
     doNothing,
     copyPlane,
     process_plane_avx2<uint8_t, rg_mode1_avx2<false>>,
@@ -163,7 +173,7 @@ PlaneProcessor* avx2_functions[] = {
 };
 
 
-PlaneProcessor* avx2_functions_16_10[] = {
+PlaneProcessor* rg_avx2_functions_16_10[] = {
   doNothing,
   copyPlane,
   process_plane_avx2<uint16_t, rg_mode1_avx2_16<false>>,
@@ -196,7 +206,7 @@ PlaneProcessor* avx2_functions_16_10[] = {
   process_plane_avx2<uint16_t, rg_mode28_avx2_16<false>>,
 };
 
-PlaneProcessor* avx2_functions_16_12[] = {
+PlaneProcessor* rg_avx2_functions_16_12[] = {
   doNothing,
   copyPlane,
   process_plane_avx2<uint16_t, rg_mode1_avx2_16<false>>,
@@ -229,7 +239,7 @@ PlaneProcessor* avx2_functions_16_12[] = {
   process_plane_avx2<uint16_t, rg_mode28_avx2_16<false>>,
 };
 
-PlaneProcessor* avx2_functions_16_14[] = {
+PlaneProcessor* rg_avx2_functions_16_14[] = {
   doNothing,
   copyPlane,
   process_plane_avx2<uint16_t, rg_mode1_avx2_16<false>>,
@@ -262,7 +272,7 @@ PlaneProcessor* avx2_functions_16_14[] = {
   process_plane_avx2<uint16_t, rg_mode28_avx2_16<false>>,
 };
 
-PlaneProcessor* avx2_functions_16_16[] = {
+PlaneProcessor* rg_avx2_functions_16_16[] = {
   doNothing,
   copyPlane,
   process_plane_avx2<uint16_t, rg_mode1_avx2_16<false>>,
@@ -297,7 +307,7 @@ PlaneProcessor* avx2_functions_16_16[] = {
 
 
 
-PlaneProcessor* avx2_functions_32_luma[] = {
+PlaneProcessor* rg_avx2_functions_32_luma[] = {
   doNothing,
   copyPlane,
   process_plane_avx2<float, rg_mode1_avx2_32<false>>,
@@ -330,7 +340,7 @@ PlaneProcessor* avx2_functions_32_luma[] = {
   process_plane_avx2<float, rg_mode28_avx2_32<false>>,
 };
 
-PlaneProcessor* avx2_functions_32_chroma[] = {
+PlaneProcessor* rg_avx2_functions_32_chroma[] = {
   doNothing,
   copyPlane,
   process_plane_avx2<float, rg_mode1_avx2_32<false>>,
@@ -362,3 +372,5 @@ PlaneProcessor* avx2_functions_32_chroma[] = {
   process_plane_avx2<float, rg_mode27_avx2_32<false>>,
   process_plane_avx2<float, rg_mode28_avx2_32<false>>,
 };
+
+#endif // INTEL_INTRINSICS

@@ -3,6 +3,9 @@
 
 #include "common_avx2.h"
 
+// kernels, included only from removegrain_avx2.cpp: internal linkage, compiled with that file's ISA flags
+namespace {
+
 typedef __m256i (SseModeProcessor)(const Byte*, int);
 
 //(x&y)+((x^y)/2) for (a+b)/2
@@ -2879,5 +2882,7 @@ RG_FORCEINLINE __m256i rg_mode28_avx2_32(const Byte* pSrc, int srcPitch) {
 
   return _mm256_castps_si256(simd_clip_32(c, real_lower, real_upper));
 }
+
+} // namespace
 
 #endif

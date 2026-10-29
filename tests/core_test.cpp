@@ -1,9 +1,12 @@
 // RgTools core test: the filter cores without a host (no AviSynth), at any bit depth.
 //
 // Every filter and mode on random planes (8 bit, 9..16 bit, 32 bit float; values weighted to 0 and the maximum),
-// YUV 4:2:0, 4:1:1, 4:4:0, 4:1:0 (luma and chroma plane) and Gray, plane sizes from 1x1. Each SIMD level the CPU has is compared to C
+// YUV 4:2:0, 4:1:1, 4:4:0, 4:1:0 (luma and chroma plane) and Gray; widths around the SIMD switch points, heights
+// from 1. The planes are allocated exactly (pitch: the 32 byte minimum of the hosts, no padding after the last row),
+// so an AddressSanitizer build finds reads and writes outside the frame. Each SIMD level the CPU has is compared to C
 // (bit-exact). The hash of all C outputs is printed: it must be the same on every platform (x86, aarch64).
 // Exit code: 0 if all SIMD outputs equal the C output.
+// AddressSanitizer / UBSan run: configure with -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer".
 
 #include "rg_core.h"
 #include "clense_core.h"
@@ -14,6 +17,11 @@
 
 #include <cinttypes>
 #include <cstdio>
+#include <memory>
+#include <new>
+#if defined(INTEL_INTRINSICS) && defined(_MSC_VER)
+#include <intrin.h>
+#endif
 #include <random>
 #include <string>
 #include <vector>
@@ -24,7 +32,21 @@ struct Level { const char* name; int cpu_flags; };
 
 std::vector<Level> simd_levels() {
   std::vector<Level> levels;
-#if defined(INTEL_INTRINSICS) && (defined(__GNUC__) || defined(__clang__))
+#if defined(INTEL_INTRINSICS) && defined(_MSC_VER)
+  // MSVC, ClangCL: no __builtin_cpu_supports (libgcc / compiler-rt)
+  int r[4];
+  __cpuid(r, 1);
+  const bool sse41 = (r[2] & (1 << 19)) != 0;
+  const bool fma = (r[2] & (1 << 12)) != 0;
+  const bool ymm_os = (r[2] & (1 << 27)) && (r[2] & (1 << 28)) && (_xgetbv(0) & 6) == 6; // OSXSAVE, AVX, XMM+YMM state
+  __cpuidex(r, 7, 0);
+  const bool avx2 = (r[1] & (1 << 5)) != 0;
+  levels.push_back({ "SSE2", RG_CPU_SSE2 });
+  if (sse41)
+    levels.push_back({ "SSE4.1", RG_CPU_SSE2 | RG_CPU_SSE41 });
+  if (sse41 && avx2 && fma && ymm_os)
+    levels.push_back({ "AVX2", RG_CPU_SSE2 | RG_CPU_SSE41 | RG_CPU_AVX2 });
+#elif defined(INTEL_INTRINSICS) && (defined(__GNUC__) || defined(__clang__))
   __builtin_cpu_init();
   levels.push_back({ "SSE2", RG_CPU_SSE2 });
   if (__builtin_cpu_supports("sse4.1"))
@@ -35,19 +57,23 @@ std::vector<Level> simd_levels() {
   return levels;
 }
 
-// a plane in a padded, 64 byte aligned buffer (the SIMD kernels may read and write past rowsize, within the pitch)
+// a plane in an exactly sized buffer: 32 byte aligned, the pitch is the rowsize rounded up to 32 bytes (the SIMD
+// kernels may read and write past rowsize within the pitch, but not outside the frame)
+constexpr size_t ALIGN = 32;
+
 struct Buffer {
-  std::vector<uint8_t> mem;
+  std::shared_ptr<uint8_t> mem;
+  size_t size = 0;
   uint8_t* ptr = nullptr;
   int pitch = 0;
   int rowsize = 0;
   int height = 0;
 
   Buffer(int rowsize_, int height_) : rowsize(rowsize_), height(height_) {
-    pitch = (rowsize + 64 + 63) / 64 * 64;
-    mem.resize((size_t)pitch * height + 256);
-    uintptr_t p = (uintptr_t)mem.data();
-    ptr = mem.data() + ((64 - p % 64) % 64);
+    pitch = (int)((rowsize + ALIGN - 1) / ALIGN * ALIGN);
+    size = (size_t)pitch * height;
+    ptr = static_cast<uint8_t*>(::operator new(size, std::align_val_t(ALIGN)));
+    mem.reset(ptr, [](uint8_t* p) { ::operator delete(p, std::align_val_t(ALIGN)); });
   }
   uint8_t* row(int y) { return ptr + (size_t)y * pitch; }
 };
@@ -127,7 +153,7 @@ void check(Stats& st, const std::string& cfg, const RgFormat& f, int num_inputs,
     for (int i = 0; i < num_planes; ++i) {
       Buffer& src = inputs[i][0];
       out.emplace_back(src.rowsize, src.height);
-      memset(out.back().mem.data(), 0xCD, out.back().mem.size()); // mode -1, grey: the same unwritten content
+      memset(out.back().ptr, 0xCD, out.back().size); // mode -1, grey: the same unwritten content
       RgPlane p = { src.ptr, src.pitch, out.back().ptr, out.back().pitch, src.rowsize, src.height };
       proc(core, i, p, inputs[i]);
     }
@@ -164,7 +190,10 @@ void check(Stats& st, const std::string& cfg, const RgFormat& f, int num_inputs,
 }
 
 const int g_bits[] = { 8, 9, 10, 11, 12, 13, 14, 15, 16, 32 };
-const int g_sizes[][2] = { { 1, 1 }, { 2, 3 }, { 4, 4 }, { 5, 7 }, { 17, 6 }, { 18, 5 }, { 33, 9 }, { 34, 8 }, { 66, 10 }, { 130, 9 } };
+// widths around the SIMD switch points (8 bit: 16 + 1, 32 + 1; 16 bit: 8 + 1, 16 + 1; float: 4 + 1, 8 + 1) and the
+// tails; heights from 1 (border rows only), odd and even (field modes 13-16)
+const int g_widths[] = { 1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 18, 31, 32, 33, 34, 63, 64, 65, 130 };
+const int g_heights[] = { 1, 2, 3, 4, 5, 9 };
 struct Family { const char* name; RgColorFamily family; int ssw, ssh; };
 const Family g_families[] = {
   { "YUV420", RgColorFamily::YUV, 1, 1 }, { "YUV411", RgColorFamily::YUV, 2, 0 }, { "YUV440", RgColorFamily::YUV, 0, 1 },
@@ -175,11 +204,12 @@ template<class Body>
 void for_formats(Body body) {
   for (const Family& fam : g_families)
     for (int bits : g_bits)
-      for (auto& s : g_sizes) {
-        const int w = (s[0] + (1 << fam.ssw) - 1) >> fam.ssw << fam.ssw;
-        const int h = (s[1] + (1 << fam.ssh) - 1) >> fam.ssh << fam.ssh;
-        body(make_format(fam.family, fam.ssw, fam.ssh, bits, w, h));
-      }
+      for (int sw : g_widths)
+        for (int sh : g_heights) {
+          const int w = (sw + (1 << fam.ssw) - 1) >> fam.ssw << fam.ssw;
+          const int h = (sh + (1 << fam.ssh) - 1) >> fam.ssh << fam.ssh;
+          body(make_format(fam.family, fam.ssw, fam.ssh, bits, w, h));
+        }
 }
 
 const char* family_name(const RgFormat& f) {

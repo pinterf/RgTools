@@ -51,6 +51,9 @@
     <ClCompile Include="RemoveGrainT_core.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RemoveGrainT_neon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="RemoveGrainT_sse.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

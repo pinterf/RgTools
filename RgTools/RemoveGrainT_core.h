@@ -21,11 +21,22 @@ extern PlaneProcessor_st* st_sse41_functions_16[];
 extern PlaneProcessor_st* st_sse2_functions_32[];
 extern PlaneProcessor_st* st_sse2_functions_chroma_32[];
 #endif
+#ifdef NEON_INTRINSICS
+// RemoveGrainT_neon.cpp, indexed by mode
+extern PlaneProcessor_t* t_neon_functions[];
+extern PlaneProcessor_t* t_neon_functions_16[];
+extern PlaneProcessor_t* t_neon_functions_32[];
+extern PlaneProcessor_t* t_neon_functions_chroma_32[];
+extern PlaneProcessor_st* st_neon_functions[];
+extern PlaneProcessor_st* st_neon_functions_16[];
+extern PlaneProcessor_st* st_neon_functions_32[];
+extern PlaneProcessor_st* st_neon_functions_chroma_32[];
+#endif
 
 struct TemporalRepairParams {
   int mode; // 0..4; 1, 2, 3: SmoothTemporalRepair
   bool grey; // only the first plane is processed (the others: random content)
-  int opt;  // -1: auto, 0: C, 1: SSE2, 2: SSE4.1
+  int opt;  // -1: auto, 0: C, 1: SSE2, 2: SSE4.1; aarch64: 0: C, the others: NEON
 };
 
 class TemporalRepairCore {

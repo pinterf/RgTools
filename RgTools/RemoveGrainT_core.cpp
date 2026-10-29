@@ -1044,6 +1044,9 @@ const char* TemporalRepairCore::init(const TemporalRepairParams& params, const R
 #else
   (void)cpu_flags;
 #endif
+#ifdef NEON_INTRINSICS
+  const bool neon = (cpu_flags & RG_CPU_NEON) != 0 && opt != 0; // 0: C
+#endif
 
   if (!smooth_) {
     // modes 0 and 4
@@ -1076,6 +1079,11 @@ const char* TemporalRepairCore::init(const TemporalRepairParams& params, const R
           t_ = t_sse2_functions[mode];
         else
 #endif
+#ifdef NEON_INTRINSICS
+        if (neon)
+          t_ = t_neon_functions[mode];
+        else
+#endif
           t_ = t_c_;
         t_chroma_ = t_;
         break;
@@ -1084,6 +1092,13 @@ const char* TemporalRepairCore::init(const TemporalRepairParams& params, const R
         if (sse41) {
           t_ = t_sse41_functions_32[mode];
           t_chroma_ = t_sse41_functions_chroma_32[mode];
+        }
+        else
+#endif
+#ifdef NEON_INTRINSICS
+        if (neon) {
+          t_ = t_neon_functions_32[mode];
+          t_chroma_ = t_neon_functions_chroma_32[mode];
         }
         else
 #endif
@@ -1096,6 +1111,11 @@ const char* TemporalRepairCore::init(const TemporalRepairParams& params, const R
 #ifdef INTEL_INTRINSICS
         if (sse41)
           t_ = t_sse41_functions_16[mode];
+        else
+#endif
+#ifdef NEON_INTRINSICS
+        if (neon)
+          t_ = t_neon_functions_16[mode];
         else
 #endif
           t_ = t_c_;
@@ -1133,6 +1153,11 @@ const char* TemporalRepairCore::init(const TemporalRepairParams& params, const R
           st_ = st_sse2_functions[mode];
         else
 #endif
+#ifdef NEON_INTRINSICS
+        if (neon)
+          st_ = st_neon_functions[mode];
+        else
+#endif
           st_ = st_c_;
         st_chroma_ = st_;
         break;
@@ -1141,6 +1166,13 @@ const char* TemporalRepairCore::init(const TemporalRepairParams& params, const R
         if (sse2) {
           st_ = st_sse2_functions_32[mode];
           st_chroma_ = st_sse2_functions_chroma_32[mode];
+        }
+        else
+#endif
+#ifdef NEON_INTRINSICS
+        if (neon) {
+          st_ = st_neon_functions_32[mode];
+          st_chroma_ = st_neon_functions_chroma_32[mode];
         }
         else
 #endif
@@ -1153,6 +1185,11 @@ const char* TemporalRepairCore::init(const TemporalRepairParams& params, const R
 #ifdef INTEL_INTRINSICS
         if (sse41)
           st_ = st_sse41_functions_16[mode];
+        else
+#endif
+#ifdef NEON_INTRINSICS
+        if (neon)
+          st_ = st_neon_functions_16[mode];
         else
 #endif
           st_ = st_c_;

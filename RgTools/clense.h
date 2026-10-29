@@ -4,7 +4,7 @@
 #include "common.h"
 
 template<typename pixel_t>
-using CModeProcessor = pixel_t (*)(pixel_t, pixel_t, pixel_t);
+using CModeProcessor = pixel_t (*)(pixel_t, pixel_t, pixel_t, int); // src, ref1, ref2, max_pixel_value (10-16 bit)
 
 enum class ClenseMode {
     FORWARD,
@@ -12,11 +12,11 @@ enum class ClenseMode {
     BOTH
 };
 
-typedef void (ClenseProcessor)(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int width, int height, IScriptEnvironment *env);
+typedef void (ClenseProcessor)(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int width, int height, int bits_per_pixel, IScriptEnvironment *env);
 
 #ifdef INTEL_INTRINSICS
 // clense_sse.cpp
-ClenseProcessor* clense_sse_processor(ClenseMode mode, int pixelsize, int bits_per_pixel, bool chroma);
+ClenseProcessor* clense_sse_processor(ClenseMode mode, int pixelsize, bool chroma);
 #endif
 
 class Clense : public GenericVideoFilter {

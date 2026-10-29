@@ -78,6 +78,11 @@ static RG_FORCEINLINE int adds_16_c(int x, int y) {
   return std::min(pixel_max, x + y);
 }
 
+// 10-16 bit with the max pixel value as a parameter
+static RG_FORCEINLINE int adds_16_c(int x, int y, int pixel_max) {
+  return std::min(pixel_max, x + y);
+}
+
 template<bool chroma>
 static RG_FORCEINLINE float adds_32_c(float x, float y) {
   constexpr float pixel_max = chroma ? 0.5f : 1.0f;

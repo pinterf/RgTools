@@ -9,38 +9,37 @@ static void check_if_match(const VideoInfo &vi, const VideoInfo &otherVi, IScrip
     }
 }
 
-RG_FORCEINLINE Byte clense_process_pixel_c(Byte src, Byte ref1, Byte ref2) {
+RG_FORCEINLINE Byte clense_process_pixel_c(Byte src, Byte ref1, Byte ref2, int /*max_pixel_value*/) {
     return std::min(std::max(src, std::min(ref1, ref2)), std::max(ref1, ref2));
 }
 
-RG_FORCEINLINE uint16_t clense_process_pixel_c_16(uint16_t src, uint16_t ref1, uint16_t ref2) {
+RG_FORCEINLINE uint16_t clense_process_pixel_c_16(uint16_t src, uint16_t ref1, uint16_t ref2, int /*max_pixel_value*/) {
   return std::min(std::max(src, std::min(ref1, ref2)), std::max(ref1, ref2));
 }
 
-RG_FORCEINLINE float clense_process_pixel_c_32(float src, float ref1, float ref2) {
+RG_FORCEINLINE float clense_process_pixel_c_32(float src, float ref1, float ref2, int /*max_pixel_value*/) {
   return std::min(std::max(src, std::min(ref1, ref2)), std::max(ref1, ref2));
 }
 
-RG_FORCEINLINE Byte sclense_process_pixel_c(Byte src, Byte ref1, Byte ref2) {
+RG_FORCEINLINE Byte sclense_process_pixel_c(Byte src, Byte ref1, Byte ref2, int /*max_pixel_value*/) {
   Byte minref = std::min(ref1, ref2);
   Byte maxref = std::max(ref1, ref2);
 
   return clip(src, (Byte)std::max(minref*2 - ref2, 0), (Byte)std::min(maxref*2-ref2, 255));
 }
 
-template<int bits_per_pixel>
-RG_FORCEINLINE uint16_t sclense_process_pixel_c_16(uint16_t src, uint16_t ref1, uint16_t ref2) {
+RG_FORCEINLINE uint16_t sclense_process_pixel_c_16(uint16_t src, uint16_t ref1, uint16_t ref2, int max_pixel_value) {
   uint16_t minref = std::min(ref1, ref2);
   uint16_t maxref = std::max(ref1, ref2);
 
   uint16_t mi = subs_16_c(minref, subs_16_c(ref2, minref)); // minref - (ref2 - minref)
-  uint16_t ma = adds_16_c<bits_per_pixel>(subs_16_c(maxref, ref2), maxref); // (maxref - ref2) + maxref
+  uint16_t ma = adds_16_c(subs_16_c(maxref, ref2), maxref, max_pixel_value); // (maxref - ref2) + maxref
 
   return clip_16(src, mi, ma);
 }
 
 template<bool chroma>
-RG_FORCEINLINE float sclense_process_pixel_c_32(float src, float ref1, float ref2) {
+RG_FORCEINLINE float sclense_process_pixel_c_32(float src, float ref1, float ref2, int /*max_pixel_value*/) {
   float minref = std::min(ref1, ref2);
   float maxref = std::max(ref1, ref2);
 
@@ -51,11 +50,12 @@ RG_FORCEINLINE float sclense_process_pixel_c_32(float src, float ref1, float ref
 }
 
 template<typename pixel_t, CModeProcessor<pixel_t>/*(clense_process_pixel_c)*/ processor>
-static void process_plane_c(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, IScriptEnvironment *env) {
+static void process_plane_c(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
   const int width = rowsize / sizeof(pixel_t);
+  const int max_pixel_value = sizeof(pixel_t) == 2 ? (1 << bits_per_pixel) - 1 : 0; // used by the 10-16 bit pixel functions
   for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
-            reinterpret_cast<pixel_t *>(pDst)[x] = processor(reinterpret_cast<const pixel_t *>(pSrc)[x], reinterpret_cast<const pixel_t *>(pRef1)[x], reinterpret_cast<const pixel_t *>(pRef2)[x]);
+            reinterpret_cast<pixel_t *>(pDst)[x] = processor(reinterpret_cast<const pixel_t *>(pSrc)[x], reinterpret_cast<const pixel_t *>(pRef1)[x], reinterpret_cast<const pixel_t *>(pRef2)[x], max_pixel_value);
         }
         pDst += dstPitch;
         pSrc += srcPitch;
@@ -108,25 +108,9 @@ Clense::Clense(PClip child, PClip previous, PClip next, bool grey, bool reducefl
         : process_plane_c<uint8_t, sclense_process_pixel_c>;
     }
     else if (pixelsize == 2) {
-      switch (bits_per_pixel) {
-      case 10: processor_ = (mode_ == ClenseMode::BOTH)
+      processor_ = (mode_ == ClenseMode::BOTH)
         ? process_plane_c<uint16_t, clense_process_pixel_c_16>
-        : process_plane_c<uint16_t, sclense_process_pixel_c_16<10>>;
-        break;
-      case 12: processor_ = (mode_ == ClenseMode::BOTH)
-        ? process_plane_c<uint16_t, clense_process_pixel_c_16>
-        : process_plane_c<uint16_t, sclense_process_pixel_c_16<12>>;
-        break;
-      case 14: processor_ = (mode_ == ClenseMode::BOTH)
-        ? process_plane_c<uint16_t, clense_process_pixel_c_16>
-        : process_plane_c<uint16_t, sclense_process_pixel_c_16<14>>;
-        break;
-      case 16: processor_ = (mode_ == ClenseMode::BOTH)
-        ? process_plane_c<uint16_t, clense_process_pixel_c_16>
-        : process_plane_c<uint16_t, sclense_process_pixel_c_16<16>>;
-        break;
-      default: env->ThrowError("Illegal bit-depth: %d!", bits_per_pixel);
-      }
+        : process_plane_c<uint16_t, sclense_process_pixel_c_16>;
     }
     else { // pixelsize == 4
       processor_ = (mode_ == ClenseMode::BOTH)
@@ -140,9 +124,9 @@ Clense::Clense(PClip child, PClip previous, PClip next, bool grey, bool reducefl
 #ifdef INTEL_INTRINSICS
     // 8 bit and float: SSE2, 10-16 bit: SSE4.1
     if (pixelsize == 2 ? sse4_ : sse2_) {
-      processor_ = clense_sse_processor(mode_, pixelsize, bits_per_pixel, false);
+      processor_ = clense_sse_processor(mode_, pixelsize, false);
       if (pixelsize == 4)
-        processor_chroma_ = clense_sse_processor(mode_, pixelsize, bits_per_pixel, true);
+        processor_chroma_ = clense_sse_processor(mode_, pixelsize, true);
     }
 #endif
     // only float has a separate chroma variant (chroma range -0.5..0.5)
@@ -188,26 +172,26 @@ PVideoFrame Clense::GetFrame(int n, IScriptEnvironment* env) {
     if (vi.IsPlanarRGB() || vi.IsPlanarRGBA()) {
       processor_(dstFrame->GetWritePtr(PLANAR_G), srcFrame->GetReadPtr(PLANAR_G), frame1->GetReadPtr(PLANAR_G), frame2->GetReadPtr(PLANAR_G),
         dstFrame->GetPitch(PLANAR_G), srcFrame->GetPitch(PLANAR_G), frame1->GetPitch(PLANAR_G), frame2->GetPitch(PLANAR_G),
-        srcFrame->GetRowSize(PLANAR_G), srcFrame->GetHeight(PLANAR_G), env);
+        srcFrame->GetRowSize(PLANAR_G), srcFrame->GetHeight(PLANAR_G), bits_per_pixel, env);
       processor_(dstFrame->GetWritePtr(PLANAR_B), srcFrame->GetReadPtr(PLANAR_B), frame1->GetReadPtr(PLANAR_B), frame2->GetReadPtr(PLANAR_B),
         dstFrame->GetPitch(PLANAR_B), srcFrame->GetPitch(PLANAR_B), frame1->GetPitch(PLANAR_B), frame2->GetPitch(PLANAR_B),
-        srcFrame->GetRowSize(PLANAR_B), srcFrame->GetHeight(PLANAR_B), env);
+        srcFrame->GetRowSize(PLANAR_B), srcFrame->GetHeight(PLANAR_B), bits_per_pixel, env);
       processor_(dstFrame->GetWritePtr(PLANAR_R), srcFrame->GetReadPtr(PLANAR_R), frame1->GetReadPtr(PLANAR_R), frame2->GetReadPtr(PLANAR_R),
         dstFrame->GetPitch(PLANAR_R), srcFrame->GetPitch(PLANAR_R), frame1->GetPitch(PLANAR_R), frame2->GetPitch(PLANAR_R),
-        srcFrame->GetRowSize(PLANAR_R), srcFrame->GetHeight(PLANAR_R), env);
+        srcFrame->GetRowSize(PLANAR_R), srcFrame->GetHeight(PLANAR_R), bits_per_pixel, env);
     } else {
       processor_(dstFrame->GetWritePtr(PLANAR_Y), srcFrame->GetReadPtr(PLANAR_Y), frame1->GetReadPtr(PLANAR_Y), frame2->GetReadPtr(PLANAR_Y),
         dstFrame->GetPitch(PLANAR_Y), srcFrame->GetPitch(PLANAR_Y), frame1->GetPitch(PLANAR_Y), frame2->GetPitch(PLANAR_Y),
-        srcFrame->GetRowSize(PLANAR_Y), srcFrame->GetHeight(PLANAR_Y), env);
+        srcFrame->GetRowSize(PLANAR_Y), srcFrame->GetHeight(PLANAR_Y), bits_per_pixel, env);
 
       if (!vi.IsY() && !grey_) {
         processor_chroma_(dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetReadPtr(PLANAR_U), frame1->GetReadPtr(PLANAR_U), frame2->GetReadPtr(PLANAR_U),
           dstFrame->GetPitch(PLANAR_U), srcFrame->GetPitch(PLANAR_U), frame1->GetPitch(PLANAR_U), frame2->GetPitch(PLANAR_U),
-          srcFrame->GetRowSize(PLANAR_U), srcFrame->GetHeight(PLANAR_U), env);
+          srcFrame->GetRowSize(PLANAR_U), srcFrame->GetHeight(PLANAR_U), bits_per_pixel, env);
 
         processor_chroma_(dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetReadPtr(PLANAR_V), frame1->GetReadPtr(PLANAR_V), frame2->GetReadPtr(PLANAR_V),
           dstFrame->GetPitch(PLANAR_V), srcFrame->GetPitch(PLANAR_V), frame1->GetPitch(PLANAR_V), frame2->GetPitch(PLANAR_V),
-          srcFrame->GetRowSize(PLANAR_V), srcFrame->GetHeight(PLANAR_V), env);
+          srcFrame->GetRowSize(PLANAR_V), srcFrame->GetHeight(PLANAR_V), bits_per_pixel, env);
       }
       // grey: U and V are not processed and not copied (random content, for speed; as documented for RemoveGrain)
     }

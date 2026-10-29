@@ -25,7 +25,7 @@ RG_FORCEINLINE void clense_process_line_sse2(Byte* pDst, const Byte *pSrc, const
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE void clense_process_line_sse4_16(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize)
+RG_FORCEINLINE void clense_process_line_sse4_16(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize, int /*bits_per_pixel*/)
 {
   for (int x = 0; x < rowsize; x+=16) {
     auto src = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc+x));
@@ -75,12 +75,12 @@ RG_FORCEINLINE void sclense_process_line_sse2(Byte* pDst, const Byte *pSrc, cons
     }
 }
 
-template<int bits_per_pixel>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE void sclense_process_line_sse4_16(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize) {
-  const __m128i pixel_max = _mm_set1_epi16(bits_per_pixel < 16 ? (1 << bits_per_pixel) - 1 : 0); // anti warning 65535 (not used) vs short
+RG_FORCEINLINE void sclense_process_line_sse4_16(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize, int bits_per_pixel) {
+  // 16 bit: the min with 0xFFFF is a no-op (_mm_adds_epu16 saturates there)
+  const __m128i pixel_max = _mm_set1_epi16((short)((1u << bits_per_pixel) - 1));
 
   for (int x = 0; x < rowsize; x+=16) {
     auto src = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc+x));
@@ -96,8 +96,7 @@ RG_FORCEINLINE void sclense_process_line_sse4_16(Byte* pDst, const Byte *pSrc, c
     ma = _mm_adds_epu16(ma, maxref);
     mi = _mm_subs_epu16(minref, mi);
 
-    if (bits_per_pixel < 16)
-      ma = _mm_min_epu16(ma, pixel_max); // saturation is not enough
+    ma = _mm_min_epu16(ma, pixel_max); // saturation is not enough below 16 bit
 
     auto dst = simd_clip_16(src, mi, ma);
 
@@ -128,7 +127,7 @@ RG_FORCEINLINE void sclense_process_line_sse2_32(Byte* pDst, const Byte *pSrc, c
 }
 
 template<decltype(clense_process_line_sse2) processor>
-void process_plane_sse(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, IScriptEnvironment *env) {
+void process_plane_sse(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
     if (!is_16byte_aligned(pSrc) || !is_16byte_aligned(pRef1) || !is_16byte_aligned(pRef2)) {
         env->ThrowError("Invalid memory alignment. Used unaligned crop?"); //omg I feel so dumb
     }
@@ -151,17 +150,17 @@ template<decltype(clense_process_line_sse4_16) processor>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-void process_plane_sse41(Byte* pDst, const Byte* pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, IScriptEnvironment* env) {
+void process_plane_sse41(Byte* pDst, const Byte* pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment* env) {
   if (!is_16byte_aligned(pSrc) || !is_16byte_aligned(pRef1) || !is_16byte_aligned(pRef2)) {
     env->ThrowError("Invalid memory alignment. Used unaligned crop?"); //omg I feel so dumb
   }
   auto mod16Width = (rowsize / 16) * 16;
 
   for (int y = 0; y < height; ++y) {
-    processor(pDst, pSrc, pRef1, pRef2, mod16Width);
+    processor(pDst, pSrc, pRef1, pRef2, mod16Width, bits_per_pixel);
 
     if (mod16Width != rowsize) {
-      processor(pDst + mod16Width, pSrc + mod16Width, pRef1 + mod16Width, pRef2 + mod16Width, 16);
+      processor(pDst + mod16Width, pSrc + mod16Width, pRef1 + mod16Width, pRef2 + mod16Width, 16, bits_per_pixel);
     }
     pDst += dstPitch;
     pSrc += srcPitch;
@@ -173,22 +172,17 @@ void process_plane_sse41(Byte* pDst, const Byte* pSrc, const Byte* pRef1, const 
 } // namespace
 
 // The SSE processor of the mode / format, the counterpart of the C selection in the Clense constructor.
-// 8 bit and float: SSE2, 10-16 bit: SSE4.1
-ClenseProcessor* clense_sse_processor(ClenseMode mode, int pixelsize, int bits_per_pixel, bool chroma) {
+// 8 bit and float: SSE2, 10-16 bit: SSE4.1 (one variant, the max pixel value comes from bits_per_pixel)
+ClenseProcessor* clense_sse_processor(ClenseMode mode, int pixelsize, bool chroma) {
   if (pixelsize == 1) {
     return (mode == ClenseMode::BOTH)
       ? process_plane_sse<clense_process_line_sse2>
       : process_plane_sse<sclense_process_line_sse2>;
   }
   if (pixelsize == 2) {
-    if (mode == ClenseMode::BOTH)
-      return process_plane_sse41<clense_process_line_sse4_16>;
-    switch (bits_per_pixel) {
-    case 10: return process_plane_sse41<sclense_process_line_sse4_16<10>>;
-    case 12: return process_plane_sse41<sclense_process_line_sse4_16<12>>;
-    case 14: return process_plane_sse41<sclense_process_line_sse4_16<14>>;
-    default: return process_plane_sse41<sclense_process_line_sse4_16<16>>;
-    }
+    return (mode == ClenseMode::BOTH)
+      ? process_plane_sse41<clense_process_line_sse4_16>
+      : process_plane_sse41<sclense_process_line_sse4_16>;
   }
   // pixelsize == 4
   if (mode == ClenseMode::BOTH)

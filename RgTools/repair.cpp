@@ -1,6 +1,8 @@
 #include "repair.h"
 #include "repair_functions_c.h"
+#ifdef INTEL_INTRINSICS
 #include "repair_functions_sse.h"
+#endif
 
 template<typename pixel_t, SseModeProcessor processor, SseModeProcessor processor_a>
 static void process_plane_sse(IScriptEnvironment* env, BYTE* pDst8, const BYTE* pSrc8, const BYTE* pRef8, int dstPitch, int srcPitch, int refPitch, int rowsize, int height) {

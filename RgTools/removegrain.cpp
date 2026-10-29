@@ -1,6 +1,8 @@
 #include "removegrain.h"
 #include "rg_functions_c.h"
+#ifdef INTEL_INTRINSICS
 #include "rg_functions_sse.h"
+#endif
 
 
 template<typename pixel_t, SseModeProcessor processor, SseModeProcessor processor_a>

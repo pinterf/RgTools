@@ -13,6 +13,12 @@
 #pragma warning(default: 4512 4244 4100)
 #include "avs/config.h"
 
+// INTEL_INTRINSICS: the x86 SIMD code is compiled. CMake defines it (ENABLE_INTEL_SIMD),
+// the MSVC solution does not: derive it from the target there.
+#if defined(_MSC_VER) && !defined(INTEL_INTRINSICS) && !defined(NEON_INTRINSICS) && (defined(_M_IX86) || defined(_M_X64))
+#define INTEL_INTRINSICS
+#endif
+
 typedef uint8_t Byte;
 
 #if defined(__clang__)

@@ -6,10 +6,13 @@
 // 2019 Rewrite and additional work by Ferenc Pintér
 
 #include "RemoveGrainT.h"
-#include "common_sse.h"
+#include "common.h"
 #include <cassert>
+#ifdef INTEL_INTRINSICS
+#include "common_sse.h"
 #include "emmintrin.h"
 #include "immintrin.h"
+#endif
 
 // called from GetFrame
 typedef void (PlaneProcessor_t)(BYTE* dp8, int dpitch, const BYTE* sp1_8, int spitch1, const BYTE* sp2_8, int spitch2, const BYTE* pp8, int ppitch, const BYTE* np8, int npitch, int width, int height);

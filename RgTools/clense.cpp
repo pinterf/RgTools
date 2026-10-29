@@ -1,5 +1,7 @@
 #include "clense.h"
+#ifdef INTEL_INTRINSICS
 #include "common_sse.h"
+#endif
 
 static void check_if_match(const VideoInfo &vi, const VideoInfo &otherVi, IScriptEnvironment* env) {
     if (otherVi.height != vi.height || otherVi.width != vi.width) {

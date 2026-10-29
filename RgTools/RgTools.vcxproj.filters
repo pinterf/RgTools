@@ -36,6 +36,9 @@
     <ClCompile Include="removegrain_core.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="removegrain_neon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="removegrain_sse.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -83,6 +86,9 @@
     <ClInclude Include="common_avx2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="common_neon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="common_sse.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -114,6 +120,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="rg_functions_c.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="rg_functions_neon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="rg_functions_sse.h">

@@ -13,12 +13,17 @@
 
 #include "rg_core.h"
 
-// env->GetCPUFlags() (SetMaxCPU applied) -> RgCpu flags
+// env->GetCPUFlags() (SetMaxCPU applied) -> RgCpu flags. The x86 and ARM flag values overlap (CPUF_ARM_NEON
+// is CPUF_FORCE on x86): only the flags of the target are mapped.
 static inline int rg_cpu_flags_from_avs(int64_t avs_flags) {
   int flags = 0;
+#if defined(NEON_INTRINSICS)
+  if (avs_flags & CPUF_ARM_NEON) flags |= RG_CPU_NEON;
+#else
   if (avs_flags & CPUF_SSE2) flags |= RG_CPU_SSE2;
   if (avs_flags & CPUF_SSE4_1) flags |= RG_CPU_SSE41;
   if (avs_flags & CPUF_AVX2) flags |= RG_CPU_AVX2;
+#endif
   return flags;
 }
 

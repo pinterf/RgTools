@@ -19,6 +19,7 @@ enum RgCpu : int {
   RG_CPU_SSE2  = 1,
   RG_CPU_SSE41 = 2,
   RG_CPU_AVX2  = 4, // the AVX2 code is compiled with FMA as well
+  RG_CPU_NEON  = 8, // aarch64
 };
 
 enum class RgColorFamily { Gray, YUV, RGB };

@@ -46,6 +46,8 @@ std::vector<Level> simd_levels() {
     levels.push_back({ "SSE4.1", RG_CPU_SSE2 | RG_CPU_SSE41 });
   if (sse41 && avx2 && fma && ymm_os)
     levels.push_back({ "AVX2", RG_CPU_SSE2 | RG_CPU_SSE41 | RG_CPU_AVX2 });
+#elif defined(NEON_INTRINSICS)
+  levels.push_back({ "NEON", RG_CPU_NEON }); // aarch64 baseline
 #elif defined(INTEL_INTRINSICS) && (defined(__GNUC__) || defined(__clang__))
   __builtin_cpu_init();
   levels.push_back({ "SSE2", RG_CPU_SSE2 });
@@ -173,19 +175,22 @@ void check(Stats& st, const std::string& cfg, const RgFormat& f, int num_inputs,
     if (!run(level.cpu_flags, out))
       return;
     ++st.compared;
-    for (int i = 0; i < num_planes; ++i) {
-      for (int y = 0; y < ref[i].height; ++y) {
-        if (memcmp(ref[i].row(y), out[i].row(y), ref[i].rowsize) != 0) {
-          if (st.mismatches < 20) {
-            int x = 0;
-            while (ref[i].row(y)[x] == out[i].row(y)[x]) ++x;
-            printf("DIFF %s %s: plane %d row %d byte %d\n", cfg.c_str(), level.name, i, y, x);
+    // one report per configuration and level
+    [&] {
+      for (int i = 0; i < num_planes; ++i) {
+        for (int y = 0; y < ref[i].height; ++y) {
+          if (memcmp(ref[i].row(y), out[i].row(y), ref[i].rowsize) != 0) {
+            if (st.mismatches < 2000) {
+              int x = 0;
+              while (ref[i].row(y)[x] == out[i].row(y)[x]) ++x;
+              printf("DIFF %s %s: plane %d row %d byte %d\n", cfg.c_str(), level.name, i, y, x);
+            }
+            ++st.mismatches;
+            return;
           }
-          ++st.mismatches;
-          y = ref[i].height; i = num_planes; // one report per configuration and level
         }
       }
-    }
+    }();
   }
 }
 

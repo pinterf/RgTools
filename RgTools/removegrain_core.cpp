@@ -251,6 +251,13 @@ extern PlaneProcessor* rg_avx2_functions_16[];
 extern PlaneProcessor* rg_avx2_functions_32_luma[];
 extern PlaneProcessor* rg_avx2_functions_32_chroma[];
 #endif
+#ifdef NEON_INTRINSICS
+// removegrain_neon.cpp
+extern PlaneProcessor* rg_neon_functions[];
+extern PlaneProcessor* rg_neon_functions_16[];
+extern PlaneProcessor* rg_neon_functions_32_luma[];
+extern PlaneProcessor* rg_neon_functions_32_chroma[];
+#endif
 
 // A plane of less than 3 rows has border rows only: it is copied (the plane functions need an inner row).
 static void process_plane_or_copy(PlaneProcessor* f, int mode, const uint8_t* pSrc, uint8_t* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
@@ -289,12 +296,17 @@ const char* RemoveGrainCore::init(const RemoveGrainParams& params, const RgForma
     // 2: sse2
     // 3: sse4.1
     // 4: avx2
-#ifdef INTEL_INTRINSICS
+    // aarch64: 1: c, 0 and the others: NEON
+#if defined(INTEL_INTRINSICS) || defined(NEON_INTRINSICS)
     // the narrowest plane (subsampled chroma) must be wider than one vector
     int worst_case_width = format.width;
     if (format.family == RgColorFamily::YUV)
       worst_case_width >>= format.ssw;
-
+#endif
+#ifdef NEON_INTRINSICS
+    const bool use_neon = opt != 1 && !!(cpu_flags & RG_CPU_NEON);
+#endif
+#ifdef INTEL_INTRINSICS
     const bool use_avx2 = (opt == 0 || opt >= 4) && !!(cpu_flags & RG_CPU_AVX2);
     const bool use_sse41 = (opt == 0 || opt >= 3) && !!(cpu_flags & RG_CPU_SSE41);
     const bool use_sse2 = (opt == 0 || opt >= 2) && !!(cpu_flags & RG_CPU_SSE2);
@@ -317,6 +329,10 @@ const char* RemoveGrainCore::init(const RemoveGrainParams& params, const RgForma
         functions_ = c_functions;
       }
 #endif
+#ifdef NEON_INTRINSICS
+      if (use_neon && worst_case_width >= 16 + 1)
+        functions_ = rg_neon_functions;
+#endif
     }
     else if (format.pixelsize == 2) {
       functions_ = c_functions_16;
@@ -327,6 +343,10 @@ const char* RemoveGrainCore::init(const RemoveGrainParams& params, const RgForma
       else if (use_sse41 && worst_case_width >= (16/sizeof(uint16_t) + 1)) {
         functions_ = rg_sse4_functions_16;
       }
+#endif
+#ifdef NEON_INTRINSICS
+      if (use_neon && worst_case_width >= 8 + 1)
+        functions_ = rg_neon_functions_16;
 #endif
     }
     else {// if (format.pixelsize == 4) 
@@ -340,6 +360,12 @@ const char* RemoveGrainCore::init(const RemoveGrainParams& params, const RgForma
       else if (use_sse41 && worst_case_width >= (16 / sizeof(float) + 1)) {
         functions_ = rg_sse4_functions_32_luma;
         functions_chroma_ = rg_sse4_functions_32_chroma;
+      }
+#endif
+#ifdef NEON_INTRINSICS
+      if (use_neon && worst_case_width >= 4 + 1) {
+        functions_ = rg_neon_functions_32_luma;
+        functions_chroma_ = rg_neon_functions_32_chroma;
       }
 #endif
     }

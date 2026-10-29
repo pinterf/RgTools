@@ -101,6 +101,7 @@
     <ClCompile Include="clense_sse.cpp" />
     <ClCompile Include="removegrain.cpp" />
     <ClCompile Include="removegrain_core.cpp" />
+    <ClCompile Include="removegrain_neon.cpp" />
     <ClCompile Include="removegrain_sse.cpp" />
     <ClCompile Include="RemoveGrainT.cpp" />
     <ClCompile Include="RemoveGrainT_core.cpp" />
@@ -120,6 +121,7 @@
     <ClInclude Include="clense_core.h" />
     <ClInclude Include="common.h" />
     <ClInclude Include="common_avx2.h" />
+    <ClInclude Include="common_neon.h" />
     <ClInclude Include="common_sse.h" />
     <ClInclude Include="include\avisynth.h" />
     <ClInclude Include="include\avs\alignment.h" />
@@ -143,6 +145,7 @@
     <ClInclude Include="repair_functions_sse.h" />
     <ClInclude Include="rg_functions_avx2.h" />
     <ClInclude Include="rg_functions_c.h" />
+    <ClInclude Include="rg_functions_neon.h" />
     <ClInclude Include="rg_functions_sse.h" />
     <ClInclude Include="vertical_cleaner.h" />
     <ClInclude Include="vertical_cleaner_core.h" />

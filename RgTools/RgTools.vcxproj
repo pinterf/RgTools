@@ -98,6 +98,7 @@
     <ClCompile Include="avs2x.cpp" />
     <ClCompile Include="clense.cpp" />
     <ClCompile Include="clense_core.cpp" />
+    <ClCompile Include="clense_neon.cpp" />
     <ClCompile Include="clense_sse.cpp" />
     <ClCompile Include="removegrain.cpp" />
     <ClCompile Include="removegrain_core.cpp" />
@@ -115,6 +116,7 @@
     <ClCompile Include="repair_sse.cpp" />
     <ClCompile Include="vertical_cleaner.cpp" />
     <ClCompile Include="vertical_cleaner_core.cpp" />
+    <ClCompile Include="vertical_cleaner_neon.cpp" />
     <ClCompile Include="vertical_cleaner_sse.cpp" />
   </ItemGroup>
   <ItemGroup>

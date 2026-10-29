@@ -30,6 +30,9 @@
     <ClCompile Include="clense_core.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="clense_neon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="removegrain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -73,6 +76,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="vertical_cleaner_core.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vertical_cleaner_neon.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

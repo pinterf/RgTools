@@ -21,6 +21,10 @@ typedef void (ClenseProcessor)(uint8_t* pDst, const uint8_t *pSrc, const uint8_t
 // clense_sse.cpp
 ClenseProcessor* clense_sse_processor(ClenseMode mode, int pixelsize, bool chroma);
 #endif
+#ifdef NEON_INTRINSICS
+// clense_neon.cpp
+ClenseProcessor* clense_neon_processor(ClenseMode mode, int pixelsize, bool chroma);
+#endif
 
 struct ClenseParams {
   ClenseMode mode;

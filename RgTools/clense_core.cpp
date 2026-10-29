@@ -105,6 +105,16 @@ const char* ClenseCore::init(const ClenseParams& params, const RgFormat& format,
       processor_chroma_ = format.pixelsize == 4 ? clense_sse_processor(mode, format.pixelsize, true) : processor_;
     }
 #endif
+#ifdef NEON_INTRINSICS
+    // the narrowest plane (subsampled chroma) must be wider than one vector, as SSE
+    int worst_case_width_neon = format.width;
+    if (format.family == RgColorFamily::YUV)
+      worst_case_width_neon >>= format.ssw;
+    if (worst_case_width_neon > 16 && (cpu_flags & RG_CPU_NEON)) {
+      processor_ = clense_neon_processor(mode, format.pixelsize, false);
+      processor_chroma_ = format.pixelsize == 4 ? clense_neon_processor(mode, format.pixelsize, true) : processor_;
+    }
+#endif
     return nullptr;
 }
 

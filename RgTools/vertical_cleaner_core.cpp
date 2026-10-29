@@ -191,6 +191,13 @@ extern VCleanerProcessor* vcleaner_sse4_functions_uint16[];
 extern VCleanerProcessor* vcleaner_sse2_functions_32[];
 extern VCleanerProcessor* vcleaner_sse2_functions_32_chroma[];
 #endif
+#ifdef NEON_INTRINSICS
+// vertical_cleaner_neon.cpp
+extern VCleanerProcessor* vcleaner_neon_functions[];
+extern VCleanerProcessor* vcleaner_neon_functions_16[];
+extern VCleanerProcessor* vcleaner_neon_functions_32[];
+extern VCleanerProcessor* vcleaner_neon_functions_32_chroma[];
+#endif
 
 static void dispatch_median(int mode, uint8_t* pDst, const uint8_t *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int pixelsize, int bits_per_pixel, bool chroma, int cpu_flags) {
   // a plane without an inner row (mode 1: 1 border row, mode 2: 2 border rows at the top and the bottom) is copied
@@ -203,12 +210,24 @@ static void dispatch_median(int mode, uint8_t* pDst, const uint8_t *pSrc, int ds
       return;
     }
 #endif
+#ifdef NEON_INTRINSICS
+    if ((cpu_flags & RG_CPU_NEON) && rowsize >= 16) {
+      vcleaner_neon_functions[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, bits_per_pixel);
+      return;
+    }
+#endif
     c_functions[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, bits_per_pixel);
   }
   else if (pixelsize == 2) {
 #ifdef INTEL_INTRINSICS
     if ((cpu_flags & RG_CPU_SSE41) && rowsize >= 16) {
       vcleaner_sse4_functions_uint16[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, bits_per_pixel);
+      return;
+    }
+#endif
+#ifdef NEON_INTRINSICS
+    if ((cpu_flags & RG_CPU_NEON) && rowsize >= 16) {
+      vcleaner_neon_functions_16[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, bits_per_pixel);
       return;
     }
 #endif
@@ -221,6 +240,15 @@ static void dispatch_median(int mode, uint8_t* pDst, const uint8_t *pSrc, int ds
         vcleaner_sse2_functions_32_chroma[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, bits_per_pixel);
       else
         vcleaner_sse2_functions_32[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, bits_per_pixel);
+      return;
+    }
+#endif
+#ifdef NEON_INTRINSICS
+    if ((cpu_flags & RG_CPU_NEON) && rowsize >= 16) {
+      if (chroma)
+        vcleaner_neon_functions_32_chroma[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, bits_per_pixel);
+      else
+        vcleaner_neon_functions_32[mode + 1](pDst, pSrc, dstPitch, srcPitch, rowsize, height, bits_per_pixel);
       return;
     }
 #endif

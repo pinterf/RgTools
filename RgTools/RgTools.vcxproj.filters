@@ -9,19 +9,51 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="Header Files\Avisynth">
+      <UniqueIdentifier>{6A1C3E5B-2F4D-4C8A-9B7E-0D1F2A3B4C5D}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="avs2x.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="clense.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="removegrain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RemoveGrainT.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="removegrain_avx2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="repair.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vertical_cleaner.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="clense.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="common_avx2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="removegrain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="clense.h">
+    <ClInclude Include="RemoveGrainT.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="repair.h">
@@ -33,74 +65,50 @@
     <ClInclude Include="repair_functions_sse.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="vertical_cleaner.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\avisynth.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\avs\alignment.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\avs\capi.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\avs\config.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\avs\cpuid.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\avs\minmax.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\avs\types.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\avs\win.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="rg_functions_avx2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="common_avx2.h">
+    <ClInclude Include="rg_functions_c.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="info.h">
+    <ClInclude Include="rg_functions_sse.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RemoveGrainT.h">
+    <ClInclude Include="vertical_cleaner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="removegrain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="clense.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="avs2x.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="repair.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="vertical_cleaner.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="removegrain_avx2.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RemoveGrainT.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="rg_functions_sse.h">
-      <Filter>Header Files</Filter>
-    </ClCompile>
-    <ClCompile Include="rg_functions_c.h">
-      <Filter>Header Files</Filter>
-    </ClCompile>
+    <ClInclude Include="include\avisynth.h">
+      <Filter>Header Files\Avisynth</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\alignment.h">
+      <Filter>Header Files\Avisynth</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\capi.h">
+      <Filter>Header Files\Avisynth</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\config.h">
+      <Filter>Header Files\Avisynth</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\cpuid.h">
+      <Filter>Header Files\Avisynth</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\filesystem.h">
+      <Filter>Header Files\Avisynth</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\minmax.h">
+      <Filter>Header Files\Avisynth</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\posix.h">
+      <Filter>Header Files\Avisynth</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\types.h">
+      <Filter>Header Files\Avisynth</Filter>
+    </ClInclude>
+    <ClInclude Include="include\avs\win.h">
+      <Filter>Header Files\Avisynth</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="rgtools.rc">

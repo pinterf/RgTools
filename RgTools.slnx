@@ -1,0 +1,9 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Release" />
+    <BuildType Name="Rel_Clang" />
+    <Platform Name="Win32" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Project Path="RgTools/RgTools.vcxproj" Id="07f7d803-bd01-4620-af0b-18803f302e86" />
+</Solution>

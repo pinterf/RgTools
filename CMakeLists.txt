@@ -40,6 +40,7 @@ endif()
 
 option(ENABLE_INTEL_SIMD "Enable SIMD intrinsics for Intel processors" "${INTEL_SIMD}")
 option(ENABLE_NEON_SIMD "Enable SIMD intrinsics for AArch64 processors" "${NEON_SIMD}")
+option(RGTOOLS_BUILD_TESTS "Build the core test program (tests/core_test.cpp)" OFF)
 if(ENABLE_INTEL_SIMD AND ENABLE_NEON_SIMD)
   message(FATAL_ERROR "ENABLE_INTEL_SIMD and ENABLE_NEON_SIMD are mutually exclusive")
 endif()

@@ -164,5 +164,18 @@ target_include_directories(${PluginName} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 # dedicated include dir for avisynth.h
 target_include_directories(${PluginName} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+# Core test program: the cores and kernels without the AviSynth front ends (no avisynth.h include directory).
+# The per-file ISA flags above are source file properties of this directory: they apply here as well.
+if(RGTOOLS_BUILD_TESTS)
+  set(RgTools_Core_Sources ${RgTools_Sources})
+  list(FILTER RgTools_Core_Sources EXCLUDE REGEX "^(avs2x|clense|removegrain|repair|vertical_cleaner|RemoveGrainT)\\.cpp$")
+  list(FILTER RgTools_Core_Sources EXCLUDE REGEX "^include/")
+  add_executable(rgtools_core_test "${CMAKE_CURRENT_SOURCE_DIR}/../tests/core_test.cpp" ${RgTools_Core_Sources})
+  target_include_directories(rgtools_core_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+  if(DEFINE_AVX512)
+    target_compile_definitions(rgtools_core_test PRIVATE INTEL_INTRINSICS_AVX512)
+  endif()
+endif()
+
 install(TARGETS ${PluginName}
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/avisynth")

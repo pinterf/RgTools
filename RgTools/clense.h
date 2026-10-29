@@ -12,6 +12,13 @@ enum class ClenseMode {
     BOTH
 };
 
+typedef void (ClenseProcessor)(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int width, int height, IScriptEnvironment *env);
+
+#ifdef INTEL_INTRINSICS
+// clense_sse.cpp
+ClenseProcessor* clense_sse_processor(ClenseMode mode, int pixelsize, int bits_per_pixel, bool chroma);
+#endif
+
 class Clense : public GenericVideoFilter {
 
 public:
@@ -41,8 +48,6 @@ private:
     // for reduceflicker
     PVideoFrame lastDstFrame;
     int lastRequestedFrameNo;
-
-    typedef void (ClenseProcessor)(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int width, int height, IScriptEnvironment *env);
 
     ClenseProcessor* processor_;
     ClenseProcessor* processor_chroma_; // for 32 bit

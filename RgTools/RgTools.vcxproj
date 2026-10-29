@@ -97,6 +97,7 @@
   <ItemGroup>
     <ClCompile Include="avs2x.cpp" />
     <ClCompile Include="clense.cpp" />
+    <ClCompile Include="clense_sse.cpp" />
     <ClCompile Include="removegrain.cpp" />
     <ClCompile Include="RemoveGrainT.cpp" />
     <ClCompile Include="removegrain_avx2.cpp">

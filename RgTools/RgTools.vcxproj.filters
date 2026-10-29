@@ -24,6 +24,9 @@
     <ClCompile Include="clense.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="clense_sse.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="removegrain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

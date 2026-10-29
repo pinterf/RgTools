@@ -208,9 +208,10 @@ PVideoFrame Clense::GetFrame(int n, IScriptEnvironment* env) {
           dstFrame->GetPitch(PLANAR_V), srcFrame->GetPitch(PLANAR_V), frame1->GetPitch(PLANAR_V), frame2->GetPitch(PLANAR_V),
           srcFrame->GetRowSize(PLANAR_V), srcFrame->GetHeight(PLANAR_V), env);
       }
+      // grey: U and V are not processed and not copied (random content, for speed; as documented for RemoveGrain)
     }
-    if ((vi.IsYUVA() || vi.IsPlanarRGBA()) && !grey_)
-    { // copy alpha
+    if (vi.IsYUVA() || vi.IsPlanarRGBA())
+    { // copy alpha, also with grey (as TemporalRepair)
       env->BitBlt(dstFrame->GetWritePtr(PLANAR_A), dstFrame->GetPitch(PLANAR_A), srcFrame->GetReadPtr(PLANAR_A), srcFrame->GetPitch(PLANAR_A), srcFrame->GetRowSize(PLANAR_A_ALIGNED), srcFrame->GetHeight(PLANAR_A));
     }
 

@@ -144,6 +144,9 @@ Clense::Clense(PClip child, PClip previous, PClip next, bool grey, bool reducefl
         processor_chroma_ = clense_sse_processor(mode_, pixelsize, bits_per_pixel, true);
     }
 #endif
+    // only float has a separate chroma variant (chroma range -0.5..0.5)
+    if (pixelsize != 4)
+      processor_chroma_ = processor_;
 }
 
 PVideoFrame Clense::GetFrame(int n, IScriptEnvironment* env) {
@@ -197,11 +200,11 @@ PVideoFrame Clense::GetFrame(int n, IScriptEnvironment* env) {
         srcFrame->GetRowSize(PLANAR_Y), srcFrame->GetHeight(PLANAR_Y), env);
 
       if (!vi.IsY() && !grey_) {
-        processor_(dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetReadPtr(PLANAR_U), frame1->GetReadPtr(PLANAR_U), frame2->GetReadPtr(PLANAR_U),
+        processor_chroma_(dstFrame->GetWritePtr(PLANAR_U), srcFrame->GetReadPtr(PLANAR_U), frame1->GetReadPtr(PLANAR_U), frame2->GetReadPtr(PLANAR_U),
           dstFrame->GetPitch(PLANAR_U), srcFrame->GetPitch(PLANAR_U), frame1->GetPitch(PLANAR_U), frame2->GetPitch(PLANAR_U),
           srcFrame->GetRowSize(PLANAR_U), srcFrame->GetHeight(PLANAR_U), env);
 
-        processor_(dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetReadPtr(PLANAR_V), frame1->GetReadPtr(PLANAR_V), frame2->GetReadPtr(PLANAR_V),
+        processor_chroma_(dstFrame->GetWritePtr(PLANAR_V), srcFrame->GetReadPtr(PLANAR_V), frame1->GetReadPtr(PLANAR_V), frame2->GetReadPtr(PLANAR_V),
           dstFrame->GetPitch(PLANAR_V), srcFrame->GetPitch(PLANAR_V), frame1->GetPitch(PLANAR_V), frame2->GetPitch(PLANAR_V),
           srcFrame->GetRowSize(PLANAR_V), srcFrame->GetHeight(PLANAR_V), env);
       }

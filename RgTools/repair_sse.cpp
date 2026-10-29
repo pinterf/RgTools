@@ -139,7 +139,9 @@ static void process_plane_sse41(uint8_t* pDst8, const uint8_t* pSrc8, const uint
   const int width = rowsize / sizeof(pixel_t);
   const int pixels_at_at_time = 16 / sizeof(pixel_t);
   // 10-16 bit kernels that depend on the max pixel value get it as a 4th parameter
+  RG_GCC_IGNORE_ATTRIBUTES_BEGIN
   constexpr bool with_max = std::is_invocable_v<decltype(processor), const uint8_t*, const __m128i&, int, const __m128i&>;
+  RG_GCC_IGNORE_ATTRIBUTES_END
   const __m128i pixel_max = _mm_set1_epi16(sizeof(pixel_t) == 2 ? (short)((1u << bits_per_pixel) - 1) : 0);
 
   pSrc += srcPitch;

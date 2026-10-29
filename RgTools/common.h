@@ -33,7 +33,17 @@
 #   define RG_FORCEINLINE inline
 #   undef __forceinline
 #   define __forceinline inline
-#endif 
+#endif
+
+// The plane loops test with std::is_invocable_v whether a kernel takes the max pixel value (a vector type
+// argument). GCC warns that the attributes of the vector type are ignored in the template argument: harmless.
+#if defined(GCC)
+#define RG_GCC_IGNORE_ATTRIBUTES_BEGIN _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wignored-attributes\"")
+#define RG_GCC_IGNORE_ATTRIBUTES_END _Pragma("GCC diagnostic pop")
+#else
+#define RG_GCC_IGNORE_ATTRIBUTES_BEGIN
+#define RG_GCC_IGNORE_ATTRIBUTES_END
+#endif
 
 
 static RG_FORCEINLINE int subs_c(int x, int y) {

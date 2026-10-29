@@ -24,7 +24,9 @@ static void process_plane_avx2(const uint8_t* pSrc8, uint8_t* pDst8, int rowsize
     dstPitch /= sizeof(pixel_t);
     const int srcPitchOrig = srcPitch;
     // 10-16 bit kernels that depend on the max pixel value get it as a 3rd parameter
+    RG_GCC_IGNORE_ATTRIBUTES_BEGIN
     constexpr bool with_max = std::is_invocable_v<decltype(processor), const uint8_t*, int, const __m256i&>;
+    RG_GCC_IGNORE_ATTRIBUTES_END
     const __m256i pixel_max = _mm256_set1_epi16(sizeof(pixel_t) == 2 ? (short)((1u << bits_per_pixel) - 1) : 0);
     srcPitch /= sizeof(pixel_t);
 
@@ -76,7 +78,9 @@ static void process_halfplane_avx2(const uint8_t* pSrc8, uint8_t* pDst8, int row
   dstPitch /= sizeof(pixel_t);
   const int srcPitchOrig = srcPitch;
   // 10-16 bit kernels that depend on the max pixel value get it as a 3rd parameter
+  RG_GCC_IGNORE_ATTRIBUTES_BEGIN
   constexpr bool with_max = std::is_invocable_v<decltype(processor), const uint8_t*, int, const __m256i&>;
+  RG_GCC_IGNORE_ATTRIBUTES_END
   const __m256i pixel_max = _mm256_set1_epi16(sizeof(pixel_t) == 2 ? (short)((1u << bits_per_pixel) - 1) : 0);
   srcPitch /= sizeof(pixel_t);
 

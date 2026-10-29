@@ -1492,35 +1492,37 @@ RG_FORCEINLINE uint16_t rg_mode25_cpp_16(const uint8_t* pSrc, int srcPitch, int 
   */
   int SSE4, SSE5; // SSE4_minus, SSE5_plus; // global collectors
   int SSE6, SSE7; // SSE6_actual_minus, SSE7_actual_plus the actual results
+  // the "no difference in this direction" marker is 0xFFFF at all bit depths, as in SIMD (neighbourdiff_16)
+  constexpr int neighbour_mask = 65535;
 
-  neighbourdiff_c(SSE4, SSE5, c, a4, pixel_max);
+  neighbourdiff_c(SSE4, SSE5, c, a4, neighbour_mask);
   // first result fill into collectors SSE4 and SSE5, no comparison
 
-  neighbourdiff_c(SSE6, SSE7, c, a5, pixel_max);
+  neighbourdiff_c(SSE6, SSE7, c, a5, neighbour_mask);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  neighbourdiff_c(SSE6, SSE7, c, a1, pixel_max);
+  neighbourdiff_c(SSE6, SSE7, c, a1, neighbour_mask);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  neighbourdiff_c(SSE6, SSE7, c, a2, pixel_max);
+  neighbourdiff_c(SSE6, SSE7, c, a2, neighbour_mask);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  neighbourdiff_c(SSE6, SSE7, c, a3, pixel_max);
+  neighbourdiff_c(SSE6, SSE7, c, a3, neighbour_mask);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  neighbourdiff_c(SSE6, SSE7, c, a6, pixel_max);
+  neighbourdiff_c(SSE6, SSE7, c, a6, neighbour_mask);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  neighbourdiff_c(SSE6, SSE7, c, a7, pixel_max);
+  neighbourdiff_c(SSE6, SSE7, c, a7, neighbour_mask);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  neighbourdiff_c(SSE6, SSE7, c, a8, pixel_max);
+  neighbourdiff_c(SSE6, SSE7, c, a8, neighbour_mask);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 

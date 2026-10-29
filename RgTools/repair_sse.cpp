@@ -28,7 +28,6 @@ static void process_plane_sse(uint8_t* pDst8, const uint8_t* pSrc8, const uint8_
     pSrc += srcPitch;
     pDst += dstPitch;
     pRef += refPitch;
-    int mod_width = width / pixels_at_at_time * pixels_at_at_time;
 
     for (int y = 1; y < height-1; ++y) {
         pDst[0] = pSrc[0];
@@ -38,14 +37,14 @@ static void process_plane_sse(uint8_t* pDst8, const uint8_t* pSrc8, const uint8_
         __m128i result = processor((uint8_t *)(pRef+1), val, refPitchOrig);
         _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst+1), result);
 
-        //aligned
-        for (int x = pixels_at_at_time; x < mod_width-1; x+= pixels_at_at_time) {
+        // aligned: the vector and its right neighbours stay inside the row (no read past the end of the row/frame)
+        for (int x = pixels_at_at_time; x < width - pixels_at_at_time; x+= pixels_at_at_time) {
             __m128i val = simd_loada_si128((uint8_t *)(pSrc+x));
             __m128i result = processor_a((uint8_t *)(pRef+x), val, refPitchOrig);
             _mm_store_si128(reinterpret_cast<__m128i*>(pDst+x), result);
         }
 
-        if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
+        if (width - 1 - pixels_at_at_time >= 1) { // the last pixels before the right border; width == vector + 1: covered by the first vector
             __m128i val = simd_loadu_si128((uint8_t *)(pSrc + width - 1 - pixels_at_at_time));
             __m128i result = processor((uint8_t *)(pRef + width - 1 - pixels_at_at_time), val, refPitchOrig);
             _mm_storeu_si128(reinterpret_cast<__m128i*>((uint8_t *)(pDst + width - 1 - pixels_at_at_time)), result);
@@ -85,7 +84,6 @@ static void process_plane_sse3(uint8_t* pDst8, const uint8_t* pSrc8, const uint8
   pSrc += srcPitch;
   pDst += dstPitch;
   pRef += refPitch;
-  int mod_width = width / pixels_at_at_time * pixels_at_at_time;
 
   for (int y = 1; y < height - 1; ++y) {
     pDst[0] = pSrc[0];
@@ -95,14 +93,14 @@ static void process_plane_sse3(uint8_t* pDst8, const uint8_t* pSrc8, const uint8
     __m128i result = processor((uint8_t*)(pRef + 1), val, refPitchOrig);
     _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + 1), result);
 
-    //aligned
-    for (int x = pixels_at_at_time; x < mod_width - 1; x += pixels_at_at_time) {
+    // aligned: the vector and its right neighbours stay inside the row (no read past the end of the row/frame)
+    for (int x = pixels_at_at_time; x < width - pixels_at_at_time; x += pixels_at_at_time) {
       __m128i val = simd_loadu_si128_sse3((uint8_t*)(pSrc + x));
       __m128i result = processor_a((uint8_t*)(pRef + x), val, refPitchOrig);
       _mm_store_si128(reinterpret_cast<__m128i*>(pDst + x), result);
     }
 
-    if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
+    if (width - 1 - pixels_at_at_time >= 1) { // the last pixels before the right border; width == vector + 1: covered by the first vector
       __m128i val = simd_loadu_si128_sse3((uint8_t*)(pSrc + width - 1 - pixels_at_at_time));
       __m128i result = processor((uint8_t*)(pRef + width - 1 - pixels_at_at_time), val, refPitchOrig);
       _mm_storeu_si128(reinterpret_cast<__m128i*>((uint8_t*)(pDst + width - 1 - pixels_at_at_time)), result);
@@ -147,7 +145,6 @@ static void process_plane_sse41(uint8_t* pDst8, const uint8_t* pSrc8, const uint
   pSrc += srcPitch;
   pDst += dstPitch;
   pRef += refPitch;
-  int mod_width = width / pixels_at_at_time * pixels_at_at_time;
 
   for (int y = 1; y < height - 1; ++y) {
     pDst[0] = pSrc[0];
@@ -159,8 +156,8 @@ static void process_plane_sse41(uint8_t* pDst8, const uint8_t* pSrc8, const uint
     else result = processor((uint8_t*)(pRef + 1), val, refPitchOrig);
     _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + 1), result);
 
-    //aligned
-    for (int x = pixels_at_at_time; x < mod_width - 1; x += pixels_at_at_time) {
+    // aligned: the vector and its right neighbours stay inside the row (no read past the end of the row/frame)
+    for (int x = pixels_at_at_time; x < width - pixels_at_at_time; x += pixels_at_at_time) {
       __m128i val = simd_loadu_si128_sse3((uint8_t*)(pSrc + x));
       __m128i result;
       if constexpr (with_max) result = processor_a((uint8_t*)(pRef + x), val, refPitchOrig, pixel_max);
@@ -168,7 +165,7 @@ static void process_plane_sse41(uint8_t* pDst8, const uint8_t* pSrc8, const uint
       _mm_store_si128(reinterpret_cast<__m128i*>(pDst + x), result);
     }
 
-    if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
+    if (width - 1 - pixels_at_at_time >= 1) { // the last pixels before the right border; width == vector + 1: covered by the first vector
       __m128i val = simd_loadu_si128_sse3((uint8_t*)(pSrc + width - 1 - pixels_at_at_time));
       __m128i result;
       if constexpr (with_max) result = processor((uint8_t*)(pRef + width - 1 - pixels_at_at_time), val, refPitchOrig, pixel_max);

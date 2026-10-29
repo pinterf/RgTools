@@ -915,33 +915,29 @@ void smooth_temporal_repair_mode1to3_sse2(uint8_t* dp, const uint8_t* previous, 
   sp += ofpitch;
   next += nfpitch;
 
-  int mod_width = width / pixels_at_a_time * pixels_at_a_time;
 
   // top line copy: done by full frame copy 
 
   for (int y = 1; y < height - 1; ++y) {
     // pDst[0] = pSrc[0]; done by full frame copy
-    // the last vector of a row of exactly n vectors covers the right border too: keep the copied pixel
-    const pixel_t right_border = reinterpret_cast<const pixel_t*>(dp)[width - 1];
-
     // unaligned first 16 bytes, last pixel overlaps with the next aligned loop
     __m128i result = processor(dp + 1 * pixelsize, previous + 1 * pixelsize, pfpitch, sp + 1 * pixelsize, ofpitch, next + 1 * pixelsize, nfpitch);
     _mm_storeu_si128(reinterpret_cast<__m128i*>(dp + 1 * pixelsize), result);
 
     // aligned
-    for (int x = pixels_at_a_time; x < mod_width - 1; x += pixels_at_a_time) {
+    for (int x = pixels_at_a_time; x < width - pixels_at_a_time; x += pixels_at_a_time) {
       __m128i result = processor_a(dp + x * pixelsize, previous + x * pixelsize, pfpitch, sp + x * pixelsize, ofpitch, next + x * pixelsize, nfpitch);
       _mm_store_si128(reinterpret_cast<__m128i*>(dp + x * pixelsize), result);
     }
 
-    if (mod_width != width) {
+    {
+      // the last pixels before the right border
       const int xx = width - 1 - pixels_at_a_time;
       __m128i result = processor(dp + xx * pixelsize, previous + xx * pixelsize, pfpitch, sp + xx * pixelsize, ofpitch, next + xx * pixelsize, nfpitch);
       _mm_storeu_si128(reinterpret_cast<__m128i*>(dp + xx * pixelsize), result);
     }
 
-    // pDst[width - 1] = pSrc[width - 1]: from the full frame copy, restored
-    reinterpret_cast<pixel_t*>(dp)[width - 1] = right_border;
+    // pDst[width - 1] = pSrc[width - 1]: from the full frame copy
 
     dp += dppitch;
     previous += pfpitch;
@@ -981,33 +977,29 @@ void smooth_temporal_repair_mode1to3_sse41(uint8_t* dp, const uint8_t* previous,
   sp += ofpitch;
   next += nfpitch;
 
-  int mod_width = width / pixels_at_a_time * pixels_at_a_time;
 
   // top line copy: done by full frame copy 
 
   for (int y = 1; y < height - 1; ++y) {
     // pDst[0] = pSrc[0]; done by full frame copy
-    // the last vector of a row of exactly n vectors covers the right border too: keep the copied pixel
-    const pixel_t right_border = reinterpret_cast<const pixel_t*>(dp)[width - 1];
-
     // unaligned first 16 bytes, last pixel overlaps with the next aligned loop
     __m128i result = processor(dp + 1 * pixelsize, previous + 1 * pixelsize, pfpitch, sp + 1 * pixelsize, ofpitch, next + 1 * pixelsize, nfpitch);
     _mm_storeu_si128(reinterpret_cast<__m128i*>(dp + 1 * pixelsize), result);
 
     // aligned
-    for (int x = pixels_at_a_time; x < mod_width - 1; x += pixels_at_a_time) {
+    for (int x = pixels_at_a_time; x < width - pixels_at_a_time; x += pixels_at_a_time) {
       __m128i result = processor_a(dp + x * pixelsize, previous + x * pixelsize, pfpitch, sp + x * pixelsize, ofpitch, next + x * pixelsize, nfpitch);
       _mm_store_si128(reinterpret_cast<__m128i*>(dp + x * pixelsize), result);
     }
 
-    if (mod_width != width) {
+    {
+      // the last pixels before the right border
       const int xx = width - 1 - pixels_at_a_time;
       __m128i result = processor(dp + xx * pixelsize, previous + xx * pixelsize, pfpitch, sp + xx * pixelsize, ofpitch, next + xx * pixelsize, nfpitch);
       _mm_storeu_si128(reinterpret_cast<__m128i*>(dp + xx * pixelsize), result);
     }
 
-    // pDst[width - 1] = pSrc[width - 1]: from the full frame copy, restored
-    reinterpret_cast<pixel_t*>(dp)[width - 1] = right_border;
+    // pDst[width - 1] = pSrc[width - 1]: from the full frame copy
 
     dp += dppitch;
     previous += pfpitch;

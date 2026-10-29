@@ -25,7 +25,6 @@ static void process_plane_sse(const uint8_t* pSrc8, uint8_t* pDst8, int rowsize,
 
     pSrc += srcPitch;
     pDst += dstPitch;
-    int mod_width = width / pixels_at_at_time * pixels_at_at_time;
 
     for (int y = 1; y < height - 1; ++y) {
       pDst[0] = pSrc[0];
@@ -34,13 +33,13 @@ static void process_plane_sse(const uint8_t* pSrc8, uint8_t* pDst8, int rowsize,
       __m128i result = processor((uint8_t *)(pSrc + 1), srcPitchOrig);
       _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + 1), result);
 
-      // aligned
-      for (int x = pixels_at_at_time; x < mod_width - 1; x += pixels_at_at_time) {
+      // aligned: the vector and its right neighbours stay inside the row (no read past the end of the row/frame)
+      for (int x = pixels_at_at_time; x < width - pixels_at_at_time; x += pixels_at_at_time) {
         __m128i result = processor_a((uint8_t *)(pSrc + x), srcPitchOrig);
         _mm_store_si128(reinterpret_cast<__m128i*>(pDst + x), result);
       }
       
-      if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
+      if (width - 1 - pixels_at_at_time >= 1) { // the last pixels before the right border; width == vector + 1: covered by the first vector
         __m128i result = processor((uint8_t *)(pSrc + width - 1 - pixels_at_at_time), srcPitchOrig);
         _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + width - 1 - pixels_at_at_time), result);
       }
@@ -78,7 +77,6 @@ static void process_plane_sse41(const uint8_t* pSrc8, uint8_t* pDst8, int rowsiz
 
   pSrc += srcPitch;
   pDst += dstPitch;
-  int mod_width = width / pixels_at_at_time * pixels_at_at_time;
 
   for (int y = 1; y < height - 1; ++y) {
     pDst[0] = pSrc[0];
@@ -89,15 +87,15 @@ static void process_plane_sse41(const uint8_t* pSrc8, uint8_t* pDst8, int rowsiz
     else result = processor((uint8_t*)(pSrc + 1), srcPitchOrig);
     _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + 1), result);
 
-    // aligned
-    for (int x = pixels_at_at_time; x < mod_width - 1; x += pixels_at_at_time) {
+    // aligned: the vector and its right neighbours stay inside the row (no read past the end of the row/frame)
+    for (int x = pixels_at_at_time; x < width - pixels_at_at_time; x += pixels_at_at_time) {
       __m128i result;
       if constexpr (with_max) result = processor_a((uint8_t*)(pSrc + x), srcPitchOrig, pixel_max);
       else result = processor_a((uint8_t*)(pSrc + x), srcPitchOrig);
       _mm_store_si128(reinterpret_cast<__m128i*>(pDst + x), result);
     }
 
-    if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
+    if (width - 1 - pixels_at_at_time >= 1) { // the last pixels before the right border; width == vector + 1: covered by the first vector
       __m128i result;
       if constexpr (with_max) result = processor((uint8_t*)(pSrc + width - 1 - pixels_at_at_time), srcPitchOrig, pixel_max);
       else result = processor((uint8_t*)(pSrc + width - 1 - pixels_at_at_time), srcPitchOrig);
@@ -127,7 +125,6 @@ static void process_halfplane_sse(const uint8_t* pSrc8, uint8_t* pDst8, int rows
 
   pSrc += srcPitch;
     pDst += dstPitch;
-    int mod_width = width / pixels_at_at_time * pixels_at_at_time;
 
     for (int y = 1; y < height/2; ++y) {
         pDst[0] = (pSrc[srcPitch] + pSrc[-srcPitch] + (sizeof(pixel_t) == 4 ? 0 : 1)) / 2; // float: no +1 rounding
@@ -136,13 +133,13 @@ static void process_halfplane_sse(const uint8_t* pSrc8, uint8_t* pDst8, int rows
         __m128i result = processor((uint8_t *)(pSrc + 1), srcPitchOrig);
         _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + 1), result);
 
-        // aligned
-        for (int x = pixels_at_at_time; x < mod_width - 1; x += pixels_at_at_time) {
+        // aligned: the vector and its right neighbours stay inside the row (no read past the end of the row/frame)
+        for (int x = pixels_at_at_time; x < width - pixels_at_at_time; x += pixels_at_at_time) {
           __m128i result = processor_a((uint8_t *)(pSrc + x), srcPitchOrig);
           _mm_store_si128(reinterpret_cast<__m128i*>(pDst + x), result);
         }
 
-        if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
+        if (width - 1 - pixels_at_at_time >= 1) { // the last pixels before the right border; width == vector + 1: covered by the first vector
           __m128i result = processor((uint8_t *)(pSrc+width-1-pixels_at_at_time), srcPitchOrig);
           _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst+width-1-pixels_at_at_time), result);
         }
@@ -180,7 +177,6 @@ static void process_halfplane_sse41(const uint8_t* pSrc8, uint8_t* pDst8, int ro
 
   pSrc += srcPitch;
   pDst += dstPitch;
-  int mod_width = width / pixels_at_at_time * pixels_at_at_time;
 
   for (int y = 1; y < height / 2; ++y) {
     pDst[0] = (pSrc[srcPitch] + pSrc[-srcPitch] + (sizeof(pixel_t) == 4 ? 0 : 1)) / 2; // float: no +1 rounding
@@ -191,15 +187,15 @@ static void process_halfplane_sse41(const uint8_t* pSrc8, uint8_t* pDst8, int ro
     else result = processor((uint8_t*)(pSrc + 1), srcPitchOrig);
     _mm_storeu_si128(reinterpret_cast<__m128i*>(pDst + 1), result);
 
-    // aligned
-    for (int x = pixels_at_at_time; x < mod_width - 1; x += pixels_at_at_time) {
+    // aligned: the vector and its right neighbours stay inside the row (no read past the end of the row/frame)
+    for (int x = pixels_at_at_time; x < width - pixels_at_at_time; x += pixels_at_at_time) {
       __m128i result;
       if constexpr (with_max) result = processor_a((uint8_t*)(pSrc + x), srcPitchOrig, pixel_max);
       else result = processor_a((uint8_t*)(pSrc + x), srcPitchOrig);
       _mm_store_si128(reinterpret_cast<__m128i*>(pDst + x), result);
     }
 
-    if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
+    if (width - 1 - pixels_at_at_time >= 1) { // the last pixels before the right border; width == vector + 1: covered by the first vector
       __m128i result;
       if constexpr (with_max) result = processor((uint8_t*)(pSrc + width - 1 - pixels_at_at_time), srcPitchOrig, pixel_max);
       else result = processor((uint8_t*)(pSrc + width - 1 - pixels_at_at_time), srcPitchOrig);

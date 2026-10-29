@@ -35,7 +35,6 @@ static void process_plane_avx2(const uint8_t* pSrc8, uint8_t* pDst8, int rowsize
 
     pSrc += srcPitch;
     pDst += dstPitch;
-    int mod_width = width / pixels_at_at_time * pixels_at_at_time;
 
     for (int y = 1; y < height - 1; ++y) {
       pDst[0] = pSrc[0];
@@ -47,14 +46,14 @@ static void process_plane_avx2(const uint8_t* pSrc8, uint8_t* pDst8, int rowsize
       _mm256_storeu_si256(reinterpret_cast<__m256i*>(pDst + 1), result);
 
       // possibly aligned
-      for (int x = pixels_at_at_time; x < mod_width - 1; x += pixels_at_at_time) {
+      for (int x = pixels_at_at_time; x < width - pixels_at_at_time; x += pixels_at_at_time) {
         __m256i result;
         if constexpr (with_max) result = processor((uint8_t *)(pSrc + x), srcPitchOrig, pixel_max);
         else result = processor((uint8_t *)(pSrc + x), srcPitchOrig);
         _mm256_storeu_si256(reinterpret_cast<__m256i*>(pDst + x), result); // store as unaligned
       }
       
-      if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
+      if (width - 1 - pixels_at_at_time >= 1) { // the last pixels before the right border; width == vector + 1: covered by the first vector
         __m256i result;
         if constexpr (with_max) result = processor((uint8_t *)(pSrc + width - 1 - pixels_at_at_time), srcPitchOrig, pixel_max);
         else result = processor((uint8_t *)(pSrc + width - 1 - pixels_at_at_time), srcPitchOrig);
@@ -89,7 +88,6 @@ static void process_halfplane_avx2(const uint8_t* pSrc8, uint8_t* pDst8, int row
 
   pSrc += srcPitch;
     pDst += dstPitch;
-    int mod_width = width / pixels_at_at_time * pixels_at_at_time;
 
     for (int y = 1; y < height/2; ++y) {
         pDst[0] = (pSrc[srcPitch] + pSrc[-srcPitch] + (sizeof(pixel_t) == 4 ? 0 : 1)) / 2; // float: no +1 rounding
@@ -101,14 +99,14 @@ static void process_halfplane_avx2(const uint8_t* pSrc8, uint8_t* pDst8, int row
         _mm256_storeu_si256(reinterpret_cast<__m256i*>(pDst + 1), result);
 
         // possibly aligned
-        for (int x = pixels_at_at_time; x < mod_width - 1; x += pixels_at_at_time) {
+        for (int x = pixels_at_at_time; x < width - pixels_at_at_time; x += pixels_at_at_time) {
           __m256i result;
           if constexpr (with_max) result = processor((uint8_t *)(pSrc + x), srcPitchOrig, pixel_max);
           else result = processor((uint8_t *)(pSrc + x), srcPitchOrig);
           _mm256_storeu_si256(reinterpret_cast<__m256i*>(pDst + x), result);
         }
 
-        if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
+        if (width - 1 - pixels_at_at_time >= 1) { // the last pixels before the right border; width == vector + 1: covered by the first vector
           __m256i result;
           if constexpr (with_max) result = processor((uint8_t *)(pSrc+width-1-pixels_at_at_time), srcPitchOrig, pixel_max);
           else result = processor((uint8_t *)(pSrc+width-1-pixels_at_at_time), srcPitchOrig);

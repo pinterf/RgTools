@@ -2,6 +2,7 @@
 #define __REMOVEGRAIN_H__
 
 #include "common.h"
+#include "rg_avs.h"
 
 
 typedef void (PlaneProcessor)(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel);

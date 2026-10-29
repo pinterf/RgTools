@@ -54,6 +54,9 @@
     <ClCompile Include="vertical_cleaner_sse.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="vertical_cleaner_core.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="clense.h">
@@ -93,6 +96,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vertical_cleaner.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vertical_cleaner_core.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="rg_core.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="rg_avs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

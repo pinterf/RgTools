@@ -2,6 +2,7 @@
 #define __CLENSE_H__
 
 #include "common.h"
+#include "rg_avs.h"
 
 template<typename pixel_t>
 using CModeProcessor = pixel_t (*)(pixel_t, pixel_t, pixel_t, int); // src, ref1, ref2, max_pixel_value (10-16 bit)

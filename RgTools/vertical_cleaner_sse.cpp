@@ -1,6 +1,7 @@
 // VerticalCleaner: x86 SSE2 / SSE4.1 kernels
 
-#include "vertical_cleaner.h"
+#include "vertical_cleaner_core.h"
+#include "common.h"
 
 #ifdef INTEL_INTRINSICS
 
@@ -8,9 +9,9 @@
 
 namespace {
 
-static void vcleaner_median_sse2_uint8(uint8_t* pDst, const uint8_t* pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
+static void vcleaner_median_sse2_uint8(uint8_t* pDst, const uint8_t* pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel) {
   typedef uint8_t pixel_t;
-  env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
+  rg_copy_rows(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
 
   const int width = rowsize / sizeof(pixel_t);
 
@@ -36,17 +37,17 @@ static void vcleaner_median_sse2_uint8(uint8_t* pDst, const uint8_t* pSrc, int d
     pDst += dstPitch;
   }
 
-  env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
+  rg_copy_rows(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
 }
 
 
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-static void vcleaner_median_sse4_uint16(uint8_t* pDst, const uint8_t* pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
+static void vcleaner_median_sse4_uint16(uint8_t* pDst, const uint8_t* pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel) {
   typedef uint16_t pixel_t;
 
-  env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
+  rg_copy_rows(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
 
   const int width = rowsize / sizeof(pixel_t);
 
@@ -72,12 +73,12 @@ static void vcleaner_median_sse4_uint16(uint8_t* pDst, const uint8_t* pSrc, int 
     pDst += dstPitch;
   }
 
-  env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
+  rg_copy_rows(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
 }
 
-static void vcleaner_median_sse2_float(uint8_t* pDst, const uint8_t* pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
+static void vcleaner_median_sse2_float(uint8_t* pDst, const uint8_t* pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel) {
   typedef float pixel_t;
-  env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
+  rg_copy_rows(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
 
   const int width = rowsize / sizeof(pixel_t);
 
@@ -103,11 +104,11 @@ static void vcleaner_median_sse2_float(uint8_t* pDst, const uint8_t* pSrc, int d
     pDst += dstPitch;
   }
 
-  env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
+  rg_copy_rows(pDst, dstPitch, pSrc, srcPitch, rowsize, 1);
 }
 
-static void vcleaner_relaxed_median_sse2(uint8_t* pDst, const uint8_t *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
-    env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 2);
+static void vcleaner_relaxed_median_sse2(uint8_t* pDst, const uint8_t *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel) {
+    rg_copy_rows(pDst, dstPitch, pSrc, srcPitch, rowsize, 2);
 
     pSrc += srcPitch*2;
     pDst += dstPitch*2;
@@ -150,14 +151,14 @@ static void vcleaner_relaxed_median_sse2(uint8_t* pDst, const uint8_t *pSrc, int
         pDst += dstPitch;
     }
 
-    env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 2);
+    rg_copy_rows(pDst, dstPitch, pSrc, srcPitch, rowsize, 2);
 }
 
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-static void vcleaner_relaxed_median_sse4_uint16(uint8_t* pDst8, const uint8_t *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
-  env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 2);
+static void vcleaner_relaxed_median_sse4_uint16(uint8_t* pDst8, const uint8_t *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel) {
+  rg_copy_rows(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 2);
 
   uint16_t *pDst = reinterpret_cast<uint16_t *>(pDst8);
   const uint16_t *pSrc = reinterpret_cast<const uint16_t *>(pSrc8);
@@ -212,12 +213,12 @@ static void vcleaner_relaxed_median_sse4_uint16(uint8_t* pDst8, const uint8_t *p
     pDst += dstPitch;
   }
 
-  env->BitBlt((uint8_t *)pDst, dstPitch*sizeof(uint16_t), (uint8_t *)pSrc, srcPitch*sizeof(uint16_t), rowsize, 2);
+  rg_copy_rows((uint8_t *)pDst, dstPitch*sizeof(uint16_t), (uint8_t *)pSrc, srcPitch*sizeof(uint16_t), rowsize, 2);
 }
 
 template<bool chroma>
-static void vcleaner_relaxed_median_sse_32(uint8_t* pDst8, const uint8_t *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
-  env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 2);
+static void vcleaner_relaxed_median_sse_32(uint8_t* pDst8, const uint8_t *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel) {
+  rg_copy_rows(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 2);
 
   float *pDst = reinterpret_cast<float *>(pDst8);
   const float *pSrc = reinterpret_cast<const float *>(pSrc8);
@@ -270,7 +271,7 @@ static void vcleaner_relaxed_median_sse_32(uint8_t* pDst8, const uint8_t *pSrc8,
     pDst += dstPitch;
   }
 
-  env->BitBlt((uint8_t *)pDst, dstPitch*sizeof(float), (uint8_t *)pSrc, srcPitch*sizeof(float), rowsize, 2);
+  rg_copy_rows((uint8_t *)pDst, dstPitch*sizeof(float), (uint8_t *)pSrc, srcPitch*sizeof(float), rowsize, 2);
 }
 
 } // namespace

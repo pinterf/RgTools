@@ -6,14 +6,7 @@
 #include <cmath>
 #include <cstdlib>
 
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-
-#pragma warning(disable: 4512 4244 4100)
-#include "avisynth.h"
-#pragma warning(default: 4512 4244 4100)
-#include "avs/config.h"
+// No host API here: the kernels and the cores include it (the AviSynth front ends include rg_avs.h).
 
 // INTEL_INTRINSICS: the x86 SIMD code is compiled. CMake defines it (ENABLE_INTEL_SIMD),
 // the MSVC solution does not: derive it from the target there.

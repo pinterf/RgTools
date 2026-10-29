@@ -2,6 +2,7 @@
 #define __REPAIR_H__
 
 #include "common.h"
+#include "rg_avs.h"
 
 
 typedef void (RepairPlaneProcessor)(IScriptEnvironment* env, BYTE* pDst, const BYTE* pSrc, const BYTE* pRef, int dstPitch, int srcPitch, int refPitch, int rowsize, int height, int bits_per_pixel);

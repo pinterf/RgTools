@@ -1,7 +1,8 @@
 #ifndef __REMOVEGRAINT___H__
 #define __REMOVEGRAINT___H__
 
-#include "common.h" // avisynth.h, INTEL_INTRINSICS for the MSVC solution
+#include "common.h" // INTEL_INTRINSICS for the MSVC solution
+#include "rg_avs.h"
 
 // plane processors: TemporalRepair (modes 0, 4) and SmoothTemporalRepair (modes 1, 2, 3)
 typedef void (PlaneProcessor_t)(BYTE* dp8, int dpitch, const BYTE* sp1_8, int spitch1, const BYTE* sp2_8, int spitch2, const BYTE* pp8, int ppitch, const BYTE* np8, int npitch, int width, int height);

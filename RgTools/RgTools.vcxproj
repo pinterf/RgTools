@@ -108,6 +108,7 @@
     <ClCompile Include="repair.cpp" />
     <ClCompile Include="repair_sse.cpp" />
     <ClCompile Include="vertical_cleaner.cpp" />
+    <ClCompile Include="vertical_cleaner_core.cpp" />
     <ClCompile Include="vertical_cleaner_sse.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -126,6 +127,8 @@
     <ClInclude Include="include\avs\types.h" />
     <ClInclude Include="include\avs\win.h" />
     <ClInclude Include="removegrain.h" />
+    <ClInclude Include="rg_avs.h" />
+    <ClInclude Include="rg_core.h" />
     <ClInclude Include="RemoveGrainT.h" />
     <ClInclude Include="repair.h" />
     <ClInclude Include="repair_functions_c.h" />
@@ -134,6 +137,7 @@
     <ClInclude Include="rg_functions_c.h" />
     <ClInclude Include="rg_functions_sse.h" />
     <ClInclude Include="vertical_cleaner.h" />
+    <ClInclude Include="vertical_cleaner_core.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="rgtools.rc" />

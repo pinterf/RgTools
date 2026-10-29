@@ -1,13 +1,11 @@
 #ifndef __VERTICAL_CLEANER_H__
 #define __VERTICAL_CLEANER_H__
 
+// VerticalCleaner: AviSynth front end
+
 #include "common.h"
-
-typedef void (VCleanerProcessor)(uint8_t* pDst, const uint8_t *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env);
-
-// mode -1 and 0 entries of the function tables, shared by the C and SIMD tables
-VCleanerProcessor vcleaner_do_nothing;
-VCleanerProcessor vcleaner_copy_plane;
+#include "rg_avs.h"
+#include "vertical_cleaner_core.h"
 
 class VerticalCleaner : public GenericVideoFilter {
 public:
@@ -19,16 +17,8 @@ public:
       return cachehints == CACHE_GET_MTMODE ? MT_NICE_FILTER : 0;
     }
 
-    const static int UNDEFINED_MODE = -2;
-
 private:
-    int mode_;
-    int modeU_;
-    int modeV_;
-
-    int pixelsize;
-    int bits_per_pixel;
-
+    VerticalCleanerCore core_;
     bool has_at_least_v8;
 };
 

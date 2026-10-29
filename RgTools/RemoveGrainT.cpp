@@ -127,17 +127,19 @@ RG_FORCEINLINE int BRepairPixel_mode4_c(int src_1, int src_2, int src_prev, int 
   return equ ? src_2 : reg5;
 }
 
-template<int bits_per_pixel>
+// 10-16 bit: one variant. The sums saturate at 16 bit (as _mm_adds_epu16) and not at the max pixel value of the
+// bit depth: they are only clip bounds (modes 1-3: the upper bound of a clip of a pixel value <= max; mode 4: limited
+// by min(.., max_np) or subtracted with saturation from max_np), a bound above the max gives the same result.
 RG_FORCEINLINE int BRepairPixel_mode4_16_c(int src_1, int src_2, int src_prev, int src_next)
 {
   auto max_np = std::max(src_next, src_prev);
   auto min_np = std::min(src_next, src_prev);
 
   auto diff_src2_minnp = subs_16_c(src_2, min_np);
-  auto reg5 = adds_16_c<bits_per_pixel>(adds_16_c<bits_per_pixel>(diff_src2_minnp, diff_src2_minnp), min_np); // diff_src2_minnp * 2 - min_np
+  auto reg5 = adds_16_c(adds_16_c(diff_src2_minnp, diff_src2_minnp, 65535), min_np, 65535); // diff_src2_minnp * 2 - min_np
 
   auto diff_maxnp_src2 = subs_16_c(max_np, src_2);
-  auto reg3 = subs_16_c(max_np, adds_16_c<bits_per_pixel>(diff_maxnp_src2, diff_maxnp_src2)); // max_np - 2 * diff_maxnp_src2
+  auto reg3 = subs_16_c(max_np, adds_16_c(diff_maxnp_src2, diff_maxnp_src2, 65535)); // max_np - 2 * diff_maxnp_src2
 
   reg5 = std::min(reg5, max_np);
   reg3 = std::max(reg3, min_np);
@@ -188,7 +190,7 @@ static PlaneProcessor_t* t_c_functions_16[] = {
     nullptr,
     nullptr,
     nullptr,
-    temporal_repair_mode0and4_c<uint16_t, BRepairPixel_mode4_16_c<16>>
+    temporal_repair_mode0and4_c<uint16_t, BRepairPixel_mode4_16_c>
 };
 
 static PlaneProcessor_t* t_c_functions_32[] = {
@@ -435,12 +437,11 @@ RG_FORCEINLINE int SmoothTRepair1_c(int dest, int lower, int upper, const int sr
   return result;
 }
 
-template<int bits_per_pixel>
 RG_FORCEINLINE int SmoothTRepair1_16_c(int dest, int lower, int upper, const int src_prev, const int src_curr, const int src_next)
 {
   auto src_dest = dest;
 
-  auto tmp_u = adds_16_c<bits_per_pixel>(upper, src_curr);
+  auto tmp_u = adds_16_c(upper, src_curr, 65535);
   auto tmp_l = subs_16_c(src_curr, lower);
 
   auto tmp_max = std::max(std::max(tmp_u, src_prev), src_next);
@@ -486,7 +487,6 @@ RG_FORCEINLINE int SmoothTRepair2_8_c(int dest, int lower, int upper, int src_pr
   return result;
 }
 
-template<int bits_per_pixel>
 RG_FORCEINLINE int SmoothTRepair2_16_c(int dest, int lower, int upper, int src_prev, int src_curr, int src_next)
 {
   int lower1;
@@ -499,7 +499,7 @@ RG_FORCEINLINE int SmoothTRepair2_16_c(int dest, int lower, int upper, int src_p
   auto lowermax = std::max(lower, lower1);
   auto upperlowermax = std::max(uppermax, lowermax);
 
-  auto tmp_max = adds_16_c<bits_per_pixel>(src_curr, upperlowermax);
+  auto tmp_max = adds_16_c(src_curr, upperlowermax, 65535);
   auto tmp_min = subs_16_c(src_curr, upperlowermax);
 
   auto result = clip_16(src_dest, tmp_min, tmp_max);
@@ -561,7 +561,6 @@ RG_FORCEINLINE int SmoothTRepair3_c(int dest, int pmax, int nmax, int src_prev, 
   return result;
 }
 
-template<int bits_per_pixel>
 RG_FORCEINLINE int SmoothTRepair3_16_c(int dest, int pmax, int nmax, int src_prev, int src_curr, int src_next)
 {
   int pdiff;
@@ -573,7 +572,7 @@ RG_FORCEINLINE int SmoothTRepair3_16_c(int dest, int pmax, int nmax, int src_pre
 
   pmax = std::min(pmax, nmax);
   auto src_dest = dest;
-  auto tmp_max = adds_16_c<bits_per_pixel>(src_curr, pmax);
+  auto tmp_max = adds_16_c(src_curr, pmax, 65535);
   auto tmp_min = subs_16_c(src_curr, pmax);
   auto result = clip_16(src_dest, tmp_min, tmp_max);
   return result;
@@ -631,7 +630,6 @@ RG_FORCEINLINE int temporal_repair_processor_mode1_8_c(
   return SmoothTRepair1_c(dp[0], lowermax, uppermax, previous[0 * pfpitch + 0], sp[0 * ofpitch + 0], next[0 * nfpitch + 0]);
 }
 
-template<int bits_per_pixel>
 RG_FORCEINLINE int temporal_repair_processor_mode1_16_c(
   BYTE* dp,
   const BYTE* previous, const intptr_t pfpitch,
@@ -690,7 +688,7 @@ RG_FORCEINLINE int temporal_repair_processor_mode1_16_c(
     *(pixel_t*)& next[0 * nfpitch + pixelsize]);
   uppermax = std::max(uppermax, upper);
   lowermax = std::max(lowermax, lower);
-  return SmoothTRepair1_16_c<bits_per_pixel>(
+  return SmoothTRepair1_16_c(
     *(pixel_t*)& dp[0], 
     lowermax, uppermax,
     *(pixel_t*)& previous[0 * pfpitch + 0], 
@@ -799,7 +797,6 @@ RG_FORCEINLINE int temporal_repair_processor_mode2_8_c(
   return SmoothTRepair2_8_c(dp[0], lowermax, uppermax, previous[0 * pfpitch + 0], sp[0 * ofpitch + 0], next[0 * nfpitch + 0]);
 }
 
-template<int bits_per_pixel>
 RG_FORCEINLINE int temporal_repair_processor_mode2_16_c(
   BYTE* dp,
   const BYTE* previous, const intptr_t pfpitch,
@@ -858,7 +855,7 @@ RG_FORCEINLINE int temporal_repair_processor_mode2_16_c(
     *(pixel_t*)& next[0 * nfpitch + pixelsize]);
   uppermax = std::max(uppermax, upper);
   lowermax = std::max(lowermax, lower);
-  return SmoothTRepair2_16_c<bits_per_pixel>(
+  return SmoothTRepair2_16_c(
     *(pixel_t*)& dp[0], 
     lowermax, uppermax, 
     *(pixel_t*)& previous[0 * pfpitch + 0], 
@@ -969,7 +966,6 @@ RG_FORCEINLINE int temporal_repair_processor_mode3_8_c(
   return SmoothTRepair3_c(dp[0], pdiffmax, ndiffmax, previous[0 * pfpitch + 0], sp[0 * ofpitch + 0], next[0 * nfpitch + 0]);
 }
 
-template<int bits_per_pixel>
 RG_FORCEINLINE int temporal_repair_processor_mode3_16_c(
   BYTE* dp,
   const BYTE* previous, const intptr_t pfpitch,
@@ -1030,7 +1026,7 @@ RG_FORCEINLINE int temporal_repair_processor_mode3_16_c(
     *(pixel_t*)& next[0 * nfpitch + pixelsize]);
   pdiffmax = std::max(pdiffmax, pdiff);
   ndiffmax = std::max(ndiffmax, ndiff);
-  return SmoothTRepair3_16_c<bits_per_pixel>(
+  return SmoothTRepair3_16_c(
     *(pixel_t*)& dp[0], 
     pdiffmax, ndiffmax, 
     *(pixel_t*)& previous[0 * pfpitch + 0], 
@@ -1180,9 +1176,9 @@ static PlaneProcessor_st* st_c_functions[] = {
 
 static PlaneProcessor_st* st_c_functions_16[] = {
     nullptr,
-    smooth_temporal_repair_mode1to3_c<uint16_t, temporal_repair_processor_mode1_16_c<16>>,
-    smooth_temporal_repair_mode1to3_c<uint16_t, temporal_repair_processor_mode2_16_c<16>>,
-    smooth_temporal_repair_mode1to3_c<uint16_t, temporal_repair_processor_mode3_16_c<16>>
+    smooth_temporal_repair_mode1to3_c<uint16_t, temporal_repair_processor_mode1_16_c>,
+    smooth_temporal_repair_mode1to3_c<uint16_t, temporal_repair_processor_mode2_16_c>,
+    smooth_temporal_repair_mode1to3_c<uint16_t, temporal_repair_processor_mode3_16_c>
 };
 
 // 32 bit float luma
@@ -1307,7 +1303,7 @@ public:
       processor_st_repair_chroma_c = processor_st_repair_c;
       break;
     case 10: case 12: case 14: case 16:
-      // FIXME: different templates (different max saturation values)
+      // one variant for 10-16 bit (the sums are clip bounds only, see BRepairPixel_mode4_16_c)
       processor_st_repair_c = st_c_functions_16[mode];
       processor_st_repair_chroma_c = processor_st_repair_c;
       break;

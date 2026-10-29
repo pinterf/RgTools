@@ -132,7 +132,9 @@ RG_FORCEINLINE void BRepairPixel_mode4_sse41(uint8_t* dest, const uint8_t* src1,
   _mm_storeu_si128(reinterpret_cast<__m128i*>(dest), result);
 }
 
-template<int bits_per_pixel>
+// 10-16 bit: one variant. The sums saturate at 16 bit (as _mm_adds_epu16) and not at the max pixel value of the
+// bit depth: they are only clip bounds (modes 1-3: the upper bound of a clip of a pixel value <= max; mode 4: limited
+// by min(.., max_np) or subtracted with saturation from max_np), a bound above the max gives the same result.
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
@@ -344,7 +346,6 @@ RG_FORCEINLINE __m128i SmoothTRepair1_8_sse2(uint8_t *dest, __m128i &lower, __m1
   return result;
 }
 
-template<int bits_per_pixel>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
@@ -355,7 +356,7 @@ RG_FORCEINLINE __m128i SmoothTRepair1_16_sse41(uint8_t* dest, __m128i& lower, __
   auto src_next = _mm_loadu_si128(reinterpret_cast<const __m128i*>(next));
   auto src_dest = _mm_loadu_si128(reinterpret_cast<const __m128i*>(dest));
 
-  auto tmp_u = _mm_adds_epu16(upper, src_curr); // FIXME: use bits_per_pixel for adds
+  auto tmp_u = _mm_adds_epu16(upper, src_curr);
   auto tmp_l = _mm_subs_epu16(src_curr, lower);
 
   auto tmp_max = _mm_max_epu16(_mm_max_epu16(tmp_u, src_prev), src_next);
@@ -405,7 +406,6 @@ RG_FORCEINLINE __m128i SmoothTRepair2_8_sse2(uint8_t *dest, __m128i lower, __m12
   return result;
 }
 
-template<int bits_per_pixel>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
@@ -422,7 +422,7 @@ RG_FORCEINLINE __m128i SmoothTRepair2_16_sse41(uint8_t* dest, __m128i lower, __m
   auto lowermax = _mm_max_epu16(lower, lower1);
   auto upperlowermax = _mm_max_epu16(uppermax, lowermax);
 
-  auto tmp_max = _mm_adds_epu16(src_curr, upperlowermax); // FIXME: use bits_per_pixel for adds
+  auto tmp_max = _mm_adds_epu16(src_curr, upperlowermax);
   auto tmp_min = _mm_subs_epu16(src_curr, upperlowermax);
 
   auto result = simd_clip_16(src_dest, tmp_min, tmp_max);
@@ -499,7 +499,6 @@ RG_FORCEINLINE __m128i SmoothTRepair3_8_sse2(uint8_t *dest, __m128i &pmax, __m12
   return result;
 }
 
-template<int bits_per_pixel>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
@@ -516,7 +515,7 @@ RG_FORCEINLINE __m128i SmoothTRepair3_16_sse41(uint8_t* dest, __m128i& pmax, __m
 
   pmax = _mm_min_epu16(pmax, nmax);
   auto src_dest = _mm_loadu_si128(reinterpret_cast<const __m128i*>(dest));
-  auto tmp_max = _mm_adds_epu16(src_curr, pmax); // FIXME: use bits_per_pixel for adds
+  auto tmp_max = _mm_adds_epu16(src_curr, pmax);
   auto tmp_min = _mm_subs_epu16(src_curr, pmax);
   auto result = simd_clip_16(src_dest, tmp_min, tmp_max);
   return result;
@@ -578,7 +577,6 @@ RG_FORCEINLINE __m128i temporal_repair_processor_mode1_8_sse2(
   return SmoothTRepair1_8_sse2(dp, lowermax, uppermax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0);
 }
 
-template<int bits_per_pixel>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
@@ -617,7 +615,7 @@ RG_FORCEINLINE __m128i temporal_repair_processor_mode1_16_sse41(
   get_lu_16_sse41(lower, upper, previous + 0 * pfpitch + pixelsize, sp + 0 * ofpitch + pixelsize, next + 0 * nfpitch + pixelsize);
   uppermax = _mm_max_epu16(uppermax, upper);
   lowermax = _mm_max_epu16(lowermax, lower);
-  return SmoothTRepair1_16_sse41<bits_per_pixel>(dp, lowermax, uppermax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0);
+  return SmoothTRepair1_16_sse41(dp, lowermax, uppermax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0);
 }
 
 template<bool chroma>
@@ -695,7 +693,6 @@ RG_FORCEINLINE __m128i temporal_repair_processor_mode2_8_sse2(
   return SmoothTRepair2_8_sse2(dp, lowermax, uppermax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0); // dp points to the center already
 }
 
-template<int bits_per_pixel>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
@@ -734,7 +731,7 @@ RG_FORCEINLINE __m128i temporal_repair_processor_mode2_16_sse41(
   get_lu_16_sse41(lower, upper, previous + 0 * pfpitch + pixelsize, sp + 0 * ofpitch + pixelsize, next + 0 * nfpitch + pixelsize);
   uppermax = _mm_max_epu16(uppermax, upper);
   lowermax = _mm_max_epu16(lowermax, lower);
-  return SmoothTRepair2_16_sse41<bits_per_pixel>(dp, lowermax, uppermax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0); // dp points to the center already
+  return SmoothTRepair2_16_sse41(dp, lowermax, uppermax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0); // dp points to the center already
 }
 
 template<bool chroma>
@@ -812,7 +809,6 @@ RG_FORCEINLINE __m128i temporal_repair_processor_mode3_8_sse2(
   return SmoothTRepair3_8_sse2(dp, pdiffmax, ndiffmax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0); // dp points to the center already
 }
 
-template<int bits_per_pixel>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
@@ -851,7 +847,7 @@ RG_FORCEINLINE __m128i temporal_repair_processor_mode3_16_sse41(
   get2diff_16_sse2(pdiff, ndiff, previous + 0 * pfpitch + pixelsize, sp + 0 * ofpitch + pixelsize, next + 0 * nfpitch + pixelsize);
   pdiffmax = _mm_max_epu16(pdiffmax, pdiff);
   ndiffmax = _mm_max_epu16(ndiffmax, ndiff);
-  return SmoothTRepair3_16_sse41<bits_per_pixel>(dp, pdiffmax, ndiffmax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0); // dp points to the center already
+  return SmoothTRepair3_16_sse41(dp, pdiffmax, ndiffmax, previous + 0 * pfpitch + 0, sp + 0 * ofpitch + 0, next + 0 * nfpitch + 0); // dp points to the center already
 }
 
 template<bool chroma>
@@ -1045,7 +1041,7 @@ PlaneProcessor_t* t_sse41_functions_16[] = {
     nullptr,
     nullptr,
     nullptr,
-    temporal_repair_mode0and4_sse41<uint16_t, BRepairPixel_mode4_sse41_16<16>, BRepairPixel_mode4_sse41_16<16>>
+    temporal_repair_mode0and4_sse41<uint16_t, BRepairPixel_mode4_sse41_16, BRepairPixel_mode4_sse41_16>
 };
 
 PlaneProcessor_t* t_sse41_functions_32[] = {
@@ -1073,9 +1069,9 @@ PlaneProcessor_st* st_sse2_functions[] = {
 
 PlaneProcessor_st* st_sse41_functions_16[] = {
     nullptr,
-    smooth_temporal_repair_mode1to3_sse41<uint16_t, temporal_repair_processor_mode1_16_sse41<16>, temporal_repair_processor_mode1_16_sse41<16>>,
-    smooth_temporal_repair_mode1to3_sse41<uint16_t, temporal_repair_processor_mode2_16_sse41<16>, temporal_repair_processor_mode2_16_sse41<16>>,
-    smooth_temporal_repair_mode1to3_sse41<uint16_t, temporal_repair_processor_mode3_16_sse41<16>, temporal_repair_processor_mode3_16_sse41<16>>
+    smooth_temporal_repair_mode1to3_sse41<uint16_t, temporal_repair_processor_mode1_16_sse41, temporal_repair_processor_mode1_16_sse41>,
+    smooth_temporal_repair_mode1to3_sse41<uint16_t, temporal_repair_processor_mode2_16_sse41, temporal_repair_processor_mode2_16_sse41>,
+    smooth_temporal_repair_mode1to3_sse41<uint16_t, temporal_repair_processor_mode3_16_sse41, temporal_repair_processor_mode3_16_sse41>
 };
 
 PlaneProcessor_st* st_sse2_functions_32[] = {

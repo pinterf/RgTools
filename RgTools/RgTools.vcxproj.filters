@@ -39,6 +39,9 @@
     <ClCompile Include="vertical_cleaner.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="vertical_cleaner_sse.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="clense.h">

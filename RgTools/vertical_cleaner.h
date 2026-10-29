@@ -5,6 +5,10 @@
 
 typedef void (VCleanerProcessor)(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, IScriptEnvironment *env);
 
+// mode -1 and 0 entries of the function tables, shared by the C and SIMD tables
+VCleanerProcessor vcleaner_do_nothing;
+VCleanerProcessor vcleaner_copy_plane;
+
 class VerticalCleaner : public GenericVideoFilter {
 public:
     VerticalCleaner(PClip child, int mode, int modeU, int modeV, bool skip_cs_check, IScriptEnvironment* env);

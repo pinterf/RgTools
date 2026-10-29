@@ -104,6 +104,7 @@
     </ClCompile>
     <ClCompile Include="repair.cpp" />
     <ClCompile Include="vertical_cleaner.cpp" />
+    <ClCompile Include="vertical_cleaner_sse.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="clense.h" />

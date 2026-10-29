@@ -189,8 +189,7 @@ static RG_FORCEINLINE __m256i sharpen_avx2(const __m256i& center, const __m256i&
   return _mm256_subs_epu8(_mm256_adds_epu8(center, min_1), min_2);
 }
 
-template<int bits_per_pixel>
-static RG_FORCEINLINE __m256i sharpen_avx2_16(const __m256i& center, const __m256i& minus, const __m256i& plus) {
+static RG_FORCEINLINE __m256i sharpen_avx2_16(const __m256i& center, const __m256i& minus, const __m256i& plus, const __m256i& pixel_max) {
   auto mp_diff = _mm256_subs_epu16(minus, plus);
   auto pm_diff = _mm256_subs_epu16(plus, minus);
   auto m_per2 = _mm256_srli_epi16(minus, 1);
@@ -198,10 +197,8 @@ static RG_FORCEINLINE __m256i sharpen_avx2_16(const __m256i& center, const __m25
   auto min_1 = _mm256_min_epu16(p_per2, mp_diff);
   auto min_2 = _mm256_min_epu16(m_per2, pm_diff);
   auto result1 = _mm256_adds_epu16(center, min_1);
-  if constexpr (bits_per_pixel < 16) {
-    const auto max_pixel_value = _mm256_set1_epi16((1 << bits_per_pixel) - 1);
-    result1 = _mm256_min_epi16(result1, max_pixel_value);
-  }
+  // unsigned min: the sum can exceed 32767 above 14 bit; 16 bit: a no-op (_mm256_adds_epu16 saturates there)
+  result1 = _mm256_min_epu16(result1, pixel_max);
   auto result = _mm256_subs_epu16(result1, min_2);
   return result;
 }

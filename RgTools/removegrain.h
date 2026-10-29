@@ -4,7 +4,7 @@
 #include "common.h"
 
 
-typedef void (PlaneProcessor)(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch);
+typedef void (PlaneProcessor)(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel);
 
 // mode -1 and 0 entries of the C and SSE function tables (the AVX2 tables have their own)
 PlaneProcessor rg_do_nothing;

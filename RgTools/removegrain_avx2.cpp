@@ -10,8 +10,8 @@ namespace {
 
 
 // AVX2: not using special aligned templates, loadu is fast is aligned
-template<typename pixel_t, SseModeProcessor processor>
-static void process_plane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, BYTE* pDst8, int rowsize, int height, int srcPitch, int dstPitch) {
+template<typename pixel_t, auto processor>
+static void process_plane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, BYTE* pDst8, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
     _mm256_zeroupper();
     
     env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 1);
@@ -21,6 +21,9 @@ static void process_plane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, BYTE*
 
     dstPitch /= sizeof(pixel_t);
     const int srcPitchOrig = srcPitch;
+    // 10-16 bit kernels that depend on the max pixel value get it as a 3rd parameter
+    constexpr bool with_max = std::is_invocable_v<decltype(processor), const Byte*, int, const __m256i&>;
+    const __m256i pixel_max = _mm256_set1_epi16(sizeof(pixel_t) == 2 ? (short)((1u << bits_per_pixel) - 1) : 0);
     srcPitch /= sizeof(pixel_t);
 
     const int width = rowsize / sizeof(pixel_t);
@@ -34,17 +37,23 @@ static void process_plane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, BYTE*
       pDst[0] = pSrc[0];
 
       // unaligned first 32 bytes, last pixel overlaps with the next aligned loop
-      __m256i result = processor((uint8_t *)(pSrc + 1), srcPitchOrig);
+      __m256i result;
+      if constexpr (with_max) result = processor((uint8_t *)(pSrc + 1), srcPitchOrig, pixel_max);
+      else result = processor((uint8_t *)(pSrc + 1), srcPitchOrig);
       _mm256_storeu_si256(reinterpret_cast<__m256i*>(pDst + 1), result);
 
       // possibly aligned
       for (int x = pixels_at_at_time; x < mod_width - 1; x += pixels_at_at_time) {
-        __m256i result = processor((uint8_t *)(pSrc + x), srcPitchOrig);
+        __m256i result;
+        if constexpr (with_max) result = processor((uint8_t *)(pSrc + x), srcPitchOrig, pixel_max);
+        else result = processor((uint8_t *)(pSrc + x), srcPitchOrig);
         _mm256_storeu_si256(reinterpret_cast<__m256i*>(pDst + x), result); // store as unaligned
       }
       
       if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
-        __m256i result = processor((uint8_t *)(pSrc + width - 1 - pixels_at_at_time), srcPitchOrig);
+        __m256i result;
+        if constexpr (with_max) result = processor((uint8_t *)(pSrc + width - 1 - pixels_at_at_time), srcPitchOrig, pixel_max);
+        else result = processor((uint8_t *)(pSrc + width - 1 - pixels_at_at_time), srcPitchOrig);
         _mm256_storeu_si256(reinterpret_cast<__m256i*>(pDst + width - 1 - pixels_at_at_time), result);
       }
       
@@ -59,8 +68,8 @@ static void process_plane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, BYTE*
 }
 
 
-template<typename pixel_t, SseModeProcessor processor>
-static void process_halfplane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, BYTE* pDst8, int rowsize, int height, int srcPitch, int dstPitch) {
+template<typename pixel_t, auto processor>
+static void process_halfplane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, BYTE* pDst8, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
   _mm256_zeroupper();
 
   pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
@@ -68,6 +77,9 @@ static void process_halfplane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, B
 
   dstPitch /= sizeof(pixel_t);
   const int srcPitchOrig = srcPitch;
+  // 10-16 bit kernels that depend on the max pixel value get it as a 3rd parameter
+  constexpr bool with_max = std::is_invocable_v<decltype(processor), const Byte*, int, const __m256i&>;
+  const __m256i pixel_max = _mm256_set1_epi16(sizeof(pixel_t) == 2 ? (short)((1u << bits_per_pixel) - 1) : 0);
   srcPitch /= sizeof(pixel_t);
 
   const int width = rowsize / sizeof(pixel_t);
@@ -81,17 +93,23 @@ static void process_halfplane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, B
         pDst[0] = (pSrc[srcPitch] + pSrc[-srcPitch] + (sizeof(pixel_t) == 4 ? 0 : 1)) / 2; // float: no +1 rounding
 
         // unaligned first 32 bytes, last pixel overlaps with the next aligned loop
-        __m256i result = processor((uint8_t *)(pSrc + 1), srcPitchOrig);
+        __m256i result;
+        if constexpr (with_max) result = processor((uint8_t *)(pSrc + 1), srcPitchOrig, pixel_max);
+        else result = processor((uint8_t *)(pSrc + 1), srcPitchOrig);
         _mm256_storeu_si256(reinterpret_cast<__m256i*>(pDst + 1), result);
 
         // possibly aligned
         for (int x = pixels_at_at_time; x < mod_width - 1; x += pixels_at_at_time) {
-          __m256i result = processor((uint8_t *)(pSrc + x), srcPitchOrig);
+          __m256i result;
+          if constexpr (with_max) result = processor((uint8_t *)(pSrc + x), srcPitchOrig, pixel_max);
+          else result = processor((uint8_t *)(pSrc + x), srcPitchOrig);
           _mm256_storeu_si256(reinterpret_cast<__m256i*>(pDst + x), result);
         }
 
         if (mod_width != width && width - 1 - pixels_at_at_time >= 1) { // width == vector + 1: covered by the first vector
-          __m256i result = processor((uint8_t *)(pSrc+width-1-pixels_at_at_time), srcPitchOrig);
+          __m256i result;
+          if constexpr (with_max) result = processor((uint8_t *)(pSrc+width-1-pixels_at_at_time), srcPitchOrig, pixel_max);
+          else result = processor((uint8_t *)(pSrc+width-1-pixels_at_at_time), srcPitchOrig);
           _mm256_storeu_si256(reinterpret_cast<__m256i*>(pDst+width-1-pixels_at_at_time), result);
         }
 
@@ -108,35 +126,35 @@ static void process_halfplane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, B
     }
 }
 
-template<typename pixel_t, SseModeProcessor processor>
-static void process_even_rows_avx2(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch) {
+template<typename pixel_t, auto processor>
+static void process_even_rows_avx2(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
     _mm256_zeroupper();
     env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 2); //copy first two lines
 
-    process_halfplane_avx2<pixel_t, processor>(env, pSrc+srcPitch, pDst+dstPitch, rowsize, height, srcPitch, dstPitch);
+    process_halfplane_avx2<pixel_t, processor>(env, pSrc+srcPitch, pDst+dstPitch, rowsize, height, srcPitch, dstPitch, bits_per_pixel);
     if (height & 1) { // odd height: the last row is an even row without a row below it: border, copied
         _mm256_zeroupper();
         env->BitBlt(pDst+dstPitch*(height-1), dstPitch, pSrc+srcPitch*(height-1), srcPitch, rowsize, 1);
     }
 }
 
-template<typename pixel_t, SseModeProcessor processor>
-static void process_odd_rows_avx2(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch) {
+template<typename pixel_t, auto processor>
+static void process_odd_rows_avx2(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
     _mm256_zeroupper();
     env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1); //top border
 
     // height + 1: with an odd height the last odd row (height-2) has both neighbours and is processed too
-    process_halfplane_avx2<pixel_t, processor>(env, pSrc, pDst, rowsize, height + 1, srcPitch, dstPitch);
+    process_halfplane_avx2<pixel_t, processor>(env, pSrc, pDst, rowsize, height + 1, srcPitch, dstPitch, bits_per_pixel);
 
     _mm256_zeroupper();
     env->BitBlt(pDst+dstPitch*(height-1), dstPitch, pSrc+srcPitch*(height-1), srcPitch, rowsize, 1); //bottom border
 }
 
-static void doNothing(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch) {
+static void doNothing(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
 
 }
 
-static void copyPlane(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch) {
+static void copyPlane(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
   _mm256_zeroupper();
   env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, height);
 }
@@ -178,7 +196,8 @@ PlaneProcessor* rg_avx2_functions[] = {
 };
 
 
-PlaneProcessor* rg_avx2_functions_16_10[] = {
+// 10-16 bit (the max pixel value comes from bits_per_pixel)
+PlaneProcessor* rg_avx2_functions_16[] = {
   doNothing,
   copyPlane,
   process_plane_avx2<uint16_t, rg_mode1_avx2_16<false>>,
@@ -186,9 +205,9 @@ PlaneProcessor* rg_avx2_functions_16_10[] = {
   process_plane_avx2<uint16_t, rg_mode3_avx2_16<false>>,
   process_plane_avx2<uint16_t, rg_mode4_avx2_16<false>>,
   process_plane_avx2<uint16_t, rg_mode5_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode6_avx2_16<10, false>>,
+  process_plane_avx2<uint16_t, rg_mode6_avx2_16<false>>,
   process_plane_avx2<uint16_t, rg_mode7_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode8_avx2_16<10, false>>,
+  process_plane_avx2<uint16_t, rg_mode8_avx2_16<false>>,
   process_plane_avx2<uint16_t, rg_mode9_avx2_16<false>>,
   process_plane_avx2<uint16_t, rg_mode10_avx2_16<false>>,
   process_plane_avx2<uint16_t, rg_mode11_avx2_16<false>>,
@@ -205,106 +224,7 @@ PlaneProcessor* rg_avx2_functions_16_10[] = {
   process_plane_avx2<uint16_t, rg_mode22_avx2_16<false>>,
   process_plane_avx2<uint16_t, rg_mode23_avx2_16<false>>,
   process_plane_avx2<uint16_t, rg_mode24_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode25_avx2_16<10,false>>,
-  process_plane_avx2<uint16_t, rg_mode26_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode27_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode28_avx2_16<false>>,
-};
-
-PlaneProcessor* rg_avx2_functions_16_12[] = {
-  doNothing,
-  copyPlane,
-  process_plane_avx2<uint16_t, rg_mode1_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode2_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode3_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode4_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode5_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode6_avx2_16<12, false>>,
-  process_plane_avx2<uint16_t, rg_mode7_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode8_avx2_16<12, false>>,
-  process_plane_avx2<uint16_t, rg_mode9_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode10_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode11_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode12_avx2_16<false>>,
-  process_even_rows_avx2<uint16_t, rg_mode13_and14_avx2_16<false>>,
-  process_odd_rows_avx2<uint16_t, rg_mode13_and14_avx2_16<false>>,
-  process_even_rows_avx2<uint16_t, rg_mode15_and16_avx2_16<false>>,
-  process_odd_rows_avx2<uint16_t, rg_mode15_and16_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode17_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode18_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode19_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode20_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode21_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode22_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode23_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode24_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode25_avx2_16<12,false>>,
-  process_plane_avx2<uint16_t, rg_mode26_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode27_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode28_avx2_16<false>>,
-};
-
-PlaneProcessor* rg_avx2_functions_16_14[] = {
-  doNothing,
-  copyPlane,
-  process_plane_avx2<uint16_t, rg_mode1_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode2_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode3_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode4_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode5_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode6_avx2_16<14, false>>,
-  process_plane_avx2<uint16_t, rg_mode7_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode8_avx2_16<14, false>>,
-  process_plane_avx2<uint16_t, rg_mode9_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode10_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode11_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode12_avx2_16<false>>,
-  process_even_rows_avx2<uint16_t, rg_mode13_and14_avx2_16<false>>,
-  process_odd_rows_avx2<uint16_t, rg_mode13_and14_avx2_16<false>>,
-  process_even_rows_avx2<uint16_t, rg_mode15_and16_avx2_16<false>>,
-  process_odd_rows_avx2<uint16_t, rg_mode15_and16_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode17_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode18_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode19_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode20_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode21_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode22_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode23_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode24_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode25_avx2_16<14,false>>,
-  process_plane_avx2<uint16_t, rg_mode26_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode27_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode28_avx2_16<false>>,
-};
-
-PlaneProcessor* rg_avx2_functions_16_16[] = {
-  doNothing,
-  copyPlane,
-  process_plane_avx2<uint16_t, rg_mode1_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode2_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode3_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode4_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode5_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode6_avx2_16<16, false>>,
-  process_plane_avx2<uint16_t, rg_mode7_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode8_avx2_16<16, false>>,
-  process_plane_avx2<uint16_t, rg_mode9_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode10_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode11_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode12_avx2_16<false>>,
-  process_even_rows_avx2<uint16_t, rg_mode13_and14_avx2_16<false>>,
-  process_odd_rows_avx2<uint16_t, rg_mode13_and14_avx2_16<false>>,
-  process_even_rows_avx2<uint16_t, rg_mode15_and16_avx2_16<false>>,
-  process_odd_rows_avx2<uint16_t, rg_mode15_and16_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode17_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode18_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode19_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode20_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode21_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode22_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode23_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode24_avx2_16<false>>,
-  process_plane_avx2<uint16_t, rg_mode25_avx2_16<16,false>>,
+  process_plane_avx2<uint16_t, rg_mode25_avx2_16<false>>,
   process_plane_avx2<uint16_t, rg_mode26_avx2_16<false>>,
   process_plane_avx2<uint16_t, rg_mode27_avx2_16<false>>,
   process_plane_avx2<uint16_t, rg_mode28_avx2_16<false>>,

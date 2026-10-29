@@ -6,6 +6,7 @@
 
 
 template<typename pixel_t>
+// 10-16 bit kernels that depend on the max pixel value take it as a 3rd parameter (int)
 using CModeProcessor = pixel_t (*)(const Byte*, int);
 
 RG_FORCEINLINE Byte rg_mode1_cpp(const Byte* pSrc, int srcPitch) {
@@ -275,8 +276,7 @@ RG_FORCEINLINE Byte rg_mode6_cpp(const Byte* pSrc, int srcPitch) {
   return clip(c, mil1, mal1);
 }
 
-template<int bits_per_pixel>
-RG_FORCEINLINE uint16_t rg_mode6_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode6_cpp_16(const Byte* pSrc, int srcPitch, int pixel_max) {
     LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
     auto mal1 = std::max(a1, a8);
@@ -301,10 +301,10 @@ RG_FORCEINLINE uint16_t rg_mode6_cpp_16(const Byte* pSrc, int srcPitch) {
     uint16_t clipped3 = clip_16(c, mil3, mal3);
     uint16_t clipped4 = clip_16(c, mil4, mal4);
 
-    int c1 = adds_16_c<bits_per_pixel>(std::abs(c-clipped1)<<1, d1);
-    int c2 = adds_16_c<bits_per_pixel>(std::abs(c-clipped2)<<1, d2);
-    int c3 = adds_16_c<bits_per_pixel>(std::abs(c-clipped3)<<1, d3);
-    int c4 = adds_16_c<bits_per_pixel>(std::abs(c-clipped4)<<1, d4);
+    int c1 = adds_16_c(std::abs(c-clipped1)<<1, d1, pixel_max);
+    int c2 = adds_16_c(std::abs(c-clipped2)<<1, d2, pixel_max);
+    int c3 = adds_16_c(std::abs(c-clipped3)<<1, d3, pixel_max);
+    int c4 = adds_16_c(std::abs(c-clipped4)<<1, d4, pixel_max);
 
     int mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
 
@@ -419,10 +419,10 @@ RG_FORCEINLINE uint16_t rg_mode7_cpp_16(const Byte* pSrc, int srcPitch) {
   auto clipped3 = clip_16(c, mil3, mal3);
   auto clipped4 = clip_16(c, mil4, mal4);
 
-  int c1 = adds_16_c<16>(std::abs(c-clipped1), d1);
-  int c2 = adds_16_c<16>(std::abs(c-clipped2), d2);
-  int c3 = adds_16_c<16>(std::abs(c-clipped3), d3);
-  int c4 = adds_16_c<16>(std::abs(c-clipped4), d4);
+  int c1 = adds_16_c(std::abs(c-clipped1), d1, 65535);
+  int c2 = adds_16_c(std::abs(c-clipped2), d2, 65535);
+  int c3 = adds_16_c(std::abs(c-clipped3), d3, 65535);
+  int c4 = adds_16_c(std::abs(c-clipped4), d4, 65535);
 
   auto mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
 
@@ -510,8 +510,7 @@ RG_FORCEINLINE Byte rg_mode8_cpp(const Byte* pSrc, int srcPitch) {
     return clipped1;
 }
 
-template<int bits_per_pixel>
-RG_FORCEINLINE uint16_t rg_mode8_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode8_cpp_16(const Byte* pSrc, int srcPitch, int pixel_max) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -536,10 +535,10 @@ RG_FORCEINLINE uint16_t rg_mode8_cpp_16(const Byte* pSrc, int srcPitch) {
   uint16_t clipped3 = clip_16(c, mil3, mal3);
   uint16_t clipped4 = clip_16(c, mil4, mal4);
 
-  int c1 = adds_16_c<bits_per_pixel>(std::abs(c-clipped1), d1<<1);
-  int c2 = adds_16_c<bits_per_pixel>(std::abs(c-clipped2), d2<<1);
-  int c3 = adds_16_c<bits_per_pixel>(std::abs(c-clipped3), d3<<1);
-  int c4 = adds_16_c<bits_per_pixel>(std::abs(c-clipped4), d4<<1);
+  int c1 = adds_16_c(std::abs(c-clipped1), d1<<1, pixel_max);
+  int c2 = adds_16_c(std::abs(c-clipped2), d2<<1, pixel_max);
+  int c3 = adds_16_c(std::abs(c-clipped3), d3<<1, pixel_max);
+  int c4 = adds_16_c(std::abs(c-clipped4), d4<<1, pixel_max);
 
   uint16_t mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
 
@@ -1226,8 +1225,7 @@ RG_FORCEINLINE Byte rg_mode23_cpp(const Byte* pSrc, int srcPitch) {
     return adds_c(subs_c(c, u), d);
 }
 
-template<int bits_per_pixel>
-RG_FORCEINLINE uint16_t rg_mode23_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode23_cpp_16(const Byte* pSrc, int srcPitch, int pixel_max) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1259,7 +1257,7 @@ RG_FORCEINLINE uint16_t rg_mode23_cpp_16(const Byte* pSrc, int srcPitch) {
   auto d4 = std::min(subs_16_c(mil4, c), linediff4);
   auto d = std::max(std::max(std::max(std::max(d1, d2), d3), d4), 0);
 
-  return adds_16_c<bits_per_pixel>(subs_16_c(c, u), d);
+  return adds_16_c(subs_16_c(c, u), d, pixel_max);
 }
 
 template<bool chroma>
@@ -1344,8 +1342,7 @@ RG_FORCEINLINE Byte rg_mode24_cpp(const Byte* pSrc, int srcPitch) {
     return adds_c(subs_c(c, u), d);
 }
 
-template<int bits_per_pixel>
-RG_FORCEINLINE uint16_t rg_mode24_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode24_cpp_16(const Byte* pSrc, int srcPitch, int pixel_max) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1387,7 +1384,7 @@ RG_FORCEINLINE uint16_t rg_mode24_cpp_16(const Byte* pSrc, int srcPitch) {
   auto d4 = std::min(t4, subs_16_c(linediff4, t4));
   auto d = std::max(std::max(std::max(std::max(d1, d2), d3), d4), 0);
 
-  return adds_16_c<bits_per_pixel>(subs_16_c(c, u), d);
+  return adds_16_c(subs_16_c(c, u), d, pixel_max);
 }
 
 template<bool chroma>
@@ -1449,44 +1446,43 @@ RG_FORCEINLINE Byte rg_mode25_cpp(const Byte* pSrc, int srcPitch) {
   int SSE4, SSE5; // SSE4_minus, SSE5_plus; // global collectors
   int SSE6, SSE7; // SSE6_actual_minus, SSE7_actual_plus the actual results
 
-  neighbourdiff_c<8>(SSE4, SSE5, c, a4);
+  neighbourdiff_c(SSE4, SSE5, c, a4, 255);
   // first result fill into collectors SSE4 and SSE5, no comparison
 
-  neighbourdiff_c<8>(SSE6, SSE7, c, a5);
+  neighbourdiff_c(SSE6, SSE7, c, a5, 255);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  neighbourdiff_c<8>(SSE6, SSE7, c, a1);
+  neighbourdiff_c(SSE6, SSE7, c, a1, 255);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  neighbourdiff_c<8>(SSE6, SSE7, c, a2);
+  neighbourdiff_c(SSE6, SSE7, c, a2, 255);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  neighbourdiff_c<8>(SSE6, SSE7, c, a3);
+  neighbourdiff_c(SSE6, SSE7, c, a3, 255);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  neighbourdiff_c<8>(SSE6, SSE7, c, a6);
+  neighbourdiff_c(SSE6, SSE7, c, a6, 255);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  neighbourdiff_c<8>(SSE6, SSE7, c, a7);
+  neighbourdiff_c(SSE6, SSE7, c, a7, 255);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  neighbourdiff_c<8>(SSE6, SSE7, c, a8);
+  neighbourdiff_c(SSE6, SSE7, c, a8, 255);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  auto result = sharpen_c<8>(c, SSE4, SSE5);
+  auto result = sharpen_c(c, SSE4, SSE5, 255);
 
   return result;
 }
 
-template<int bits_per_pixel>
-RG_FORCEINLINE uint16_t rg_mode25_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode25_cpp_16(const Byte* pSrc, int srcPitch, int pixel_max) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   /*
@@ -1497,38 +1493,38 @@ RG_FORCEINLINE uint16_t rg_mode25_cpp_16(const Byte* pSrc, int srcPitch) {
   int SSE4, SSE5; // SSE4_minus, SSE5_plus; // global collectors
   int SSE6, SSE7; // SSE6_actual_minus, SSE7_actual_plus the actual results
 
-  neighbourdiff_c<bits_per_pixel>(SSE4, SSE5, c, a4);
+  neighbourdiff_c(SSE4, SSE5, c, a4, pixel_max);
   // first result fill into collectors SSE4 and SSE5, no comparison
 
-  neighbourdiff_c<bits_per_pixel>(SSE6, SSE7, c, a5);
+  neighbourdiff_c(SSE6, SSE7, c, a5, pixel_max);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  neighbourdiff_c<bits_per_pixel>(SSE6, SSE7, c, a1);
+  neighbourdiff_c(SSE6, SSE7, c, a1, pixel_max);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  neighbourdiff_c<bits_per_pixel>(SSE6, SSE7, c, a2);
+  neighbourdiff_c(SSE6, SSE7, c, a2, pixel_max);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  neighbourdiff_c<bits_per_pixel>(SSE6, SSE7, c, a3);
+  neighbourdiff_c(SSE6, SSE7, c, a3, pixel_max);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  neighbourdiff_c<bits_per_pixel>(SSE6, SSE7, c, a6);
+  neighbourdiff_c(SSE6, SSE7, c, a6, pixel_max);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  neighbourdiff_c<bits_per_pixel>(SSE6, SSE7, c, a7);
+  neighbourdiff_c(SSE6, SSE7, c, a7, pixel_max);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  neighbourdiff_c<bits_per_pixel>(SSE6, SSE7, c, a8);
+  neighbourdiff_c(SSE6, SSE7, c, a8, pixel_max);
   SSE4 = std::min(SSE4, SSE6);
   SSE5 = std::min(SSE5, SSE7);
 
-  auto result = sharpen_c<bits_per_pixel>(c, SSE4, SSE5);
+  auto result = sharpen_c(c, SSE4, SSE5, pixel_max);
 
   return result;
 }

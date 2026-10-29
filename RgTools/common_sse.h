@@ -215,11 +215,10 @@ static RG_FORCEINLINE __m128i sharpen(const __m128i& center, const __m128i& minu
   return _mm_subs_epu8(_mm_adds_epu8(center, min_1), min_2);
 }
 
-template<int bits_per_pixel>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-static RG_FORCEINLINE __m128i sharpen_16(const __m128i& center, const __m128i& minus, const __m128i& plus) {
+static RG_FORCEINLINE __m128i sharpen_16(const __m128i& center, const __m128i& minus, const __m128i& plus, const __m128i& pixel_max) {
   auto mp_diff = _mm_subs_epu16(minus, plus);
   auto pm_diff = _mm_subs_epu16(plus, minus);
   auto m_per2 = _mm_srli_epi16(minus, 1);
@@ -227,10 +226,8 @@ static RG_FORCEINLINE __m128i sharpen_16(const __m128i& center, const __m128i& m
   auto min_1 = _mm_min_epu16(p_per2, mp_diff);
   auto min_2 = _mm_min_epu16(m_per2, pm_diff);
   auto result1 = _mm_adds_epu16(center, min_1);
-  if constexpr (bits_per_pixel < 16) {
-    const auto max_pixel_value = _mm_set1_epi16((1 << bits_per_pixel) - 1);
-    result1 = _mm_min_epi16(result1, max_pixel_value);
-  }
+  // unsigned min: the sum can exceed 32767 above 14 bit; 16 bit: a no-op (_mm_adds_epu16 saturates there)
+  result1 = _mm_min_epu16(result1, pixel_max);
   auto result = _mm_subs_epu16(result1, min_2);
   return result;
 }

@@ -72,13 +72,7 @@ static RG_FORCEINLINE int adds_c(int x, int y) {
   return std::min(pixel_max, x + y);
 }
 
-template<int bits_per_pixel>
-static RG_FORCEINLINE int adds_16_c(int x, int y) {
-  constexpr int pixel_max = (1 << bits_per_pixel) - 1;
-  return std::min(pixel_max, x + y);
-}
-
-// 10-16 bit with the max pixel value as a parameter
+// 10-16 bit, saturates at the max pixel value
 static RG_FORCEINLINE int adds_16_c(int x, int y, int pixel_max) {
   return std::min(pixel_max, x + y);
 }
@@ -127,15 +121,14 @@ static RG_FORCEINLINE bool is_16byte_aligned(const void *ptr) {
 // sharpen, neighbourdiff: helpers for mode 25
 
 // good for all integer
-template<int bits_per_pixel>
-static RG_FORCEINLINE int sharpen_c(const int& center, const int& minus, const int& plus) {
+static RG_FORCEINLINE int sharpen_c(const int& center, const int& minus, const int& plus, int pixel_max) {
   auto mp_diff = subs_16_c(minus, plus);
   auto pm_diff = subs_16_c(plus, minus);
   auto m_per2 = minus >> 1;
   auto p_per2 = plus >> 1;
   auto min_1 = std::min(p_per2, mp_diff);
   auto min_2 = std::min(m_per2, pm_diff);
-  return subs_16_c(adds_16_c<bits_per_pixel>(center, min_1), min_2);
+  return subs_16_c(adds_16_c(center, min_1, pixel_max), min_2);
 }
 
 
@@ -151,13 +144,12 @@ static RG_FORCEINLINE float sharpen_32_c(const float& center, const float& minus
 }
 
 // helper for mode 25
-template<int bits_per_pixel>
-static RG_FORCEINLINE void neighbourdiff_c(int& minus, int& plus, int center, int neighbour) {
+// max_mask: the max pixel value
+static RG_FORCEINLINE void neighbourdiff_c(int& minus, int& plus, int center, int neighbour, int max_mask) {
   bool n_ge_c = center <= neighbour;
   bool c_ge_n = neighbour <= center;
   bool equ = center == neighbour;
 
-  constexpr int max_mask = (1 << bits_per_pixel) - 1;
   // an appropriately big number to use for testing max 
   // in sharpen
 

@@ -100,6 +100,7 @@
     <ClCompile Include="clense_sse.cpp" />
     <ClCompile Include="removegrain.cpp" />
     <ClCompile Include="RemoveGrainT.cpp" />
+    <ClCompile Include="RemoveGrainT_sse.cpp" />
     <ClCompile Include="removegrain_avx2.cpp">
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>

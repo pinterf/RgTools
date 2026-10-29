@@ -3,6 +3,8 @@
 
 #include "stdint.h"
 #include <algorithm>
+#include <cmath>
+#include <cstdlib>
 
 #ifndef NOMINMAX
 #define NOMINMAX

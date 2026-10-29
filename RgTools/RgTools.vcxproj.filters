@@ -33,6 +33,9 @@
     <ClCompile Include="RemoveGrainT.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RemoveGrainT_sse.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="removegrain_avx2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

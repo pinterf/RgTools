@@ -1300,9 +1300,6 @@ public:
     has_at_least_v8 = true;
     try { env->CheckVersion(8); } catch (const AvisynthError&) { has_at_least_v8 = false; }
 
-    if (vi.IsY())
-      grey = true;
-
     // only mode 1, 2 and 3
     switch (vi.BitsPerComponent()) {
     case 8:
@@ -1373,8 +1370,7 @@ public:
 
     last_frame = vi.num_frames >= 2 ? vi.num_frames - 2 : 0;
 
-    /*FIXME: check min dimensions 3x3
-      env->ThrowError("TemporalRepair: the width or height of the clip is too small");*/
+    // planes smaller than 3x3 have no inner pixel: the processors leave the copied plane as is
   }
 };
 

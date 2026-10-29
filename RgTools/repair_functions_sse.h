@@ -3,6 +3,9 @@
 
 #include "common_sse.h"
 
+// kernels, included only from repair_sse.cpp: internal linkage, compiled with that file's ISA flags
+namespace {
+
 typedef __m128i (SseModeProcessor)(const Byte*, const __m128i &val, int);
 
 template<bool aligned>
@@ -4546,5 +4549,7 @@ RG_FORCEINLINE __m128i repair_mode28_sse_32(const Byte* pSrc, const __m128i& val
 
   return _mm_castps_si128(simd_clip_32(_mm_castsi128_ps(val), real_lower, real_upper));
 }
+
+} // namespace
 
 #endif

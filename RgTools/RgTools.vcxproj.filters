@@ -42,6 +42,9 @@
     <ClCompile Include="repair.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="repair_sse.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="vertical_cleaner.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

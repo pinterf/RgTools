@@ -105,6 +105,7 @@
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <ClCompile Include="repair.cpp" />
+    <ClCompile Include="repair_sse.cpp" />
     <ClCompile Include="vertical_cleaner.cpp" />
     <ClCompile Include="vertical_cleaner_sse.cpp" />
   </ItemGroup>

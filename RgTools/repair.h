@@ -6,6 +6,10 @@
 
 typedef void (RepairPlaneProcessor)(IScriptEnvironment* env, BYTE* pDst, const BYTE* pSrc, const BYTE* pRef, int dstPitch, int srcPitch, int refPitch, int rowsize, int height);
 
+// mode -1 and 0 entries of the function tables, shared by the C and SIMD tables
+RepairPlaneProcessor repair_do_nothing;
+RepairPlaneProcessor repair_copy_plane;
+
 
 class Repair : public GenericVideoFilter {
 public:

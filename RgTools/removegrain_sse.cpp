@@ -1,6 +1,7 @@
 // RemoveGrain: x86 SSE2 / SSE4.1 plane loops and function tables
 
-#include "removegrain.h"
+#include "removegrain_core.h"
+#include "common.h"
 
 #ifdef INTEL_INTRINSICS
 
@@ -9,8 +10,8 @@
 namespace {
 
 template<typename pixel_t, auto processor, auto processor_a>
-static void process_plane_sse(IScriptEnvironment* env, const BYTE* pSrc8, BYTE* pDst8, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
-    env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 1);  // FIXME: change single row copy to memcpy (1st and last rows)
+static void process_plane_sse(const uint8_t* pSrc8, uint8_t* pDst8, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
+    rg_copy_rows(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 1);  // FIXME: change single row copy to memcpy (1st and last rows)
 
     pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
     const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
@@ -50,15 +51,15 @@ static void process_plane_sse(IScriptEnvironment* env, const BYTE* pSrc8, BYTE* 
       pDst += dstPitch;
     }
 
-    env->BitBlt((uint8_t *)(pDst), dstPitch*sizeof(pixel_t), (uint8_t *)(pSrc), srcPitch*sizeof(pixel_t), rowsize, 1);
+    rg_copy_rows((uint8_t *)(pDst), dstPitch*sizeof(pixel_t), (uint8_t *)(pSrc), srcPitch*sizeof(pixel_t), rowsize, 1);
 }
 
 template<typename pixel_t, auto processor, auto processor_a>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-static void process_plane_sse41(IScriptEnvironment* env, const BYTE* pSrc8, BYTE* pDst8, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
-  env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 1);
+static void process_plane_sse41(const uint8_t* pSrc8, uint8_t* pDst8, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
+  rg_copy_rows(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 1);
 
   pixel_t* pDst = reinterpret_cast<pixel_t*>(pDst8);
   const pixel_t* pSrc = reinterpret_cast<const pixel_t*>(pSrc8);
@@ -107,11 +108,11 @@ static void process_plane_sse41(IScriptEnvironment* env, const BYTE* pSrc8, BYTE
     pDst += dstPitch;
   }
 
-  env->BitBlt((uint8_t*)(pDst), dstPitch * sizeof(pixel_t), (uint8_t*)(pSrc), srcPitch * sizeof(pixel_t), rowsize, 1);
+  rg_copy_rows((uint8_t*)(pDst), dstPitch * sizeof(pixel_t), (uint8_t*)(pSrc), srcPitch * sizeof(pixel_t), rowsize, 1);
 }
 
 template<typename pixel_t, auto processor, auto processor_a>
-static void process_halfplane_sse(IScriptEnvironment* env, const BYTE* pSrc8, BYTE* pDst8, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
+static void process_halfplane_sse(const uint8_t* pSrc8, uint8_t* pDst8, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
   pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
   const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
 
@@ -148,7 +149,7 @@ static void process_halfplane_sse(IScriptEnvironment* env, const BYTE* pSrc8, BY
         pSrc += srcPitch;
         pDst += dstPitch;
 
-        env->BitBlt((uint8_t *)(pDst), dstPitch*sizeof(pixel_t), (uint8_t *)(pSrc), srcPitch*sizeof(pixel_t), rowsize, 1); //other field
+        rg_copy_rows((uint8_t *)(pDst), dstPitch*sizeof(pixel_t), (uint8_t *)(pSrc), srcPitch*sizeof(pixel_t), rowsize, 1); //other field
 
         pSrc += srcPitch;
         pDst += dstPitch;
@@ -159,7 +160,7 @@ template<typename pixel_t, auto processor, auto processor_a>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-static void process_halfplane_sse41(IScriptEnvironment* env, const BYTE* pSrc8, BYTE* pDst8, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
+static void process_halfplane_sse41(const uint8_t* pSrc8, uint8_t* pDst8, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
   pixel_t* pDst = reinterpret_cast<pixel_t*>(pDst8);
   const pixel_t* pSrc = reinterpret_cast<const pixel_t*>(pSrc8);
 
@@ -205,7 +206,7 @@ static void process_halfplane_sse41(IScriptEnvironment* env, const BYTE* pSrc8, 
     pSrc += srcPitch;
     pDst += dstPitch;
 
-    env->BitBlt((uint8_t*)(pDst), dstPitch * sizeof(pixel_t), (uint8_t*)(pSrc), srcPitch * sizeof(pixel_t), rowsize, 1); //other field
+    rg_copy_rows((uint8_t*)(pDst), dstPitch * sizeof(pixel_t), (uint8_t*)(pSrc), srcPitch * sizeof(pixel_t), rowsize, 1); //other field
 
     pSrc += srcPitch;
     pDst += dstPitch;
@@ -214,47 +215,47 @@ static void process_halfplane_sse41(IScriptEnvironment* env, const BYTE* pSrc8, 
 
 
 template<typename pixel_t, auto processor, auto processor_a>
-static void process_even_rows_sse(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
-    env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 2); //copy first two lines
+static void process_even_rows_sse(const uint8_t* pSrc, uint8_t* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
+    rg_copy_rows(pDst, dstPitch, pSrc, srcPitch, rowsize, 2); //copy first two lines
 
-    process_halfplane_sse<pixel_t, processor, processor_a>(env, pSrc+srcPitch, pDst+dstPitch, rowsize, height, srcPitch, dstPitch, bits_per_pixel);
+    process_halfplane_sse<pixel_t, processor, processor_a>(pSrc+srcPitch, pDst+dstPitch, rowsize, height, srcPitch, dstPitch, bits_per_pixel);
     if (height & 1) // odd height: the last row is an even row without a row below it: border, copied
-        env->BitBlt(pDst+dstPitch*(height-1), dstPitch, pSrc+srcPitch*(height-1), srcPitch, rowsize, 1);
+        rg_copy_rows(pDst+dstPitch*(height-1), dstPitch, pSrc+srcPitch*(height-1), srcPitch, rowsize, 1);
 }
 
 template<typename pixel_t, auto processor, auto processor_a>
-static void process_odd_rows_sse(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
-    env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1); //top border
+static void process_odd_rows_sse(const uint8_t* pSrc, uint8_t* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
+    rg_copy_rows(pDst, dstPitch, pSrc, srcPitch, rowsize, 1); //top border
 
     // height + 1: with an odd height the last odd row (height-2) has both neighbours and is processed too
-    process_halfplane_sse<pixel_t, processor, processor_a>(env, pSrc, pDst, rowsize, height + 1, srcPitch, dstPitch, bits_per_pixel);
+    process_halfplane_sse<pixel_t, processor, processor_a>(pSrc, pDst, rowsize, height + 1, srcPitch, dstPitch, bits_per_pixel);
 
-    env->BitBlt(pDst+dstPitch*(height-1), dstPitch, pSrc+srcPitch*(height-1), srcPitch, rowsize, 1); //bottom border
+    rg_copy_rows(pDst+dstPitch*(height-1), dstPitch, pSrc+srcPitch*(height-1), srcPitch, rowsize, 1); //bottom border
 }
 
 template<typename pixel_t, auto processor, auto processor_a>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-static void process_even_rows_sse41(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
-  env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 2); //copy first two lines
+static void process_even_rows_sse41(const uint8_t* pSrc, uint8_t* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
+  rg_copy_rows(pDst, dstPitch, pSrc, srcPitch, rowsize, 2); //copy first two lines
 
-  process_halfplane_sse41<pixel_t, processor, processor_a>(env, pSrc + srcPitch, pDst + dstPitch, rowsize, height, srcPitch, dstPitch, bits_per_pixel);
+  process_halfplane_sse41<pixel_t, processor, processor_a>(pSrc + srcPitch, pDst + dstPitch, rowsize, height, srcPitch, dstPitch, bits_per_pixel);
   if (height & 1) // odd height: the last row is an even row without a row below it: border, copied
-    env->BitBlt(pDst+dstPitch*(height-1), dstPitch, pSrc+srcPitch*(height-1), srcPitch, rowsize, 1);
+    rg_copy_rows(pDst+dstPitch*(height-1), dstPitch, pSrc+srcPitch*(height-1), srcPitch, rowsize, 1);
 }
 
 template<typename pixel_t, auto processor, auto processor_a>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-static void process_odd_rows_sse41(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
-  env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1); //top border
+static void process_odd_rows_sse41(const uint8_t* pSrc, uint8_t* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
+  rg_copy_rows(pDst, dstPitch, pSrc, srcPitch, rowsize, 1); //top border
 
   // height + 1: with an odd height the last odd row (height-2) has both neighbours and is processed too
-  process_halfplane_sse41<pixel_t, processor, processor_a>(env, pSrc, pDst, rowsize, height + 1, srcPitch, dstPitch, bits_per_pixel);
+  process_halfplane_sse41<pixel_t, processor, processor_a>(pSrc, pDst, rowsize, height + 1, srcPitch, dstPitch, bits_per_pixel);
 
-  env->BitBlt(pDst + dstPitch * (height - 1), dstPitch, pSrc + srcPitch * (height - 1), srcPitch, rowsize, 1); //bottom border
+  rg_copy_rows(pDst + dstPitch * (height - 1), dstPitch, pSrc + srcPitch * (height - 1), srcPitch, rowsize, 1); //bottom border
 }
 
 } // namespace

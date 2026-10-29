@@ -3,15 +3,6 @@
 
 #include <algorithm>
 
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-
-#pragma warning(disable: 4512 4244 4100)
-#include "avisynth.h"
-#pragma warning(default: 4512 4244 4100)
-#include "avs/config.h"
-
 // experimental simd includes for avx2 compiled files
 #if defined (__GNUC__) && ! defined (__INTEL_COMPILER)
 #include <x86intrin.h>

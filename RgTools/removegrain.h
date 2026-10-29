@@ -1,15 +1,11 @@
 #ifndef __REMOVEGRAIN_H__
 #define __REMOVEGRAIN_H__
 
+// RemoveGrain: AviSynth front end
+
 #include "common.h"
 #include "rg_avs.h"
-
-
-typedef void (PlaneProcessor)(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel);
-
-// mode -1 and 0 entries of the C and SSE function tables (the AVX2 tables have their own)
-PlaneProcessor rg_do_nothing;
-PlaneProcessor rg_copy_plane;
+#include "removegrain_core.h"
 
 
 class RemoveGrain : public GenericVideoFilter {
@@ -22,20 +18,9 @@ public:
       return cachehints == CACHE_GET_MTMODE ? MT_NICE_FILTER : 0;
     }
 
-    const static int UNDEFINED_MODE = -2;
-
 private:
-    int mode_;
-    int modeU_;
-    int modeV_;
-
-    int pixelsize;
-    int bits_per_pixel;
-
+    RemoveGrainCore core_;
     bool has_at_least_v8;
-
-    PlaneProcessor** functions;
-    PlaneProcessor** functions_chroma; // only for float
 };
 
 

@@ -33,6 +33,9 @@
     <ClCompile Include="removegrain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="removegrain_core.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="removegrain_sse.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -84,6 +87,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="removegrain.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="removegrain_core.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="RemoveGrainT.h">

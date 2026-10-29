@@ -3300,11 +3300,11 @@ RG_FORCEINLINE __m128i rg_mode25_sse_32(const uint8_t* pSrc, int srcPitch) {
 
 #if 0
 // mode25
-void	nondestructivesharpen(const uint8_t* pSrc, int srcPitch, BYTE* dp, int dpitch, const BYTE* _sp, int spitch, int hblocks, int remainder, int incpitch, int height)
+void	nondestructivesharpen(const uint8_t* pSrc, int srcPitch, uint8_t* dp, int dpitch, const uint8_t* _sp, int spitch, int hblocks, int remainder, int incpitch, int height)
 {
   int eax, ebx, edx;
-  const BYTE* esi;
-  BYTE* edi;
+  const uint8_t* esi;
+  uint8_t* edi;
   // integrated into later eax = hblocks; // __asm	mov			eax,				hblocks
   ebx = spitch; // __asm	mov			ebx, spitch
   edx = remainder; //  __asm	mov			edx, remainder

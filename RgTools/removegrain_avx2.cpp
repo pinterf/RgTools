@@ -1,6 +1,7 @@
 // RemoveGrain: x86 AVX2 plane loops and function tables
 
-#include "removegrain.h"
+#include "removegrain_core.h"
+#include "common.h"
 
 #ifdef INTEL_INTRINSICS
 
@@ -11,11 +12,11 @@ namespace {
 
 // AVX2: not using special aligned templates, loadu is fast is aligned
 // No manual _mm256_zeroupper(): the compilers insert vzeroupper where needed (before calls such as
-// env->BitBlt and at returns), and with LLVM the intrinsic makes the function save and restore all
+// memcpy and at returns), and with LLVM the intrinsic makes the function save and restore all
 // callee-saved xmm registers (as in mvtools, https://stackoverflow.com/questions/68736527).
 template<typename pixel_t, auto processor>
-static void process_plane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, BYTE* pDst8, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
-    env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 1);
+static void process_plane_avx2(const uint8_t* pSrc8, uint8_t* pDst8, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
+    rg_copy_rows(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 1);
 
     pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
     const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
@@ -63,12 +64,12 @@ static void process_plane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, BYTE*
       pSrc += srcPitch;
       pDst += dstPitch;
     }
-    env->BitBlt((uint8_t *)(pDst), dstPitch*sizeof(pixel_t), (uint8_t *)(pSrc), srcPitch*sizeof(pixel_t), rowsize, 1);
+    rg_copy_rows((uint8_t *)(pDst), dstPitch*sizeof(pixel_t), (uint8_t *)(pSrc), srcPitch*sizeof(pixel_t), rowsize, 1);
 }
 
 
 template<typename pixel_t, auto processor>
-static void process_halfplane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, BYTE* pDst8, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
+static void process_halfplane_avx2(const uint8_t* pSrc8, uint8_t* pDst8, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
   pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
   const pixel_t *pSrc = reinterpret_cast<const pixel_t *>(pSrc8);
 
@@ -114,7 +115,7 @@ static void process_halfplane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, B
         pSrc += srcPitch;
         pDst += dstPitch;
 
-        env->BitBlt((uint8_t *)(pDst), dstPitch*sizeof(pixel_t), (uint8_t *)(pSrc), srcPitch*sizeof(pixel_t), rowsize, 1); //other field
+        rg_copy_rows((uint8_t *)(pDst), dstPitch*sizeof(pixel_t), (uint8_t *)(pSrc), srcPitch*sizeof(pixel_t), rowsize, 1); //other field
 
         pSrc += srcPitch;
         pDst += dstPitch;
@@ -122,31 +123,31 @@ static void process_halfplane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, B
 }
 
 template<typename pixel_t, auto processor>
-static void process_even_rows_avx2(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
-    env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 2); //copy first two lines
+static void process_even_rows_avx2(const uint8_t* pSrc, uint8_t* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
+    rg_copy_rows(pDst, dstPitch, pSrc, srcPitch, rowsize, 2); //copy first two lines
 
-    process_halfplane_avx2<pixel_t, processor>(env, pSrc+srcPitch, pDst+dstPitch, rowsize, height, srcPitch, dstPitch, bits_per_pixel);
+    process_halfplane_avx2<pixel_t, processor>(pSrc+srcPitch, pDst+dstPitch, rowsize, height, srcPitch, dstPitch, bits_per_pixel);
     if (height & 1) { // odd height: the last row is an even row without a row below it: border, copied
-        env->BitBlt(pDst+dstPitch*(height-1), dstPitch, pSrc+srcPitch*(height-1), srcPitch, rowsize, 1);
+        rg_copy_rows(pDst+dstPitch*(height-1), dstPitch, pSrc+srcPitch*(height-1), srcPitch, rowsize, 1);
     }
 }
 
 template<typename pixel_t, auto processor>
-static void process_odd_rows_avx2(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
-    env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1); //top border
+static void process_odd_rows_avx2(const uint8_t* pSrc, uint8_t* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
+    rg_copy_rows(pDst, dstPitch, pSrc, srcPitch, rowsize, 1); //top border
 
     // height + 1: with an odd height the last odd row (height-2) has both neighbours and is processed too
-    process_halfplane_avx2<pixel_t, processor>(env, pSrc, pDst, rowsize, height + 1, srcPitch, dstPitch, bits_per_pixel);
+    process_halfplane_avx2<pixel_t, processor>(pSrc, pDst, rowsize, height + 1, srcPitch, dstPitch, bits_per_pixel);
 
-    env->BitBlt(pDst+dstPitch*(height-1), dstPitch, pSrc+srcPitch*(height-1), srcPitch, rowsize, 1); //bottom border
+    rg_copy_rows(pDst+dstPitch*(height-1), dstPitch, pSrc+srcPitch*(height-1), srcPitch, rowsize, 1); //bottom border
 }
 
-static void doNothing(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
+static void doNothing(const uint8_t* pSrc, uint8_t* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
 
 }
 
-static void copyPlane(IScriptEnvironment* env, const BYTE* pSrc, BYTE* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
-  env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, height);
+static void copyPlane(const uint8_t* pSrc, uint8_t* pDst, int rowsize, int height, int srcPitch, int dstPitch, int bits_per_pixel) {
+  rg_copy_rows(pDst, dstPitch, pSrc, srcPitch, rowsize, height);
 }
 
 

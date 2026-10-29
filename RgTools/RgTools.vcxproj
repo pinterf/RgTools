@@ -100,6 +100,7 @@
     <ClCompile Include="clense_core.cpp" />
     <ClCompile Include="clense_sse.cpp" />
     <ClCompile Include="removegrain.cpp" />
+    <ClCompile Include="removegrain_core.cpp" />
     <ClCompile Include="removegrain_sse.cpp" />
     <ClCompile Include="RemoveGrainT.cpp" />
     <ClCompile Include="RemoveGrainT_core.cpp" />
@@ -131,6 +132,7 @@
     <ClInclude Include="include\avs\types.h" />
     <ClInclude Include="include\avs\win.h" />
     <ClInclude Include="removegrain.h" />
+    <ClInclude Include="removegrain_core.h" />
     <ClInclude Include="rg_avs.h" />
     <ClInclude Include="rg_core.h" />
     <ClInclude Include="RemoveGrainT.h" />

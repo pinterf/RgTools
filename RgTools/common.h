@@ -226,16 +226,17 @@ static RG_FORCEINLINE void neighbourdiff_32_c(float& minus, float& plus, float c
 
 // loaders for C routines
 // pointers and pitch are byte-based
+// a kernel uses only the neighbours it needs
 #define LOAD_SQUARE_CPP_0(pixel_t, ptr, pitch) \
-    pixel_t a1 = *(pixel_t *)((ptr) - (pitch) - sizeof(pixel_t)); \
-    pixel_t a2 = *(pixel_t *)((ptr) - (pitch)); \
-    pixel_t a3 = *(pixel_t *)((ptr) - (pitch) + sizeof(pixel_t)); \
-    pixel_t a4 = *(pixel_t *)((ptr) - sizeof(pixel_t)); \
-    pixel_t c  = *(pixel_t *)((ptr) ); \
-    pixel_t a5 = *(pixel_t *)((ptr) + sizeof(pixel_t)); \
-    pixel_t a6 = *(pixel_t *)((ptr) + (pitch) - sizeof(pixel_t)); \
-    pixel_t a7 = *(pixel_t *)((ptr) + (pitch)); \
-    pixel_t a8 = *(pixel_t *)((ptr) + (pitch) + sizeof(pixel_t));
+    [[maybe_unused]] pixel_t a1 = *(pixel_t *)((ptr) - (pitch) - sizeof(pixel_t)); \
+    [[maybe_unused]] pixel_t a2 = *(pixel_t *)((ptr) - (pitch)); \
+    [[maybe_unused]] pixel_t a3 = *(pixel_t *)((ptr) - (pitch) + sizeof(pixel_t)); \
+    [[maybe_unused]] pixel_t a4 = *(pixel_t *)((ptr) - sizeof(pixel_t)); \
+    [[maybe_unused]] pixel_t c  = *(pixel_t *)((ptr) ); \
+    [[maybe_unused]] pixel_t a5 = *(pixel_t *)((ptr) + sizeof(pixel_t)); \
+    [[maybe_unused]] pixel_t a6 = *(pixel_t *)((ptr) + (pitch) - sizeof(pixel_t)); \
+    [[maybe_unused]] pixel_t a7 = *(pixel_t *)((ptr) + (pitch)); \
+    [[maybe_unused]] pixel_t a8 = *(pixel_t *)((ptr) + (pitch) + sizeof(pixel_t));
 
 #define LOAD_SQUARE_CPP(ptr, pitch) LOAD_SQUARE_CPP_0(uint8_t, ptr, pitch);
 #define LOAD_SQUARE_CPP_16(ptr, pitch) LOAD_SQUARE_CPP_0(uint16_t, ptr, pitch);

@@ -41,15 +41,6 @@ static RG_FORCEINLINE uint16_t satb_16(int value, int max_pixel_value) {
   return clip_16(value, 0, max_pixel_value);
 }
 
-static RG_FORCEINLINE float satb_32(float value) {
-#if 0
-  // no clamp for float
-  return clip_32(value, 0.0f, 1.0f);
-#else
-  return value;
-#endif
-}
-
 static void vcleaner_relaxed_median_c(uint8_t* pDst, const uint8_t *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel) {
   rg_copy_rows(pDst, dstPitch, pSrc, srcPitch, rowsize, 2);
 

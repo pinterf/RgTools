@@ -283,7 +283,7 @@ static RG_FORCEINLINE void neighbourdiff_avx2_32(__m256& minus, __m256& plus, __
 // end of mode 25 helpers
 
 #define LOAD_SQUARE_AVX2_0(ptr, pitch, pixelsize, aligned) \
-__m256i a1, a2, a3, a4, a5, a6, a7, a8, c; \
+[[maybe_unused]] __m256i a1, a2, a3, a4, a5, a6, a7, a8, c; /* a kernel uses only the neighbours it needs */ \
 if constexpr(!aligned) {\
 a1 = simd_loadu_si256((ptr) - (pitch) - (pixelsize)); \
 a2 = simd_loadu_si256((ptr) - (pitch)); \
@@ -316,7 +316,7 @@ a8 = simd_loadu_si256((ptr) + (pitch) + (pixelsize)); \
 
 // 32 bit float loads
 #define LOAD_SQUARE_AVX2_0_32(ptr, pitch, aligned) \
-__m256 a1, a2, a3, a4, a5, a6, a7, a8, c; \
+[[maybe_unused]] __m256 a1, a2, a3, a4, a5, a6, a7, a8, c; /* a kernel uses only the neighbours it needs */ \
 if constexpr(!aligned) {\
 a1 = _mm256_loadu_ps((const float *)((ptr) - (pitch) - 4)); \
 a2 = _mm256_loadu_ps((const float *)((ptr) - (pitch))); \

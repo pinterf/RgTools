@@ -387,7 +387,7 @@ static RG_FORCEINLINE void neighbourdiff_32(__m128& minus, __m128& plus, __m128 
 
 // center column as aligned
 #define LOAD_SQUARE_SSE_0(ptr, pitch, pixelsize, aligned) \
-__m128i a1, a2, a3, a4, a5, a6, a7, a8, c; \
+[[maybe_unused]] __m128i a1, a2, a3, a4, a5, a6, a7, a8, c; /* a kernel uses only the neighbours it needs */ \
 if constexpr(!aligned) {\
 a1 = simd_loadu_si128((ptr) - (pitch) - (pixelsize)); \
 a2 = simd_loadu_si128((ptr) - (pitch)); \
@@ -411,7 +411,7 @@ a8 = simd_loadu_si128((ptr) + (pitch) + (pixelsize)); \
 }
 
 #define LOAD_SQUARE_SSE3_0(ptr, pitch, pixelsize, aligned) \
-__m128i a1, a2, a3, a4, a5, a6, a7, a8, c; \
+[[maybe_unused]] __m128i a1, a2, a3, a4, a5, a6, a7, a8, c; /* a kernel uses only the neighbours it needs */ \
 if constexpr(!aligned) {\
 a1 = simd_loadu_si128_sse3((ptr) - (pitch) - (pixelsize)); \
 a2 = simd_loadu_si128_sse3((ptr) - (pitch)); \
@@ -445,7 +445,7 @@ a8 = simd_loadu_si128_sse3((ptr) + (pitch) + (pixelsize)); \
 
 // 32 bit float loads
 #define LOAD_SQUARE_SSE_0_32(ptr, pitch, aligned) \
-__m128 a1, a2, a3, a4, a5, a6, a7, a8, c; \
+[[maybe_unused]] __m128 a1, a2, a3, a4, a5, a6, a7, a8, c; /* a kernel uses only the neighbours it needs */ \
 if constexpr(!aligned) {\
 a1 = _mm_loadu_ps((const float *)((ptr) - (pitch) - 4)); \
 a2 = _mm_loadu_ps((const float *)((ptr) - (pitch))); \

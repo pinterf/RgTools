@@ -27,7 +27,8 @@ install_manifest.txt
 *.userprefs
 
 # Build results
-Build/
+[Bb]uild/
+out/
 [Dd]ebug/
 [Dd]ebug LLVM/
 [Dd]ebugPublic/

@@ -276,7 +276,8 @@ VerticalCleaner::VerticalCleaner(PClip child, int mode, int modeU, int modeV, bo
         env->ThrowError("VerticalCleaner works only with planar colorspaces");
     }
 
-    if (mode_ > 2 || modeU_ > 2 || modeV_ > 2) {
+    // modeU/modeV below -1: same as the previous plane (UNDEFINED_MODE, the default)
+    if (mode_ <= UNDEFINED_MODE || mode_ > 2 || modeU_ > 2 || modeV_ > 2) {
         env->ThrowError("Sorry, this mode does not exist");
     }
 

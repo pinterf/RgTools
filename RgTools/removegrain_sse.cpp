@@ -66,7 +66,7 @@ static void process_plane_sse41(IScriptEnvironment* env, const BYTE* pSrc8, BYTE
   dstPitch /= sizeof(pixel_t);
   const int srcPitchOrig = srcPitch;
   // 10-16 bit kernels that depend on the max pixel value get it as a 3rd parameter
-  constexpr bool with_max = std::is_invocable_v<decltype(processor), const Byte*, int, const __m128i&>;
+  constexpr bool with_max = std::is_invocable_v<decltype(processor), const uint8_t*, int, const __m128i&>;
   const __m128i pixel_max = _mm_set1_epi16(sizeof(pixel_t) == 2 ? (short)((1u << bits_per_pixel) - 1) : 0);
   srcPitch /= sizeof(pixel_t);
 
@@ -166,7 +166,7 @@ static void process_halfplane_sse41(IScriptEnvironment* env, const BYTE* pSrc8, 
   dstPitch /= sizeof(pixel_t);
   const int srcPitchOrig = srcPitch;
   // 10-16 bit kernels that depend on the max pixel value get it as a 3rd parameter
-  constexpr bool with_max = std::is_invocable_v<decltype(processor), const Byte*, int, const __m128i&>;
+  constexpr bool with_max = std::is_invocable_v<decltype(processor), const uint8_t*, int, const __m128i&>;
   const __m128i pixel_max = _mm_set1_epi16(sizeof(pixel_t) == 2 ? (short)((1u << bits_per_pixel) - 1) : 0);
   srcPitch /= sizeof(pixel_t);
 

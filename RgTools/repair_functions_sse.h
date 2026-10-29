@@ -7,10 +7,10 @@
 namespace {
 
 // 10-16 bit kernels that depend on the max pixel value take it as a 4th parameter (__m128i)
-typedef __m128i (SseModeProcessor)(const Byte*, const __m128i &val, int);
+typedef __m128i (SseModeProcessor)(const uint8_t*, const __m128i &val, int);
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode1_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode1_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     __m128i mi = _mm_min_epu8(_mm_min_epu8(
@@ -29,7 +29,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode1_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode1_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   __m128i mi = _mm_min_epu8(_mm_min_epu8(
@@ -48,7 +48,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode1_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode1_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   __m128i mi = _mm_min_epu16(_mm_min_epu16(
@@ -67,7 +67,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode1_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode1_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   __m128 mi = _mm_min_ps(_mm_min_ps(
@@ -86,7 +86,7 @@ RG_FORCEINLINE __m128i repair_mode1_sse_32(const Byte* pSrc, const __m128i &val,
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode2_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode2_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     sort_pair(a1, a8);
@@ -128,7 +128,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode2_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode2_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   sort_pair(a1, a8);
@@ -170,7 +170,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode2_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode2_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   sort_pair_16(a1, a8);
@@ -212,7 +212,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode2_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode2_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   sort_pair_32(a1, a8);
@@ -254,7 +254,7 @@ RG_FORCEINLINE __m128i repair_mode2_sse_32(const Byte* pSrc, const __m128i &val,
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode3_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode3_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     sort_pair(a1, a8);
@@ -297,7 +297,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode3_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode3_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   sort_pair(a1, a8);
@@ -340,7 +340,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode3_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode3_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   sort_pair_16(a1, a8);
@@ -383,7 +383,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode3_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode3_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   sort_pair_32(a1, a8);
@@ -426,7 +426,7 @@ RG_FORCEINLINE __m128i repair_mode3_sse_32(const Byte* pSrc, const __m128i &val,
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode4_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode4_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     sort_pair(a1, a8);
@@ -469,7 +469,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode4_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode4_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   sort_pair(a1, a8);
@@ -512,7 +512,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode4_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode4_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   sort_pair_16(a1, a8);
@@ -555,7 +555,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode4_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode4_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   sort_pair_32(a1, a8);
@@ -598,7 +598,7 @@ RG_FORCEINLINE __m128i repair_mode4_sse_32(const Byte* pSrc, const __m128i &val,
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode5_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode5_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     auto mal1 = _mm_max_epu8(_mm_max_epu8(a1, a8), c);
@@ -637,7 +637,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode5_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode5_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu8(_mm_max_epu8(a1, a8), c);
@@ -676,7 +676,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode5_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode5_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu16(_mm_max_epu16(a1, a8), c);
@@ -715,7 +715,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode5_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode5_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_ps(_mm_max_ps(a1, a8), c);
@@ -754,7 +754,7 @@ RG_FORCEINLINE __m128i repair_mode5_sse_32(const Byte* pSrc, const __m128i &val,
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode6_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode6_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     auto mal1 = _mm_max_epu8(_mm_max_epu8(a1, a8), c);
@@ -803,7 +803,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode6_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode6_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu8(_mm_max_epu8(a1, a8), c);
@@ -853,7 +853,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode6_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch, const __m128i &pixel_max) {
+RG_FORCEINLINE __m128i repair_mode6_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch, const __m128i &pixel_max) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu16(_mm_max_epu16(a1, a8), c);
@@ -908,7 +908,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode6_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode6_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_ps(_mm_max_ps(a1, a8), c);
@@ -956,7 +956,7 @@ RG_FORCEINLINE __m128i repair_mode6_sse_32(const Byte* pSrc, const __m128i &val,
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode7_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode7_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     auto mal1 = _mm_max_epu8(_mm_max_epu8(a1, a8), c);
@@ -1000,7 +1000,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode7_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode7_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu8(_mm_max_epu8(a1, a8), c);
@@ -1044,7 +1044,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode7_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode7_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu16(_mm_max_epu16(a1, a8), c);
@@ -1088,7 +1088,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode7_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode7_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_ps(_mm_max_ps(a1, a8), c);
@@ -1132,7 +1132,7 @@ RG_FORCEINLINE __m128i repair_mode7_sse_32(const Byte* pSrc, const __m128i &val,
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode8_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode8_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     auto mal1 = _mm_max_epu8(_mm_max_epu8(a1, a8), c);
@@ -1176,7 +1176,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode8_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode8_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu8(_mm_max_epu8(a1, a8), c);
@@ -1220,7 +1220,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode8_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch, const __m128i &pixel_max) {
+RG_FORCEINLINE __m128i repair_mode8_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch, const __m128i &pixel_max) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu16(_mm_max_epu16(a1, a8), c);
@@ -1270,7 +1270,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode8_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode8_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_ps(_mm_max_ps(a1, a8), c);
@@ -1315,7 +1315,7 @@ RG_FORCEINLINE __m128i repair_mode8_sse_32(const Byte* pSrc, const __m128i &val,
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode9_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode9_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     auto mal1 = _mm_max_epu8(_mm_max_epu8(a1, a8), c);
@@ -1349,7 +1349,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode9_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode9_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu8(_mm_max_epu8(a1, a8), c);
@@ -1383,7 +1383,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode9_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode9_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu16(_mm_max_epu16(a1, a8), c);
@@ -1417,7 +1417,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode9_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode9_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_ps(_mm_max_ps(a1, a8), c);
@@ -1450,7 +1450,7 @@ RG_FORCEINLINE __m128i repair_mode9_sse_32(const Byte* pSrc, const __m128i &val,
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode10_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode10_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     auto d1 = abs_diff(val, a1);
@@ -1487,7 +1487,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode10_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode10_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff(val, a1);
@@ -1524,7 +1524,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode10_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode10_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff_16(val, a1);
@@ -1561,7 +1561,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode10_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode10_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff_32(_mm_castsi128_ps(val), a1);
@@ -1597,7 +1597,7 @@ RG_FORCEINLINE __m128i repair_mode10_sse_32(const Byte* pSrc, const __m128i &val
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode12_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode12_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     sort_pair(a1, a2);
@@ -1634,7 +1634,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode12_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode12_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   sort_pair(a1, a2);
@@ -1671,7 +1671,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode12_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode12_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   sort_pair_16(a1, a2);
@@ -1708,7 +1708,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode12_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode12_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   sort_pair_32(a1, a2);
@@ -1745,7 +1745,7 @@ RG_FORCEINLINE __m128i repair_mode12_sse_32(const Byte* pSrc, const __m128i &val
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode13_sse2(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode13_sse2(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
   sort_pair(a1, a2);
@@ -1782,7 +1782,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode13_sse(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode13_sse(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
     sort_pair(a1, a2);
@@ -1819,7 +1819,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode13_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode13_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   sort_pair_16(a1, a2);
@@ -1856,7 +1856,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode13_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode13_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   sort_pair_32(a1, a2);
@@ -1893,7 +1893,7 @@ RG_FORCEINLINE __m128i repair_mode13_sse_32(const Byte* pSrc, const __m128i &val
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode14_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode14_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     sort_pair(a1, a2);
@@ -1929,7 +1929,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode14_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode14_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   sort_pair(a1, a2);
@@ -1965,7 +1965,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode14_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode14_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   sort_pair_16(a1, a2);
@@ -2001,7 +2001,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode14_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode14_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   sort_pair_32(a1, a2);
@@ -2037,7 +2037,7 @@ RG_FORCEINLINE __m128i repair_mode14_sse_32(const Byte* pSrc, const __m128i &val
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode15_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode15_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     auto mal1 = _mm_max_epu8(a1, a8);
@@ -2086,7 +2086,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode15_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode15_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu8(a1, a8);
@@ -2135,7 +2135,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode15_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode15_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu16(a1, a8);
@@ -2184,7 +2184,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode15_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode15_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_ps(a1, a8);
@@ -2232,7 +2232,7 @@ RG_FORCEINLINE __m128i repair_mode15_sse_32(const Byte* pSrc, const __m128i &val
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode16_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode16_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     auto mal1 = _mm_max_epu8(a1, a8);
@@ -2291,7 +2291,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode16_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode16_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu8(a1, a8);
@@ -2350,7 +2350,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode16_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch, const __m128i &pixel_max) {
+RG_FORCEINLINE __m128i repair_mode16_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch, const __m128i &pixel_max) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu16(a1, a8);
@@ -2415,7 +2415,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode16_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode16_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_ps(a1, a8);
@@ -2473,7 +2473,7 @@ RG_FORCEINLINE __m128i repair_mode16_sse_32(const Byte* pSrc, const __m128i &val
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode17_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode17_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     auto mal1 = _mm_max_epu8(a1, a8);
@@ -2506,7 +2506,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode17_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode17_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu8(a1, a8);
@@ -2539,7 +2539,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode17_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode17_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu16(a1, a8);
@@ -2572,7 +2572,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode17_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode17_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_ps(a1, a8);
@@ -2605,7 +2605,7 @@ RG_FORCEINLINE __m128i repair_mode17_sse_32(const Byte* pSrc, const __m128i &val
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode18_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode18_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     auto absdiff1 = abs_diff(c, a1);
@@ -2651,7 +2651,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode18_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode18_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   auto absdiff1 = abs_diff(c, a1);
@@ -2697,7 +2697,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode18_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode18_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto absdiff1 = abs_diff_16(c, a1);
@@ -2743,7 +2743,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode18_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode18_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto absdiff1 = abs_diff_32(c, a1);
@@ -2788,7 +2788,7 @@ RG_FORCEINLINE __m128i repair_mode18_sse_32(const Byte* pSrc, const __m128i &val
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode19_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode19_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     auto d1 = abs_diff(c, a1);
@@ -2818,7 +2818,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode19_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode19_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff(c, a1);
@@ -2848,7 +2848,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode19_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch, const __m128i &pixel_max) {
+RG_FORCEINLINE __m128i repair_mode19_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch, const __m128i &pixel_max) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff_16(c, a1);
@@ -2880,7 +2880,7 @@ template<bool aligned, bool chroma>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode19_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode19_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff_32(c, a1);
@@ -2910,7 +2910,7 @@ RG_FORCEINLINE __m128i repair_mode19_sse_32(const Byte* pSrc, const __m128i &val
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode20_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode20_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     auto d1 = abs_diff(c, a1);
@@ -2952,7 +2952,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode20_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode20_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff(c, a1);
@@ -2994,7 +2994,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode20_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch, const __m128i &pixel_max) {
+RG_FORCEINLINE __m128i repair_mode20_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch, const __m128i &pixel_max) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff_16(c, a1);
@@ -3038,7 +3038,7 @@ template<bool aligned, bool chroma>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode20_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode20_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff_32(c, a1);
@@ -3080,7 +3080,7 @@ RG_FORCEINLINE __m128i repair_mode20_sse_32(const Byte* pSrc, const __m128i &val
 
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode21_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode21_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     auto mal1 = _mm_max_epu8(a1, a8);
@@ -3124,7 +3124,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode21_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode21_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu8(a1, a8);
@@ -3168,7 +3168,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode21_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch, const __m128i &pixel_max) {
+RG_FORCEINLINE __m128i repair_mode21_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch, const __m128i &pixel_max) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu16(a1, a8);
@@ -3214,7 +3214,7 @@ template<bool aligned, bool chroma>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode21_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode21_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_ps(a1, a8);
@@ -3257,7 +3257,7 @@ RG_FORCEINLINE __m128i repair_mode21_sse_32(const Byte* pSrc, const __m128i &val
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode22_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode22_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     auto d1 = abs_diff(val, a1);
@@ -3287,7 +3287,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode22_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode22_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff(val, a1);
@@ -3317,7 +3317,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode22_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch, const __m128i &pixel_max) {
+RG_FORCEINLINE __m128i repair_mode22_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch, const __m128i &pixel_max) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff_16(val, a1);
@@ -3349,7 +3349,7 @@ template<bool aligned, bool chroma>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode22_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode22_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff_32(_mm_castsi128_ps(val), a1);
@@ -3379,7 +3379,7 @@ RG_FORCEINLINE __m128i repair_mode22_sse_32(const Byte* pSrc, const __m128i &val
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode23_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode23_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     auto d1 = abs_diff(val, a1);
@@ -3421,7 +3421,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode23_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode23_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff(val, a1);
@@ -3463,7 +3463,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode23_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch, const __m128i &pixel_max) {
+RG_FORCEINLINE __m128i repair_mode23_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch, const __m128i &pixel_max) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff_16(val, a1);
@@ -3507,7 +3507,7 @@ template<bool aligned, bool chroma>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode23_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode23_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff_32(_mm_castsi128_ps(val), a1);
@@ -3549,7 +3549,7 @@ RG_FORCEINLINE __m128i repair_mode23_sse_32(const Byte* pSrc, const __m128i &val
 // ------------
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode24_sse2(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode24_sse2(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
     LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
 
     auto mal1 = _mm_max_epu8(a1, a8);
@@ -3593,7 +3593,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode24_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode24_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu8(a1, a8);
@@ -3637,7 +3637,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode24_sse_16(const Byte* pSrc, const __m128i &val, int srcPitch, const __m128i &pixel_max) {
+RG_FORCEINLINE __m128i repair_mode24_sse_16(const uint8_t* pSrc, const __m128i &val, int srcPitch, const __m128i &pixel_max) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_epu16(a1, a8);
@@ -3683,7 +3683,7 @@ template<bool aligned, bool chroma>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode24_sse_32(const Byte* pSrc, const __m128i &val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode24_sse_32(const uint8_t* pSrc, const __m128i &val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm_max_ps(a1, a8);
@@ -3733,7 +3733,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode26_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode26_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
   /*
   a1 a2 a3
@@ -3787,7 +3787,7 @@ RG_FORCEINLINE __m128i repair_mode26_sse(const Byte* pSrc, const __m128i& val, i
 
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode26_sse2(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode26_sse2(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
   /*
   a1 a2 a3
@@ -3843,7 +3843,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode26_sse_16(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode26_sse_16(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mi12 = _mm_min_epu16(a1, a2);
@@ -3894,7 +3894,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode26_sse_32(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode26_sse_32(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mi12 = _mm_min_ps(a1, a2);
@@ -3949,7 +3949,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode27_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode27_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
   /*
   a1 a2 a3
@@ -4023,7 +4023,7 @@ RG_FORCEINLINE __m128i repair_mode27_sse(const Byte* pSrc, const __m128i& val, i
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode27_sse2(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode27_sse2(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
   /*
   a1 a2 a3
@@ -4100,7 +4100,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode27_sse_16(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode27_sse_16(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mi18 = _mm_min_epu16(a1, a8);
@@ -4172,7 +4172,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode27_sse_32(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode27_sse_32(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mi18 = _mm_min_ps(a1, a8);
@@ -4248,7 +4248,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode28_sse(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode28_sse(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE3_UA(pSrc, srcPitch, aligned);
   /*
   a1 a2 a3
@@ -4320,7 +4320,7 @@ RG_FORCEINLINE __m128i repair_mode28_sse(const Byte* pSrc, const __m128i& val, i
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m128i repair_mode28_sse2(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode28_sse2(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE_UA(pSrc, srcPitch, aligned);
   /*
   a1 a2 a3
@@ -4395,7 +4395,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode28_sse_16(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode28_sse_16(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE_16_UA(pSrc, srcPitch, aligned);
 
   auto mi12 = _mm_min_epu16(a1, a2);
@@ -4466,7 +4466,7 @@ template<bool aligned>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE __m128i repair_mode28_sse_32(const Byte* pSrc, const __m128i& val, int srcPitch) {
+RG_FORCEINLINE __m128i repair_mode28_sse_32(const uint8_t* pSrc, const __m128i& val, int srcPitch) {
   LOAD_SQUARE_SSE_32_UA(pSrc, srcPitch, aligned);
 
   auto mi12 = _mm_min_ps(a1, a2);

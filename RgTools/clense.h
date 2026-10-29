@@ -12,7 +12,7 @@ enum class ClenseMode {
     BOTH
 };
 
-typedef void (ClenseProcessor)(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int width, int height, int bits_per_pixel, IScriptEnvironment *env);
+typedef void (ClenseProcessor)(uint8_t* pDst, const uint8_t *pSrc, const uint8_t* pRef1, const uint8_t* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int width, int height, int bits_per_pixel, IScriptEnvironment *env);
 
 #ifdef INTEL_INTRINSICS
 // clense_sse.cpp

@@ -1,7 +1,7 @@
 #include "vertical_cleaner.h"
 
 template<typename pixel_t>
-static void vcleaner_median_c(Byte* pDst8, const Byte *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
+static void vcleaner_median_c(uint8_t* pDst8, const uint8_t *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
     env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 1);
 
     pixel_t *pDst = reinterpret_cast<pixel_t *>(pDst8);
@@ -30,7 +30,7 @@ static void vcleaner_median_c(Byte* pDst8, const Byte *pSrc8, int dstPitch, int 
     env->BitBlt((uint8_t *)pDst, dstPitch*sizeof(pixel_t), (uint8_t *)pSrc, srcPitch*sizeof(pixel_t), rowsize, 1);
 }
 
-static RG_FORCEINLINE Byte satb(int value) {
+static RG_FORCEINLINE uint8_t satb(int value) {
     return clip(value, 0, 255);
 }
 
@@ -47,7 +47,7 @@ static RG_FORCEINLINE float satb_32(float value) {
 #endif
 }
 
-static void vcleaner_relaxed_median_c(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
+static void vcleaner_relaxed_median_c(uint8_t* pDst, const uint8_t *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
   env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 2);
 
   pSrc += srcPitch*2;
@@ -63,8 +63,8 @@ static void vcleaner_relaxed_median_c(Byte* pDst, const Byte *pSrc, int dstPitch
       BYTE n1 = pSrc[x+srcPitch];
       BYTE n2 = pSrc[x+srcPitch*2];
 
-      Byte upper = std::max(std::max(std::min(satb(satb(p1-p2) + p1), satb(satb(n1-n2) + n1)), p1), n1);
-      Byte lower = std::min(std::min(p1, n1), std::max(satb(p1 - satb(p2-p1)), satb(n1 - satb(n2-n1))));
+      uint8_t upper = std::max(std::max(std::min(satb(satb(p1-p2) + p1), satb(satb(n1-n2) + n1)), p1), n1);
+      uint8_t lower = std::min(std::min(p1, n1), std::max(satb(p1 - satb(p2-p1)), satb(n1 - satb(n2-n1))));
 
       pDst[x] = clip(c, lower, upper);
     }
@@ -76,7 +76,7 @@ static void vcleaner_relaxed_median_c(Byte* pDst, const Byte *pSrc, int dstPitch
   env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 2);
 }
 
-static void vcleaner_relaxed_median_c_16(Byte* pDst8, const Byte *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
+static void vcleaner_relaxed_median_c_16(uint8_t* pDst8, const uint8_t *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
     env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 2);
 
     uint16_t *pDst = reinterpret_cast<uint16_t *>(pDst8);
@@ -113,7 +113,7 @@ static void vcleaner_relaxed_median_c_16(Byte* pDst8, const Byte *pSrc8, int dst
 }
 
 template<bool chroma>
-static void vcleaner_relaxed_median_c_32(Byte* pDst8, const Byte *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
+static void vcleaner_relaxed_median_c_32(uint8_t* pDst8, const uint8_t *pSrc8, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
   env->BitBlt(pDst8, dstPitch, pSrc8, srcPitch, rowsize, 2);
 
   float *pDst = reinterpret_cast<float *>(pDst8);
@@ -153,11 +153,11 @@ static void vcleaner_relaxed_median_c_32(Byte* pDst8, const Byte *pSrc8, int dst
 }
 
 
-void vcleaner_copy_plane(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
+void vcleaner_copy_plane(uint8_t* pDst, const uint8_t *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
     env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, height);
 }
 
-void vcleaner_do_nothing(Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
+void vcleaner_do_nothing(uint8_t* pDst, const uint8_t *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
 
 }
 
@@ -198,7 +198,7 @@ extern VCleanerProcessor* vcleaner_sse2_functions_32[];
 extern VCleanerProcessor* vcleaner_sse2_functions_32_chroma[];
 #endif
 
-static void dispatch_median(int mode, Byte* pDst, const Byte *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int pixelsize, int bits_per_pixel, bool chroma, IScriptEnvironment *env) {
+static void dispatch_median(int mode, uint8_t* pDst, const uint8_t *pSrc, int dstPitch, int srcPitch, int rowsize, int height, int pixelsize, int bits_per_pixel, bool chroma, IScriptEnvironment *env) {
   // a plane without an inner row (mode 1: 1 border row, mode 2: 2 border rows at the top and the bottom) is copied
   if ((mode == 1 && height < 3) || (mode == 2 && height < 5))
     mode = 0;

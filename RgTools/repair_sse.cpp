@@ -138,7 +138,7 @@ static void process_plane_sse41(IScriptEnvironment* env, BYTE* pDst8, const BYTE
   const int width = rowsize / sizeof(pixel_t);
   const int pixels_at_at_time = 16 / sizeof(pixel_t);
   // 10-16 bit kernels that depend on the max pixel value get it as a 4th parameter
-  constexpr bool with_max = std::is_invocable_v<decltype(processor), const Byte*, const __m128i&, int, const __m128i&>;
+  constexpr bool with_max = std::is_invocable_v<decltype(processor), const uint8_t*, const __m128i&, int, const __m128i&>;
   const __m128i pixel_max = _mm_set1_epi16(sizeof(pixel_t) == 2 ? (short)((1u << bits_per_pixel) - 1) : 0);
 
   pSrc += srcPitch;

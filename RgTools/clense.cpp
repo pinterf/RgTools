@@ -9,7 +9,7 @@ static void check_if_match(const VideoInfo &vi, const VideoInfo &otherVi, IScrip
     }
 }
 
-RG_FORCEINLINE Byte clense_process_pixel_c(Byte src, Byte ref1, Byte ref2, int /*max_pixel_value*/) {
+RG_FORCEINLINE uint8_t clense_process_pixel_c(uint8_t src, uint8_t ref1, uint8_t ref2, int /*max_pixel_value*/) {
     return std::min(std::max(src, std::min(ref1, ref2)), std::max(ref1, ref2));
 }
 
@@ -21,11 +21,11 @@ RG_FORCEINLINE float clense_process_pixel_c_32(float src, float ref1, float ref2
   return std::min(std::max(src, std::min(ref1, ref2)), std::max(ref1, ref2));
 }
 
-RG_FORCEINLINE Byte sclense_process_pixel_c(Byte src, Byte ref1, Byte ref2, int /*max_pixel_value*/) {
-  Byte minref = std::min(ref1, ref2);
-  Byte maxref = std::max(ref1, ref2);
+RG_FORCEINLINE uint8_t sclense_process_pixel_c(uint8_t src, uint8_t ref1, uint8_t ref2, int /*max_pixel_value*/) {
+  uint8_t minref = std::min(ref1, ref2);
+  uint8_t maxref = std::max(ref1, ref2);
 
-  return clip(src, (Byte)std::max(minref*2 - ref2, 0), (Byte)std::min(maxref*2-ref2, 255));
+  return clip(src, (uint8_t)std::max(minref*2 - ref2, 0), (uint8_t)std::min(maxref*2-ref2, 255));
 }
 
 RG_FORCEINLINE uint16_t sclense_process_pixel_c_16(uint16_t src, uint16_t ref1, uint16_t ref2, int max_pixel_value) {
@@ -50,7 +50,7 @@ RG_FORCEINLINE float sclense_process_pixel_c_32(float src, float ref1, float ref
 }
 
 template<typename pixel_t, CModeProcessor<pixel_t>/*(clense_process_pixel_c)*/ processor>
-static void process_plane_c(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
+static void process_plane_c(uint8_t* pDst, const uint8_t *pSrc, const uint8_t* pRef1, const uint8_t* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
   const int width = rowsize / sizeof(pixel_t);
   const int max_pixel_value = sizeof(pixel_t) == 2 ? (1 << bits_per_pixel) - 1 : 0; // used by the 10-16 bit pixel functions
   for (int y = 0; y < height; ++y) {

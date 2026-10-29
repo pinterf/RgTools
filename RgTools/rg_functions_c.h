@@ -7,16 +7,16 @@
 
 template<typename pixel_t>
 // 10-16 bit kernels that depend on the max pixel value take it as a 3rd parameter (int)
-using CModeProcessor = pixel_t (*)(const Byte*, int);
+using CModeProcessor = pixel_t (*)(const uint8_t*, int);
 
-RG_FORCEINLINE Byte rg_mode1_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode1_cpp(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    Byte mi = std::min (
+    uint8_t mi = std::min (
         std::min (std::min (a1, a2), std::min (a3, a4)),
         std::min (std::min (a5, a6), std::min (a7, a8))
         );
-    Byte ma = std::max (
+    uint8_t ma = std::max (
         std::max (std::max (a1, a2), std::max (a3, a4)),
         std::max (std::max (a5, a6), std::max (a7, a8))
         );
@@ -24,7 +24,7 @@ RG_FORCEINLINE Byte rg_mode1_cpp(const Byte* pSrc, int srcPitch) {
     return clip(c, mi, ma);
 }
 
-RG_FORCEINLINE uint16_t rg_mode1_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode1_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   uint16_t mi = std::min (
@@ -39,7 +39,7 @@ RG_FORCEINLINE uint16_t rg_mode1_cpp_16(const Byte* pSrc, int srcPitch) {
   return clip_16(c, mi, ma);
 }
 
-RG_FORCEINLINE float rg_mode1_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode1_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   float mi = std::min (
@@ -56,17 +56,17 @@ RG_FORCEINLINE float rg_mode1_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode2_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode2_cpp(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-  Byte a [8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
+  uint8_t a [8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
 
   std::sort(&a [0], (&a [7]) + 1);
 
   return clip(c, a [2-1], a [7-1]);
 }
 
-RG_FORCEINLINE uint16_t rg_mode2_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode2_cpp_16(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
     uint16_t a [8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
@@ -76,7 +76,7 @@ RG_FORCEINLINE uint16_t rg_mode2_cpp_16(const Byte* pSrc, int srcPitch) {
     return clip_16(c, a [2-1], a [7-1]);
 }
 
-RG_FORCEINLINE float rg_mode2_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode2_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   float a [8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
@@ -88,17 +88,17 @@ RG_FORCEINLINE float rg_mode2_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode3_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode3_cpp(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    Byte	a [8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
+    uint8_t	a [8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
 
     std::sort (&a [0], (&a [7]) + 1);
 
     return clip(c, a [3-1], a [6-1]);
 }
 
-RG_FORCEINLINE uint16_t rg_mode3_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode3_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   uint16_t	a [8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
@@ -108,7 +108,7 @@ RG_FORCEINLINE uint16_t rg_mode3_cpp_16(const Byte* pSrc, int srcPitch) {
   return clip_16(c, a [3-1], a [6-1]);
 }
 
-RG_FORCEINLINE float rg_mode3_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode3_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   float a[8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
@@ -120,17 +120,17 @@ RG_FORCEINLINE float rg_mode3_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode4_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode4_cpp(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    Byte a[8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
+    uint8_t a[8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
 
     std::sort(&a[0], (&a[7]) + 1);
 
     return clip(c, a[4 - 1], a[5 - 1]);
 }
 
-RG_FORCEINLINE uint16_t rg_mode4_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode4_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   uint16_t a[8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
@@ -140,7 +140,7 @@ RG_FORCEINLINE uint16_t rg_mode4_cpp_16(const Byte* pSrc, int srcPitch) {
   return clip_16(c, a[4 - 1], a[5 - 1]);
 }
 
-RG_FORCEINLINE float rg_mode4_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode4_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   float	a [8] = { a1, a2, a3, a4, a5, a6, a7, a8 };
@@ -152,7 +152,7 @@ RG_FORCEINLINE float rg_mode4_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode5_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode5_cpp(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto mal1 = std::max(a1, a8);
@@ -167,10 +167,10 @@ RG_FORCEINLINE Byte rg_mode5_cpp(const Byte* pSrc, int srcPitch) {
     auto mal4 = std::max(a4, a5);
     auto mil4 = std::min(a4, a5);
 
-    Byte c1 = std::abs(c-clip(c, mil1, mal1));
-    Byte c2 = std::abs(c-clip(c, mil2, mal2));
-    Byte c3 = std::abs(c-clip(c, mil3, mal3));
-    Byte c4 = std::abs(c-clip(c, mil4, mal4));
+    uint8_t c1 = std::abs(c-clip(c, mil1, mal1));
+    uint8_t c2 = std::abs(c-clip(c, mil2, mal2));
+    uint8_t c3 = std::abs(c-clip(c, mil3, mal3));
+    uint8_t c4 = std::abs(c-clip(c, mil4, mal4));
 
     auto mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
 
@@ -180,7 +180,7 @@ RG_FORCEINLINE Byte rg_mode5_cpp(const Byte* pSrc, int srcPitch) {
     return clip(c, mil1, mal1);
 }
 
-RG_FORCEINLINE uint16_t rg_mode5_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode5_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -208,7 +208,7 @@ RG_FORCEINLINE uint16_t rg_mode5_cpp_16(const Byte* pSrc, int srcPitch) {
   return clip_16(c, mil1, mal1);
 }
 
-RG_FORCEINLINE float rg_mode5_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode5_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -238,7 +238,7 @@ RG_FORCEINLINE float rg_mode5_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode6_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode6_cpp(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -258,10 +258,10 @@ RG_FORCEINLINE Byte rg_mode6_cpp(const Byte* pSrc, int srcPitch) {
   int d3 = subs_c(mal3, mil3);
   int d4 = subs_c(mal4, mil4);
 
-  Byte clipped1 = clip(c, mil1, mal1);
-  Byte clipped2 = clip(c, mil2, mal2);
-  Byte clipped3 = clip(c, mil3, mal3);
-  Byte clipped4 = clip(c, mil4, mal4);
+  uint8_t clipped1 = clip(c, mil1, mal1);
+  uint8_t clipped2 = clip(c, mil2, mal2);
+  uint8_t clipped3 = clip(c, mil3, mal3);
+  uint8_t clipped4 = clip(c, mil4, mal4);
 
   int c1 = adds_c((std::abs(c-clipped1)<<1), d1);
   int c2 = adds_c((std::abs(c-clipped2)<<1), d2);
@@ -276,7 +276,7 @@ RG_FORCEINLINE Byte rg_mode6_cpp(const Byte* pSrc, int srcPitch) {
   return clip(c, mil1, mal1);
 }
 
-RG_FORCEINLINE uint16_t rg_mode6_cpp_16(const Byte* pSrc, int srcPitch, int pixel_max) {
+RG_FORCEINLINE uint16_t rg_mode6_cpp_16(const uint8_t* pSrc, int srcPitch, int pixel_max) {
     LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
     auto mal1 = std::max(a1, a8);
@@ -315,7 +315,7 @@ RG_FORCEINLINE uint16_t rg_mode6_cpp_16(const Byte* pSrc, int srcPitch, int pixe
 }
 
 //template<bool chroma>
-RG_FORCEINLINE float rg_mode6_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode6_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -356,7 +356,7 @@ RG_FORCEINLINE float rg_mode6_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode7_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode7_cpp(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto mal1 = std::max(a1, a8);
@@ -394,7 +394,7 @@ RG_FORCEINLINE Byte rg_mode7_cpp(const Byte* pSrc, int srcPitch) {
     return clipped1;
 }
 
-RG_FORCEINLINE uint16_t rg_mode7_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode7_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -432,7 +432,7 @@ RG_FORCEINLINE uint16_t rg_mode7_cpp_16(const Byte* pSrc, int srcPitch) {
   return clipped1;
 }
 
-RG_FORCEINLINE float rg_mode7_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode7_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -472,7 +472,7 @@ RG_FORCEINLINE float rg_mode7_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode8_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode8_cpp(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto mal1 = std::max(a1, a8);
@@ -487,22 +487,22 @@ RG_FORCEINLINE Byte rg_mode8_cpp(const Byte* pSrc, int srcPitch) {
     auto mal4 = std::max(a4, a5);
     auto mil4 = std::min(a4, a5);
 
-    Byte d1 = subs_c(mal1, mil1);
-    Byte d2 = subs_c(mal2, mil2);
-    Byte d3 = subs_c(mal3, mil3);
-    Byte d4 = subs_c(mal4, mil4);
+    uint8_t d1 = subs_c(mal1, mil1);
+    uint8_t d2 = subs_c(mal2, mil2);
+    uint8_t d3 = subs_c(mal3, mil3);
+    uint8_t d4 = subs_c(mal4, mil4);
 
-    Byte clipped1 = clip(c, mil1, mal1);
-    Byte clipped2 = clip(c, mil2, mal2);
-    Byte clipped3 = clip(c, mil3, mal3);
-    Byte clipped4 = clip(c, mil4, mal4);
+    uint8_t clipped1 = clip(c, mil1, mal1);
+    uint8_t clipped2 = clip(c, mil2, mal2);
+    uint8_t clipped3 = clip(c, mil3, mal3);
+    uint8_t clipped4 = clip(c, mil4, mal4);
     
     int c1 = adds_c(std::abs(c-clipped1), d1<<1);
     int c2 = adds_c(std::abs(c-clipped2), d2<<1);
     int c3 = adds_c(std::abs(c-clipped3), d3<<1);
     int c4 = adds_c(std::abs(c-clipped4), d4<<1);
 
-    Byte mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
+    uint8_t mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
 
     if (mindiff == c4) return clipped4;
     if (mindiff == c2) return clipped2;
@@ -510,7 +510,7 @@ RG_FORCEINLINE Byte rg_mode8_cpp(const Byte* pSrc, int srcPitch) {
     return clipped1;
 }
 
-RG_FORCEINLINE uint16_t rg_mode8_cpp_16(const Byte* pSrc, int srcPitch, int pixel_max) {
+RG_FORCEINLINE uint16_t rg_mode8_cpp_16(const uint8_t* pSrc, int srcPitch, int pixel_max) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -549,7 +549,7 @@ RG_FORCEINLINE uint16_t rg_mode8_cpp_16(const Byte* pSrc, int srcPitch, int pixe
 }
 
 //template<bool chroma>
-RG_FORCEINLINE float rg_mode8_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode8_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -589,7 +589,7 @@ RG_FORCEINLINE float rg_mode8_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode9_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode9_cpp(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto mal1 = std::max(a1, a8);
@@ -617,7 +617,7 @@ RG_FORCEINLINE Byte rg_mode9_cpp(const Byte* pSrc, int srcPitch) {
     return clip(c, mil1, mal1);
 }
 
-RG_FORCEINLINE uint16_t rg_mode9_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode9_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -645,7 +645,7 @@ RG_FORCEINLINE uint16_t rg_mode9_cpp_16(const Byte* pSrc, int srcPitch) {
   return clip_16(c, mil1, mal1);
 }
 
-RG_FORCEINLINE float rg_mode9_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode9_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -675,7 +675,7 @@ RG_FORCEINLINE float rg_mode9_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode10_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode10_cpp(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto d1 = std::abs(c - a1);
@@ -699,7 +699,7 @@ RG_FORCEINLINE Byte rg_mode10_cpp(const Byte* pSrc, int srcPitch) {
     return a4;
 }
 
-RG_FORCEINLINE uint16_t rg_mode10_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode10_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto d1 = std::abs(c - a1);
@@ -723,7 +723,7 @@ RG_FORCEINLINE uint16_t rg_mode10_cpp_16(const Byte* pSrc, int srcPitch) {
   return a4;
 }
 
-RG_FORCEINLINE float rg_mode10_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode10_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto d1 = std::abs(c - a1);
@@ -749,7 +749,7 @@ RG_FORCEINLINE float rg_mode10_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode11_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode11_cpp(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
     int	sum = 4 * c + 2 * (a2 + a4 + a5 + a7) + a1 + a3 + a6 + a8;
     int	val = (sum + 8) >> 4;
@@ -757,7 +757,7 @@ RG_FORCEINLINE Byte rg_mode11_cpp(const Byte* pSrc, int srcPitch) {
     return val;
 }
 
-RG_FORCEINLINE uint16_t rg_mode11_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode11_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   int	sum = 4 * c + 2 * (a2 + a4 + a5 + a7) + a1 + a3 + a6 + a8;
@@ -766,7 +766,7 @@ RG_FORCEINLINE uint16_t rg_mode11_cpp_16(const Byte* pSrc, int srcPitch) {
   return val;
 }
 
-RG_FORCEINLINE float rg_mode11_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode11_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   float	sum = 4 * c + 2 * (a2 + a4 + a5 + a7) + a1 + a3 + a6 + a8;
@@ -777,7 +777,7 @@ RG_FORCEINLINE float rg_mode11_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode12_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode12_cpp(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP(pSrc, srcPitch);
 
   // faster approximation of mode 11 (difference <= 1): cascaded averages, the same as SIMD
@@ -787,7 +787,7 @@ RG_FORCEINLINE Byte rg_mode12_cpp(const Byte* pSrc, int srcPitch) {
   return avg_c(a4c5, subs_c(avg_c(a123, a678), 1));
 }
 
-RG_FORCEINLINE uint16_t rg_mode12_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode12_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   // faster approximation of mode 11 (difference <= 1): cascaded averages, the same as SIMD
@@ -797,7 +797,7 @@ RG_FORCEINLINE uint16_t rg_mode12_cpp_16(const Byte* pSrc, int srcPitch) {
   return avg_c(a4c5, subs_16_c(avg_c(a123, a678), 1));
 }
 
-RG_FORCEINLINE float rg_mode12_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode12_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   // cascaded averages, the same as SIMD (no -1 rounding correction at float)
@@ -809,7 +809,7 @@ RG_FORCEINLINE float rg_mode12_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode13_and14_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode13_and14_cpp(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto d1 = std::abs(a1 - a8);
@@ -823,7 +823,7 @@ RG_FORCEINLINE Byte rg_mode13_and14_cpp(const Byte* pSrc, int srcPitch) {
     return (a1 + a8 + 1) / 2;
 }
 
-RG_FORCEINLINE uint16_t rg_mode13_and14_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode13_and14_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto d1 = std::abs(a1 - a8);
@@ -837,7 +837,7 @@ RG_FORCEINLINE uint16_t rg_mode13_and14_cpp_16(const Byte* pSrc, int srcPitch) {
   return (a1 + a8 + 1) / 2;
 }
 
-RG_FORCEINLINE float rg_mode13_and14_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode13_and14_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto d1 = std::abs(a1 - a8);
@@ -853,7 +853,7 @@ RG_FORCEINLINE float rg_mode13_and14_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode15_and16_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode15_and16_cpp(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto d1 = std::abs(a1 - a8);
@@ -870,7 +870,7 @@ RG_FORCEINLINE Byte rg_mode15_and16_cpp(const Byte* pSrc, int srcPitch) {
     return clip(average, (int)std::min(a1, a8), (int)std::max(a1, a8));
 }
 
-RG_FORCEINLINE uint16_t rg_mode15_and16_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode15_and16_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto d1 = std::abs(a1 - a8);
@@ -887,7 +887,7 @@ RG_FORCEINLINE uint16_t rg_mode15_and16_cpp_16(const Byte* pSrc, int srcPitch) {
   return clip_16(average, (int)std::min(a1, a8), (int)std::max(a1, a8));
 }
 
-RG_FORCEINLINE float rg_mode15_and16_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode15_and16_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto d1 = std::abs(a1 - a8);
@@ -905,7 +905,7 @@ RG_FORCEINLINE float rg_mode15_and16_cpp_32(const Byte* pSrc, int srcPitch) {
 }
 // ------------
 
-RG_FORCEINLINE Byte rg_mode17_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode17_cpp(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto mal1 = std::max(a1, a8);
@@ -938,7 +938,7 @@ repair difference:
 */
 }
 
-RG_FORCEINLINE uint16_t rg_mode17_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode17_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -959,7 +959,7 @@ RG_FORCEINLINE uint16_t rg_mode17_cpp_16(const Byte* pSrc, int srcPitch) {
   return clip_16(c, std::min(lower, upper), std::max(lower, upper));
 }
 
-RG_FORCEINLINE float rg_mode17_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode17_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -982,7 +982,7 @@ RG_FORCEINLINE float rg_mode17_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode18_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode18_cpp(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto d1 = std::max(std::abs(c - a1), std::abs(c - a8));
@@ -998,7 +998,7 @@ RG_FORCEINLINE Byte rg_mode18_cpp(const Byte* pSrc, int srcPitch) {
     return clip(c, std::min(a1, a8), std::max(a1, a8));
 }
 
-RG_FORCEINLINE uint16_t rg_mode18_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode18_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto d1 = std::max(std::abs(c - a1), std::abs(c - a8));
@@ -1014,7 +1014,7 @@ RG_FORCEINLINE uint16_t rg_mode18_cpp_16(const Byte* pSrc, int srcPitch) {
   return clip_16(c, std::min(a1, a8), std::max(a1, a8));
 }
 
-RG_FORCEINLINE float rg_mode18_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode18_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto d1 = std::max(std::abs(c - a1), std::abs(c - a8));
@@ -1032,7 +1032,7 @@ RG_FORCEINLINE float rg_mode18_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode19_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode19_cpp(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP(pSrc, srcPitch);
 
   // (a1 + ... + a8) / 8 with cascaded averages, the same as SIMD
@@ -1041,7 +1041,7 @@ RG_FORCEINLINE Byte rg_mode19_cpp(const Byte* pSrc, int srcPitch) {
   return avg_c(a1368, a2457);
 }
 
-RG_FORCEINLINE uint16_t rg_mode19_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode19_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   // (a1 + ... + a8) / 8 with cascaded averages, the same as SIMD
@@ -1050,7 +1050,7 @@ RG_FORCEINLINE uint16_t rg_mode19_cpp_16(const Byte* pSrc, int srcPitch) {
   return avg_c(a1368, a2457);
 }
 
-RG_FORCEINLINE float rg_mode19_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode19_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   // cascaded averages, the same as SIMD
@@ -1059,7 +1059,7 @@ RG_FORCEINLINE float rg_mode19_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode20_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode20_cpp(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     int sum = a1 + a2 + a3 + a4 + c + a5 + a6 + a7 + a8;
@@ -1068,7 +1068,7 @@ RG_FORCEINLINE Byte rg_mode20_cpp(const Byte* pSrc, int srcPitch) {
     return val;
 }
 
-RG_FORCEINLINE uint16_t rg_mode20_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode20_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   // (sum + 4) / 9 as in SIMD: fixed point 1/9 with 15 bits, 32 bit unsigned product, saturated to 16 bit
@@ -1079,7 +1079,7 @@ RG_FORCEINLINE uint16_t rg_mode20_cpp_16(const Byte* pSrc, int srcPitch) {
   return (uint16_t)std::min(val, 65535u);
 }
 
-RG_FORCEINLINE float rg_mode20_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode20_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   // sum / 9, the summing order and the multiplication with 1/9 are the same as SIMD
@@ -1090,7 +1090,7 @@ RG_FORCEINLINE float rg_mode20_cpp_32(const Byte* pSrc, int srcPitch) {
 // ------------
 
 //rounding does not match
-RG_FORCEINLINE Byte rg_mode21_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode21_cpp(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     int l1a = (a1 + a8) / 2;
@@ -1109,7 +1109,7 @@ RG_FORCEINLINE Byte rg_mode21_cpp(const Byte* pSrc, int srcPitch) {
     return clip((int)c, mi, ma);
 }
 
-RG_FORCEINLINE uint16_t rg_mode21_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode21_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   int l1a = (a1 + a8) / 2;
@@ -1128,7 +1128,7 @@ RG_FORCEINLINE uint16_t rg_mode21_cpp_16(const Byte* pSrc, int srcPitch) {
   return clip_16((int)c, mi, ma);
 }
 
-RG_FORCEINLINE float rg_mode21_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode21_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
   // float: no integer tricks, same like 22
   float l1 = (a1 + a8) / 2.0f;
@@ -1145,13 +1145,13 @@ RG_FORCEINLINE float rg_mode21_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode22_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode22_cpp(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    Byte l1 = (a1 + a8 + 1) / 2;
-    Byte l2 = (a2 + a7 + 1) / 2;
-    Byte l3 = (a3 + a6 + 1) / 2;
-    Byte l4 = (a4 + a5 + 1) / 2;
+    uint8_t l1 = (a1 + a8 + 1) / 2;
+    uint8_t l2 = (a2 + a7 + 1) / 2;
+    uint8_t l3 = (a3 + a6 + 1) / 2;
+    uint8_t l4 = (a4 + a5 + 1) / 2;
 
     auto ma = std::max(std::max(std::max(l1, l2), l3), l4);
     auto mi = std::min(std::min(std::min(l1, l2), l3), l4);
@@ -1159,7 +1159,7 @@ RG_FORCEINLINE Byte rg_mode22_cpp(const Byte* pSrc, int srcPitch) {
     return clip(c, mi, ma);
 }
 
-RG_FORCEINLINE uint16_t rg_mode22_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode22_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   uint16_t l1 = (a1 + a8 + 1) / 2;
@@ -1173,7 +1173,7 @@ RG_FORCEINLINE uint16_t rg_mode22_cpp_16(const Byte* pSrc, int srcPitch) {
   return clip_16(c, mi, ma);
 }
 
-RG_FORCEINLINE float rg_mode22_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode22_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   // float: no integer tricks, same as 21
@@ -1190,7 +1190,7 @@ RG_FORCEINLINE float rg_mode22_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode23_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode23_cpp(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto mal1 = std::max(a1, a8);
@@ -1225,7 +1225,7 @@ RG_FORCEINLINE Byte rg_mode23_cpp(const Byte* pSrc, int srcPitch) {
     return adds_c(subs_c(c, u), d);
 }
 
-RG_FORCEINLINE uint16_t rg_mode23_cpp_16(const Byte* pSrc, int srcPitch, int pixel_max) {
+RG_FORCEINLINE uint16_t rg_mode23_cpp_16(const uint8_t* pSrc, int srcPitch, int pixel_max) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1261,7 +1261,7 @@ RG_FORCEINLINE uint16_t rg_mode23_cpp_16(const Byte* pSrc, int srcPitch, int pix
 }
 
 template<bool chroma>
-RG_FORCEINLINE float rg_mode23_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode23_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1297,7 +1297,7 @@ RG_FORCEINLINE float rg_mode23_cpp_32(const Byte* pSrc, int srcPitch) {
 }
 
 // ------------
-RG_FORCEINLINE Byte rg_mode24_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode24_cpp(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto mal1 = std::max(a1, a8);
@@ -1342,7 +1342,7 @@ RG_FORCEINLINE Byte rg_mode24_cpp(const Byte* pSrc, int srcPitch) {
     return adds_c(subs_c(c, u), d);
 }
 
-RG_FORCEINLINE uint16_t rg_mode24_cpp_16(const Byte* pSrc, int srcPitch, int pixel_max) {
+RG_FORCEINLINE uint16_t rg_mode24_cpp_16(const uint8_t* pSrc, int srcPitch, int pixel_max) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1388,7 +1388,7 @@ RG_FORCEINLINE uint16_t rg_mode24_cpp_16(const Byte* pSrc, int srcPitch, int pix
 }
 
 template<bool chroma>
-RG_FORCEINLINE float rg_mode24_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode24_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1435,7 +1435,7 @@ RG_FORCEINLINE float rg_mode24_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode25_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode25_cpp(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP(pSrc, srcPitch);
 
   /*
@@ -1482,7 +1482,7 @@ RG_FORCEINLINE Byte rg_mode25_cpp(const Byte* pSrc, int srcPitch) {
   return result;
 }
 
-RG_FORCEINLINE uint16_t rg_mode25_cpp_16(const Byte* pSrc, int srcPitch, int pixel_max) {
+RG_FORCEINLINE uint16_t rg_mode25_cpp_16(const uint8_t* pSrc, int srcPitch, int pixel_max) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   /*
@@ -1530,7 +1530,7 @@ RG_FORCEINLINE uint16_t rg_mode25_cpp_16(const Byte* pSrc, int srcPitch, int pix
 }
 
 template<bool chroma>
-RG_FORCEINLINE float rg_mode25_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode25_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   /*
@@ -1579,7 +1579,7 @@ RG_FORCEINLINE float rg_mode25_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode26_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode26_cpp(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a2);
@@ -1615,7 +1615,7 @@ RG_FORCEINLINE Byte rg_mode26_cpp(const Byte* pSrc, int srcPitch) {
   return clip(c, std::min(lower, upper), std::max(lower, upper));
 }
 
-RG_FORCEINLINE uint16_t rg_mode26_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode26_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a2);
@@ -1651,7 +1651,7 @@ RG_FORCEINLINE uint16_t rg_mode26_cpp_16(const Byte* pSrc, int srcPitch) {
   return clip_16(c, std::min(lower, upper), std::max(lower, upper));
 }
 
-RG_FORCEINLINE float rg_mode26_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode26_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a2);
@@ -1689,7 +1689,7 @@ RG_FORCEINLINE float rg_mode26_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode27_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode27_cpp(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1740,7 +1740,7 @@ RG_FORCEINLINE Byte rg_mode27_cpp(const Byte* pSrc, int srcPitch) {
   return clip(c, std::min(lower, upper), std::max(lower, upper));
 }
 
-RG_FORCEINLINE uint16_t rg_mode27_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode27_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1791,7 +1791,7 @@ RG_FORCEINLINE uint16_t rg_mode27_cpp_16(const Byte* pSrc, int srcPitch) {
   return clip_16(c, std::min(lower, upper), std::max(lower, upper));
 }
 
-RG_FORCEINLINE float rg_mode27_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode27_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1844,7 +1844,7 @@ RG_FORCEINLINE float rg_mode27_cpp_32(const Byte* pSrc, int srcPitch) {
 
 // ------------
 
-RG_FORCEINLINE Byte rg_mode28_cpp(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint8_t rg_mode28_cpp(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a2);
@@ -1895,7 +1895,7 @@ RG_FORCEINLINE Byte rg_mode28_cpp(const Byte* pSrc, int srcPitch) {
   return clip(c, std::min(lower, upper), std::max(lower, upper));
 }
 
-RG_FORCEINLINE uint16_t rg_mode28_cpp_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE uint16_t rg_mode28_cpp_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a2);
@@ -1946,7 +1946,7 @@ RG_FORCEINLINE uint16_t rg_mode28_cpp_16(const Byte* pSrc, int srcPitch) {
   return clip_16(c, std::min(lower, upper), std::max(lower, upper));
 }
 
-RG_FORCEINLINE float rg_mode28_cpp_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE float rg_mode28_cpp_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a2);

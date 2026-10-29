@@ -7,7 +7,7 @@
 namespace {
 
 // 10-16 bit kernels that depend on the max pixel value take it as a 3rd parameter (__m256i)
-typedef __m256i (SseModeProcessor)(const Byte*, int);
+typedef __m256i (SseModeProcessor)(const uint8_t*, int);
 
 //(x&y)+((x^y)/2) for (a+b)/2
 static RG_FORCEINLINE __m256i not_rounded_average(__m256i a, __m256i b) {
@@ -35,7 +35,7 @@ static RG_FORCEINLINE __m256i not_rounded_average_16(__m256i a, __m256i b) {
 //-------------------
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode1_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode1_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     __m256i mi = _mm256_min_epu8 (
@@ -51,7 +51,7 @@ RG_FORCEINLINE __m256i rg_mode1_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode1_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode1_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   __m256i mi = _mm256_min_epu16 (
@@ -67,7 +67,7 @@ RG_FORCEINLINE __m256i rg_mode1_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode1_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode1_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   __m256 mi = _mm256_min_ps (
@@ -85,7 +85,7 @@ RG_FORCEINLINE __m256i rg_mode1_avx2_32(const Byte* pSrc, int srcPitch) {
 //-------------------
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode2_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode2_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     sort_pair(a1, a2);
@@ -116,7 +116,7 @@ RG_FORCEINLINE __m256i rg_mode2_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode2_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode2_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   sort_pair_16(a1, a2);
@@ -147,7 +147,7 @@ RG_FORCEINLINE __m256i rg_mode2_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode2_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode2_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   sort_pair_32(a1, a2);
@@ -181,7 +181,7 @@ RG_FORCEINLINE __m256i rg_mode2_avx2_32(const Byte* pSrc, int srcPitch) {
 //-------------------
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode3_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode3_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     sort_pair(a1, a2);
@@ -212,7 +212,7 @@ RG_FORCEINLINE __m256i rg_mode3_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode3_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode3_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   sort_pair_16(a1, a2);
@@ -243,7 +243,7 @@ RG_FORCEINLINE __m256i rg_mode3_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode3_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode3_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   sort_pair_32(a1, a2);
@@ -276,7 +276,7 @@ RG_FORCEINLINE __m256i rg_mode3_avx2_32(const Byte* pSrc, int srcPitch) {
 //-------------------
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode4_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode4_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     sort_pair (a1, a2);
@@ -308,7 +308,7 @@ RG_FORCEINLINE __m256i rg_mode4_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode4_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode4_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   sort_pair_16 (a1, a2);
@@ -340,7 +340,7 @@ RG_FORCEINLINE __m256i rg_mode4_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode4_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode4_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   sort_pair_32 (a1, a2);
@@ -374,7 +374,7 @@ RG_FORCEINLINE __m256i rg_mode4_avx2_32(const Byte* pSrc, int srcPitch) {
 //-------------------
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode5_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode5_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     auto mal1 = _mm256_max_epu8(a1, a8);
@@ -410,7 +410,7 @@ RG_FORCEINLINE __m256i rg_mode5_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode5_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode5_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm256_max_epu16(a1, a8);
@@ -446,7 +446,7 @@ RG_FORCEINLINE __m256i rg_mode5_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode5_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode5_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm256_max_ps(a1, a8);
@@ -484,7 +484,7 @@ RG_FORCEINLINE __m256i rg_mode5_avx2_32(const Byte* pSrc, int srcPitch) {
 //-------------------
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode6_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode6_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     auto mal1 = _mm256_max_epu8(a1, a8);
@@ -530,7 +530,7 @@ RG_FORCEINLINE __m256i rg_mode6_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode6_avx2_16(const Byte* pSrc, int srcPitch, const __m256i &pixel_max) {
+RG_FORCEINLINE __m256i rg_mode6_avx2_16(const uint8_t* pSrc, int srcPitch, const __m256i &pixel_max) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm256_max_epu16(a1, a8);
@@ -582,7 +582,7 @@ RG_FORCEINLINE __m256i rg_mode6_avx2_16(const Byte* pSrc, int srcPitch, const __
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode6_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode6_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm256_max_ps(a1, a8);
@@ -632,7 +632,7 @@ RG_FORCEINLINE __m256i rg_mode6_avx2_32(const Byte* pSrc, int srcPitch) {
 //-------------------
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode7_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode7_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     auto mal1 = _mm256_max_epu8(a1, a8);
@@ -673,7 +673,7 @@ RG_FORCEINLINE __m256i rg_mode7_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode7_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode7_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm256_max_epu16(a1, a8);
@@ -714,7 +714,7 @@ RG_FORCEINLINE __m256i rg_mode7_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode7_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode7_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm256_max_ps(a1, a8);
@@ -757,7 +757,7 @@ RG_FORCEINLINE __m256i rg_mode7_avx2_32(const Byte* pSrc, int srcPitch) {
 //-------------------
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode8_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode8_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     auto mal1 = _mm256_max_epu8(a1, a8);
@@ -798,7 +798,7 @@ RG_FORCEINLINE __m256i rg_mode8_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode8_avx2_16(const Byte* pSrc, int srcPitch, const __m256i &pixel_max) {
+RG_FORCEINLINE __m256i rg_mode8_avx2_16(const uint8_t* pSrc, int srcPitch, const __m256i &pixel_max) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm256_max_epu16(a1, a8);
@@ -845,7 +845,7 @@ RG_FORCEINLINE __m256i rg_mode8_avx2_16(const Byte* pSrc, int srcPitch, const __
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode8_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode8_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm256_max_ps(a1, a8);
@@ -888,7 +888,7 @@ RG_FORCEINLINE __m256i rg_mode8_avx2_32(const Byte* pSrc, int srcPitch) {
 //-------------------
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode9_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode9_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     auto mal1 = _mm256_max_epu8(a1, a8);
@@ -919,7 +919,7 @@ RG_FORCEINLINE __m256i rg_mode9_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode9_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode9_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm256_max_epu16(a1, a8);
@@ -950,7 +950,7 @@ RG_FORCEINLINE __m256i rg_mode9_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode9_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode9_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm256_max_ps(a1, a8);
@@ -984,7 +984,7 @@ RG_FORCEINLINE __m256i rg_mode9_avx2_32(const Byte* pSrc, int srcPitch) {
 //-------------------
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode10_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode10_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     auto d1 = abs_diff(c, a1);
@@ -1015,7 +1015,7 @@ RG_FORCEINLINE __m256i rg_mode10_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode10_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode10_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff_16(c, a1);
@@ -1046,7 +1046,7 @@ RG_FORCEINLINE __m256i rg_mode10_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode10_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode10_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff_32(c, a1);
@@ -1079,7 +1079,7 @@ RG_FORCEINLINE __m256i rg_mode10_avx2_32(const Byte* pSrc, int srcPitch) {
 //-------------------
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode12_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode12_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     auto a13  = _mm256_avg_epu8 (a1, a3);
@@ -1098,7 +1098,7 @@ RG_FORCEINLINE __m256i rg_mode12_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode12_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode12_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   auto a13  = _mm256_avg_epu16 (a1, a3);
@@ -1117,7 +1117,7 @@ RG_FORCEINLINE __m256i rg_mode12_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode12_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode12_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto a13  = _mm256_avg_ps (a1, a3);
@@ -1159,7 +1159,7 @@ RG_FORCEINLINE __m256i rg_mode11_sum_epi32_avx2(const __m256i& c, const __m256i&
 
 // unpack and pack work per 128 bit lane, the pack restores the order
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode11_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode11_avx2(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
   auto zero = _mm256_setzero_si256();
   auto lo = rg_mode11_sum_epi16_avx2(_mm256_unpacklo_epi8(c, zero), _mm256_unpacklo_epi8(a1, zero), _mm256_unpacklo_epi8(a2, zero),
@@ -1172,7 +1172,7 @@ RG_FORCEINLINE __m256i rg_mode11_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode11_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode11_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
   auto zero = _mm256_setzero_si256();
   auto lo = rg_mode11_sum_epi32_avx2(_mm256_unpacklo_epi16(c, zero), _mm256_unpacklo_epi16(a1, zero), _mm256_unpacklo_epi16(a2, zero),
@@ -1186,7 +1186,7 @@ RG_FORCEINLINE __m256i rg_mode11_avx2_16(const Byte* pSrc, int srcPitch) {
 
 // float: same operation order as C (the *4 and *2 are exact, a contracted FMA gives the same result)
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode11_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode11_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
   auto edges = _mm256_add_ps(_mm256_add_ps(_mm256_add_ps(a2, a4), a5), a7);
   auto sum = _mm256_add_ps(_mm256_mul_ps(c, _mm256_set1_ps(4.0f)), _mm256_mul_ps(edges, _mm256_set1_ps(2.0f)));
@@ -1197,7 +1197,7 @@ RG_FORCEINLINE __m256i rg_mode11_avx2_32(const Byte* pSrc, int srcPitch) {
 //-------------------
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode13_and14_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode13_and14_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     auto d1 = abs_diff(a1, a8);
@@ -1213,7 +1213,7 @@ RG_FORCEINLINE __m256i rg_mode13_and14_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode13_and14_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode13_and14_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff_16(a1, a8);
@@ -1229,7 +1229,7 @@ RG_FORCEINLINE __m256i rg_mode13_and14_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode13_and14_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode13_and14_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto d1 = abs_diff_32(a1, a8);
@@ -1248,7 +1248,7 @@ RG_FORCEINLINE __m256i rg_mode13_and14_avx2_32(const Byte* pSrc, int srcPitch) {
 
 //rounding does not match
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode15_and16_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode15_and16_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     auto max18 = _mm256_max_epu8(a1, a8);
@@ -1285,7 +1285,7 @@ RG_FORCEINLINE __m256i rg_mode15_and16_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode15_and16_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode15_and16_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   auto max18 = _mm256_max_epu16(a1, a8);
@@ -1322,7 +1322,7 @@ RG_FORCEINLINE __m256i rg_mode15_and16_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode15_and16_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode15_and16_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto max18 = _mm256_max_ps(a1, a8);
@@ -1361,7 +1361,7 @@ RG_FORCEINLINE __m256i rg_mode15_and16_avx2_32(const Byte* pSrc, int srcPitch) {
 //-------------------
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode17_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode17_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     auto mal1 = _mm256_max_epu8(a1, a8);
@@ -1391,7 +1391,7 @@ RG_FORCEINLINE __m256i rg_mode17_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode17_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode17_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm256_max_epu16(a1, a8);
@@ -1421,7 +1421,7 @@ RG_FORCEINLINE __m256i rg_mode17_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode17_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode17_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm256_max_ps(a1, a8);
@@ -1453,7 +1453,7 @@ RG_FORCEINLINE __m256i rg_mode17_avx2_32(const Byte* pSrc, int srcPitch) {
 //-------------------
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode18_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode18_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     auto absdiff1 = abs_diff(c, a1);
@@ -1486,7 +1486,7 @@ RG_FORCEINLINE __m256i rg_mode18_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode18_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode18_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   auto absdiff1 = abs_diff_16(c, a1);
@@ -1519,7 +1519,7 @@ RG_FORCEINLINE __m256i rg_mode18_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode18_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode18_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto absdiff1 = abs_diff_32(c, a1);
@@ -1555,7 +1555,7 @@ RG_FORCEINLINE __m256i rg_mode18_avx2_32(const Byte* pSrc, int srcPitch) {
 //-------------------
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode19_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode19_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     auto a13    = _mm256_avg_epu8 (a1, a3);
@@ -1571,7 +1571,7 @@ RG_FORCEINLINE __m256i rg_mode19_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode19_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode19_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   auto a13    = _mm256_avg_epu16 (a1, a3);
@@ -1587,7 +1587,7 @@ RG_FORCEINLINE __m256i rg_mode19_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode19_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode19_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto a13    = _mm256_avg_ps (a1, a3);
@@ -1606,7 +1606,7 @@ RG_FORCEINLINE __m256i rg_mode19_avx2_32(const Byte* pSrc, int srcPitch) {
 
 //todo: probably extract a function with 12 arguments?
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode20_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode20_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     auto zero = _mm256_setzero_si256();
@@ -1666,7 +1666,7 @@ RG_FORCEINLINE __m256i rg_mode20_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode20_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode20_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   //    int sum = a1 + a2 + a3 + a4 + c + a5 + a6 + a7 + a8;
@@ -1681,7 +1681,7 @@ RG_FORCEINLINE __m256i rg_mode20_avx2_16(const Byte* pSrc, int srcPitch) {
   // worst case: 9*FFFF * E39 = 8000B8E3 ( 8000B8E3 >> 15 = 10001, packus rounding to FFFF)
   // Try with
   // ((1<<15) / 9  + 4) = 0xE3C (3644)
-  const Byte FACTOR = 15;
+  const uint8_t FACTOR = 15;
   auto zero = _mm256_setzero_si256();
   auto onenineth = _mm256_set1_epi32(((1u << FACTOR) + 4) / 9);
   auto bias = _mm256_set1_epi32(4);
@@ -1740,7 +1740,7 @@ RG_FORCEINLINE __m256i rg_mode20_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode20_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode20_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto onenineth = _mm256_set1_ps(1/9.0f);
@@ -1760,7 +1760,7 @@ RG_FORCEINLINE __m256i rg_mode20_avx2_32(const Byte* pSrc, int srcPitch) {
 //-------------------
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode21_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode21_avx2(const uint8_t* pSrc, int srcPitch) {
   /*
   LOAD_SQUARE_AVX2_UA_18(pSrc, srcPitch, aligned);
 
@@ -1815,7 +1815,7 @@ RG_FORCEINLINE __m256i rg_mode21_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode21_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode21_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   auto l1a = not_rounded_average_16(a1, a8);
@@ -1840,17 +1840,17 @@ RG_FORCEINLINE __m256i rg_mode21_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode22_avx2_32(const Byte* pSrc, int srcPitch);
+RG_FORCEINLINE __m256i rg_mode22_avx2_32(const uint8_t* pSrc, int srcPitch);
   // float: no integer tricks, same like 22
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode21_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode21_avx2_32(const uint8_t* pSrc, int srcPitch) {
   return rg_mode22_avx2_32<aligned>(pSrc, srcPitch);
 }
 
 //-------------------
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode22_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode22_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     auto l1 = _mm256_avg_epu8(a1, a8);
@@ -1871,7 +1871,7 @@ RG_FORCEINLINE __m256i rg_mode22_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode22_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode22_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   auto l1 = _mm256_avg_epu16(a1, a8);
@@ -1892,7 +1892,7 @@ RG_FORCEINLINE __m256i rg_mode22_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode22_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode22_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto l1 = _mm256_avg_ps(a1, a8);
@@ -1917,7 +1917,7 @@ RG_FORCEINLINE __m256i rg_mode22_avx2_32(const Byte* pSrc, int srcPitch) {
 
 //optimized. 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode23_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode23_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     auto mal1 = _mm256_max_epu8(a1, a8);
@@ -1959,7 +1959,7 @@ RG_FORCEINLINE __m256i rg_mode23_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode23_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode23_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm256_max_epu16(a1, a8);
@@ -2001,7 +2001,7 @@ RG_FORCEINLINE __m256i rg_mode23_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned, bool chroma>
-RG_FORCEINLINE __m256i rg_mode23_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode23_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto mal1 = _mm256_max_ps(a1, a8);
@@ -2047,7 +2047,7 @@ RG_FORCEINLINE __m256i rg_mode23_avx2_32(const Byte* pSrc, int srcPitch) {
 
 //optimized, todo: decide how to name the function and extract this stuff. Order is important.
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode24_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode24_avx2(const uint8_t* pSrc, int srcPitch) {
     LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
 
     auto mal  = _mm256_max_epu8(a1, a8);
@@ -2095,7 +2095,7 @@ RG_FORCEINLINE __m256i rg_mode24_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode24_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode24_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   auto mal  = _mm256_max_epu16(a1, a8);
@@ -2143,7 +2143,7 @@ RG_FORCEINLINE __m256i rg_mode24_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned, bool chroma>
-RG_FORCEINLINE __m256i rg_mode24_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode24_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto mal  = _mm256_max_ps(a1, a8);
@@ -2191,7 +2191,7 @@ RG_FORCEINLINE __m256i rg_mode24_avx2_32(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode25_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode25_avx2(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
   /*
   a1 a2 a3
@@ -2239,7 +2239,7 @@ RG_FORCEINLINE __m256i rg_mode25_avx2(const Byte* pSrc, int srcPitch) {
 
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode25_avx2_16(const Byte* pSrc, int srcPitch, const __m256i &pixel_max) {
+RG_FORCEINLINE __m256i rg_mode25_avx2_16(const uint8_t* pSrc, int srcPitch, const __m256i &pixel_max) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
   /*
   a1 a2 a3
@@ -2287,7 +2287,7 @@ RG_FORCEINLINE __m256i rg_mode25_avx2_16(const Byte* pSrc, int srcPitch, const _
 }
 
 template<bool aligned, bool chroma>
-RG_FORCEINLINE __m256i rg_mode25_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode25_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
   /*
   a1 a2 a3
@@ -2337,7 +2337,7 @@ RG_FORCEINLINE __m256i rg_mode25_avx2_32(const Byte* pSrc, int srcPitch) {
 
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode26_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode26_avx2(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
   /*
   a1 a2 a3
@@ -2390,7 +2390,7 @@ RG_FORCEINLINE __m256i rg_mode26_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode26_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode26_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   auto mi12 = _mm256_min_epu16(a1, a2);
@@ -2438,7 +2438,7 @@ RG_FORCEINLINE __m256i rg_mode26_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode26_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode26_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto mi12 = _mm256_min_ps(a1, a2);
@@ -2492,7 +2492,7 @@ RG_FORCEINLINE __m256i rg_mode26_avx2_32(const Byte* pSrc, int srcPitch) {
 // 27 = medianblur.Same as mode 26 but preserves thin lines.
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode27_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode27_avx2(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
   /*
   a1 a2 a3
@@ -2566,7 +2566,7 @@ RG_FORCEINLINE __m256i rg_mode27_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode27_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode27_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   auto mi18 = _mm256_min_epu16(a1, a8);
@@ -2635,7 +2635,7 @@ RG_FORCEINLINE __m256i rg_mode27_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode27_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode27_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto mi18 = _mm256_min_ps(a1, a8);
@@ -2707,7 +2707,7 @@ RG_FORCEINLINE __m256i rg_mode27_avx2_32(const Byte* pSrc, int srcPitch) {
 // Mode28_SmartRGCL2.cpp
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode28_avx2(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode28_avx2(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_UA(pSrc, srcPitch, aligned);
   /*
   a1 a2 a3
@@ -2779,7 +2779,7 @@ RG_FORCEINLINE __m256i rg_mode28_avx2(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode28_avx2_16(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode28_avx2_16(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_16_UA(pSrc, srcPitch, aligned);
 
   auto mi12 = _mm256_min_epu16(a1, a2);
@@ -2847,7 +2847,7 @@ RG_FORCEINLINE __m256i rg_mode28_avx2_16(const Byte* pSrc, int srcPitch) {
 }
 
 template<bool aligned>
-RG_FORCEINLINE __m256i rg_mode28_avx2_32(const Byte* pSrc, int srcPitch) {
+RG_FORCEINLINE __m256i rg_mode28_avx2_32(const uint8_t* pSrc, int srcPitch) {
   LOAD_SQUARE_AVX2_32_UA(pSrc, srcPitch, aligned);
 
   auto mi12 = _mm256_min_ps(a1, a2);

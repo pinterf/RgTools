@@ -74,7 +74,7 @@ static RG_FORCEINLINE void sort_pair_32(__m128 &a1, __m128 &a2)
   a1 = tmp;
 }
 
-static RG_FORCEINLINE __m128i simd_loadu_si128(const Byte* ptr) {
+static RG_FORCEINLINE __m128i simd_loadu_si128(const uint8_t* ptr) {
 #ifdef USE_MOVPS
   return _mm_castps_si128(_mm_loadu_ps(reinterpret_cast<const float*>(ptr)));
 #else
@@ -86,11 +86,11 @@ static RG_FORCEINLINE __m128i simd_loadu_si128(const Byte* ptr) {
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse3")))
 #endif
-static RG_FORCEINLINE __m128i simd_loadu_si128_sse3(const Byte* ptr) {
+static RG_FORCEINLINE __m128i simd_loadu_si128_sse3(const uint8_t* ptr) {
   return _mm_lddqu_si128(reinterpret_cast<const __m128i*>(ptr));
 }
 
-static RG_FORCEINLINE __m128i simd_loada_si128(const Byte* ptr) {
+static RG_FORCEINLINE __m128i simd_loada_si128(const uint8_t* ptr) {
 #ifdef USE_MOVPS
     return _mm_castps_si128(_mm_load_ps(reinterpret_cast<const float*>(ptr)));
 #else

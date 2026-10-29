@@ -38,7 +38,6 @@
 
 #include "common_sse.h"
 
-typedef unsigned char Byte;
 
 static RG_FORCEINLINE bool is_32byte_aligned(const void *ptr) {
     return (((uintptr_t)ptr) & 31) == 0;
@@ -85,11 +84,11 @@ static RG_FORCEINLINE void sort_pair_32(__m256 &a1, __m256 &a2)
   a1 = tmp;
 }
 
-static RG_FORCEINLINE __m256i simd_loadu_si256(const Byte* ptr) {
+static RG_FORCEINLINE __m256i simd_loadu_si256(const uint8_t* ptr) {
   return _mm256_loadu_si256(reinterpret_cast<const __m256i*>(ptr));
 }
 
-static RG_FORCEINLINE __m256i simd_loada_si256(const Byte* ptr) {
+static RG_FORCEINLINE __m256i simd_loada_si256(const uint8_t* ptr) {
   return _mm256_load_si256(reinterpret_cast<const __m256i*>(ptr));
 }
 

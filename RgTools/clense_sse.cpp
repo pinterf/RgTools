@@ -8,7 +8,7 @@
 
 namespace {
 
-RG_FORCEINLINE void clense_process_line_sse2(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize) {
+RG_FORCEINLINE void clense_process_line_sse2(uint8_t* pDst, const uint8_t *pSrc, const uint8_t* pRef1, const uint8_t* pRef2, int rowsize) {
     for (int x = 0; x < rowsize; x+=16) {
         auto src = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc+x));
         auto ref1 = _mm_load_si128(reinterpret_cast<const __m128i*>(pRef1+x));
@@ -25,7 +25,7 @@ RG_FORCEINLINE void clense_process_line_sse2(Byte* pDst, const Byte *pSrc, const
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE void clense_process_line_sse4_16(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize, int /*bits_per_pixel*/)
+RG_FORCEINLINE void clense_process_line_sse4_16(uint8_t* pDst, const uint8_t *pSrc, const uint8_t* pRef1, const uint8_t* pRef2, int rowsize, int /*bits_per_pixel*/)
 {
   for (int x = 0; x < rowsize; x+=16) {
     auto src = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc+x));
@@ -40,7 +40,7 @@ RG_FORCEINLINE void clense_process_line_sse4_16(Byte* pDst, const Byte *pSrc, co
   }
 }
 
-RG_FORCEINLINE void clense_process_line_sse2_32(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize) {
+RG_FORCEINLINE void clense_process_line_sse2_32(uint8_t* pDst, const uint8_t *pSrc, const uint8_t* pRef1, const uint8_t* pRef2, int rowsize) {
   for (int x = 0; x < rowsize; x+=16) {
     auto src = _mm_load_ps(reinterpret_cast<const float*>(pSrc+x));
     auto ref1 = _mm_load_ps(reinterpret_cast<const float*>(pRef1+x));
@@ -54,7 +54,7 @@ RG_FORCEINLINE void clense_process_line_sse2_32(Byte* pDst, const Byte *pSrc, co
   }
 }
 
-RG_FORCEINLINE void sclense_process_line_sse2(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize) {
+RG_FORCEINLINE void sclense_process_line_sse2(uint8_t* pDst, const uint8_t *pSrc, const uint8_t* pRef1, const uint8_t* pRef2, int rowsize) {
     for (int x = 0; x < rowsize; x+=16) {
         auto src = _mm_load_si128(reinterpret_cast<const __m128i*>(pSrc+x));
         auto ref1 = _mm_load_si128(reinterpret_cast<const __m128i*>(pRef1+x));
@@ -78,7 +78,7 @@ RG_FORCEINLINE void sclense_process_line_sse2(Byte* pDst, const Byte *pSrc, cons
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-RG_FORCEINLINE void sclense_process_line_sse4_16(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize, int bits_per_pixel) {
+RG_FORCEINLINE void sclense_process_line_sse4_16(uint8_t* pDst, const uint8_t *pSrc, const uint8_t* pRef1, const uint8_t* pRef2, int rowsize, int bits_per_pixel) {
   // 16 bit: the min with 0xFFFF is a no-op (_mm_adds_epu16 saturates there)
   const __m128i pixel_max = _mm_set1_epi16((short)((1u << bits_per_pixel) - 1));
 
@@ -105,7 +105,7 @@ RG_FORCEINLINE void sclense_process_line_sse4_16(Byte* pDst, const Byte *pSrc, c
 }
 
 template<bool chroma>
-RG_FORCEINLINE void sclense_process_line_sse2_32(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int rowsize) {
+RG_FORCEINLINE void sclense_process_line_sse2_32(uint8_t* pDst, const uint8_t *pSrc, const uint8_t* pRef1, const uint8_t* pRef2, int rowsize) {
   for (int x = 0; x < rowsize; x+=16) {
     auto src = _mm_load_ps(reinterpret_cast<const float*>(pSrc+x));
     auto ref1 = _mm_load_ps(reinterpret_cast<const float*>(pRef1+x));
@@ -127,7 +127,7 @@ RG_FORCEINLINE void sclense_process_line_sse2_32(Byte* pDst, const Byte *pSrc, c
 }
 
 template<decltype(clense_process_line_sse2) processor>
-void process_plane_sse(Byte* pDst, const Byte *pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
+void process_plane_sse(uint8_t* pDst, const uint8_t *pSrc, const uint8_t* pRef1, const uint8_t* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment *env) {
     if (!is_16byte_aligned(pSrc) || !is_16byte_aligned(pRef1) || !is_16byte_aligned(pRef2)) {
         env->ThrowError("Invalid memory alignment. Used unaligned crop?"); //omg I feel so dumb
     }
@@ -150,7 +150,7 @@ template<decltype(clense_process_line_sse4_16) processor>
 #if defined(GCC) || defined(CLANG)
 __attribute__((__target__("sse4.1")))
 #endif
-void process_plane_sse41(Byte* pDst, const Byte* pSrc, const Byte* pRef1, const Byte* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment* env) {
+void process_plane_sse41(uint8_t* pDst, const uint8_t* pSrc, const uint8_t* pRef1, const uint8_t* pRef2, int dstPitch, int srcPitch, int ref1Pitch, int ref2Pitch, int rowsize, int height, int bits_per_pixel, IScriptEnvironment* env) {
   if (!is_16byte_aligned(pSrc) || !is_16byte_aligned(pRef1) || !is_16byte_aligned(pRef2)) {
     env->ThrowError("Invalid memory alignment. Used unaligned crop?"); //omg I feel so dumb
   }

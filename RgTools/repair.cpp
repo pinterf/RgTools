@@ -15,7 +15,7 @@ static void process_plane_c(IScriptEnvironment* env, BYTE* pDst, const BYTE* pSr
     reinterpret_cast<pixel_t *>(pDst)[0] = reinterpret_cast<const pixel_t *>(pSrc)[0];
     for (int x = 1; x < width-1; x+=1) {
       pixel_t result;
-      if constexpr (std::is_invocable_v<decltype(processor), const Byte*, pixel_t, int, int>)
+      if constexpr (std::is_invocable_v<decltype(processor), const uint8_t*, pixel_t, int, int>)
         result = processor(pRef + x*sizeof(pixel_t), reinterpret_cast<const pixel_t *>(pSrc)[x], refPitch, max_pixel_value);
       else
         result = processor(pRef + x*sizeof(pixel_t), reinterpret_cast<const pixel_t *>(pSrc)[x], refPitch);

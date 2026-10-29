@@ -7,16 +7,16 @@
 
 template<typename pixel_t>
 // 10-16 bit kernels that depend on the max pixel value take it as a 4th parameter (int)
-using CModeProcessor = pixel_t (*)(const Byte*, pixel_t val, int);
+using CModeProcessor = pixel_t (*)(const uint8_t*, pixel_t val, int);
 
-RG_FORCEINLINE Byte repair_mode1_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode1_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    Byte mi = std::min(std::min (
+    uint8_t mi = std::min(std::min (
         std::min(std::min(a1, a2), std::min(a3, a4)),
         std::min(std::min(a5, a6), std::min(a7, a8))
         ), c);
-    Byte ma = std::max(std::max(
+    uint8_t ma = std::max(std::max(
         std::max(std::max(a1, a2), std::max(a3, a4)),
         std::max(std::max(a5, a6), std::max(a7, a8))
         ), c);
@@ -24,7 +24,7 @@ RG_FORCEINLINE Byte repair_mode1_cpp(const Byte* pSrc, Byte val, int srcPitch) {
     return clip(val, mi, ma);
 }
 
-RG_FORCEINLINE uint16_t repair_mode1_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode1_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   uint16_t mi = std::min(std::min (
@@ -39,7 +39,7 @@ RG_FORCEINLINE uint16_t repair_mode1_cpp_16(const Byte* pSrc, uint16_t val, int 
   return clip_16(val, mi, ma);
 }
 
-RG_FORCEINLINE float repair_mode1_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode1_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   float mi = std::min(std::min (
@@ -56,17 +56,17 @@ RG_FORCEINLINE float repair_mode1_cpp_32(const Byte* pSrc, float val, int srcPit
 
 // ------------
 
-RG_FORCEINLINE Byte repair_mode2_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode2_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    std::array<Byte, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
+    std::array<uint8_t, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
 
     std::sort(std::begin(a), std::end(a));
 
     return clip(val, a[1], a[7]);
 }
 
-RG_FORCEINLINE uint16_t repair_mode2_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode2_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   std::array<uint16_t, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
@@ -76,7 +76,7 @@ RG_FORCEINLINE uint16_t repair_mode2_cpp_16(const Byte* pSrc, uint16_t val, int 
   return clip_16(val, a[1], a[7]);
 }
 
-RG_FORCEINLINE float repair_mode2_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode2_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   std::array<float, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
@@ -88,17 +88,17 @@ RG_FORCEINLINE float repair_mode2_cpp_32(const Byte* pSrc, float val, int srcPit
 
 // ------------
 
-RG_FORCEINLINE Byte repair_mode3_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode3_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    std::array<Byte, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
+    std::array<uint8_t, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
 
     std::sort(std::begin(a), std::end(a));
 
     return clip(val, a[2], a[6]);
 }
 
-RG_FORCEINLINE uint16_t repair_mode3_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode3_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   std::array<uint16_t, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
@@ -108,7 +108,7 @@ RG_FORCEINLINE uint16_t repair_mode3_cpp_16(const Byte* pSrc, uint16_t val, int 
   return clip_16(val, a[2], a[6]);
 }
 
-RG_FORCEINLINE float repair_mode3_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode3_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   std::array<float, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
@@ -120,17 +120,17 @@ RG_FORCEINLINE float repair_mode3_cpp_32(const Byte* pSrc, float val, int srcPit
 
 // ------------
 
-RG_FORCEINLINE Byte repair_mode4_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode4_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    std::array<Byte, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
+    std::array<uint8_t, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
 
     std::sort(std::begin(a), std::end(a));
 
     return clip(val, a[3], a[5]);
 }
 
-RG_FORCEINLINE uint16_t repair_mode4_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode4_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   std::array<uint16_t, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
@@ -140,7 +140,7 @@ RG_FORCEINLINE uint16_t repair_mode4_cpp_16(const Byte* pSrc, uint16_t val, int 
   return clip_16(val, a[3], a[5]);
 }
 
-RG_FORCEINLINE float repair_mode4_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode4_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   std::array<float, 9> a = { a1, a2, a3, a4, c, a5, a6, a7, a8 };
@@ -152,7 +152,7 @@ RG_FORCEINLINE float repair_mode4_cpp_32(const Byte* pSrc, float val, int srcPit
 
 // ------------
 
-RG_FORCEINLINE Byte repair_mode5_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode5_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto mal1 = std::max(std::max(a1, a8), c);
@@ -167,10 +167,10 @@ RG_FORCEINLINE Byte repair_mode5_cpp(const Byte* pSrc, Byte val, int srcPitch) {
     auto mal4 = std::max(std::max(a4, a5), c);
     auto mil4 = std::min(std::min(a4, a5), c);
 
-    Byte c1 = std::abs(val-clip(val, mil1, mal1));
-    Byte c2 = std::abs(val-clip(val, mil2, mal2));
-    Byte c3 = std::abs(val-clip(val, mil3, mal3));
-    Byte c4 = std::abs(val-clip(val, mil4, mal4));
+    uint8_t c1 = std::abs(val-clip(val, mil1, mal1));
+    uint8_t c2 = std::abs(val-clip(val, mil2, mal2));
+    uint8_t c3 = std::abs(val-clip(val, mil3, mal3));
+    uint8_t c4 = std::abs(val-clip(val, mil4, mal4));
 
     auto mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
 
@@ -180,7 +180,7 @@ RG_FORCEINLINE Byte repair_mode5_cpp(const Byte* pSrc, Byte val, int srcPitch) {
     return clip(val, mil1, mal1);
 }
 
-RG_FORCEINLINE uint16_t repair_mode5_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode5_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(std::max(a1, a8), c);
@@ -209,7 +209,7 @@ RG_FORCEINLINE uint16_t repair_mode5_cpp_16(const Byte* pSrc, uint16_t val, int 
 }
 
 
-RG_FORCEINLINE float repair_mode5_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode5_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(std::max(a1, a8), c);
@@ -239,7 +239,7 @@ RG_FORCEINLINE float repair_mode5_cpp_32(const Byte* pSrc, float val, int srcPit
 
 // ------------
 
-RG_FORCEINLINE Byte repair_mode6_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode6_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto mal1 = std::max(std::max(a1, a8), c);
@@ -259,10 +259,10 @@ RG_FORCEINLINE Byte repair_mode6_cpp(const Byte* pSrc, Byte val, int srcPitch) {
     int d3 = mal3 - mil3;
     int d4 = mal4 - mil4;
 
-    Byte clipped1 = clip(val, mil1, mal1);
-    Byte clipped2 = clip(val, mil2, mal2);
-    Byte clipped3 = clip(val, mil3, mal3);
-    Byte clipped4 = clip(val, mil4, mal4);
+    uint8_t clipped1 = clip(val, mil1, mal1);
+    uint8_t clipped2 = clip(val, mil2, mal2);
+    uint8_t clipped3 = clip(val, mil3, mal3);
+    uint8_t clipped4 = clip(val, mil4, mal4);
 
     int c1 = clip((std::abs(val-clipped1)<<1)+d1, 0, 255);
     int c2 = clip((std::abs(val-clipped2)<<1)+d2, 0, 255);
@@ -277,7 +277,7 @@ RG_FORCEINLINE Byte repair_mode6_cpp(const Byte* pSrc, Byte val, int srcPitch) {
     return clip(val, mil1, mal1);
 }
 
-RG_FORCEINLINE uint16_t repair_mode6_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch, int pixel_max) {
+RG_FORCEINLINE uint16_t repair_mode6_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch, int pixel_max) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(std::max(a1, a8), c);
@@ -315,7 +315,7 @@ RG_FORCEINLINE uint16_t repair_mode6_cpp_16(const Byte* pSrc, uint16_t val, int 
   return clip_16(val, mil1, mal1);
 }
 
-RG_FORCEINLINE float repair_mode6_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode6_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(std::max(a1, a8), c);
@@ -371,7 +371,7 @@ RG_FORCEINLINE float repair_mode6_cpp_32(const Byte* pSrc, float val, int srcPit
 
 // ------------
 
-RG_FORCEINLINE Byte repair_mode7_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode7_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto mal1 = std::max(std::max(a1, a8), c);
@@ -409,7 +409,7 @@ RG_FORCEINLINE Byte repair_mode7_cpp(const Byte* pSrc, Byte val, int srcPitch) {
     return clipped1;
 }
 
-RG_FORCEINLINE uint16_t repair_mode7_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode7_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(std::max(a1, a8), c);
@@ -447,7 +447,7 @@ RG_FORCEINLINE uint16_t repair_mode7_cpp_16(const Byte* pSrc, uint16_t val, int 
   return clipped1;
 }
 
-RG_FORCEINLINE float repair_mode7_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode7_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(std::max(a1, a8), c);
@@ -488,7 +488,7 @@ RG_FORCEINLINE float repair_mode7_cpp_32(const Byte* pSrc, float val, int srcPit
 
 // ------------
 
-RG_FORCEINLINE Byte repair_mode8_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode8_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto mal1 = std::max(std::max(a1, a8), c);
@@ -503,22 +503,22 @@ RG_FORCEINLINE Byte repair_mode8_cpp(const Byte* pSrc, Byte val, int srcPitch) {
     auto mal4 = std::max(std::max(a4, a5), c);
     auto mil4 = std::min(std::min(a4, a5), c);
 
-    Byte d1 = mal1 - mil1;
-    Byte d2 = mal2 - mil2;
-    Byte d3 = mal3 - mil3;
-    Byte d4 = mal4 - mil4;
+    uint8_t d1 = mal1 - mil1;
+    uint8_t d2 = mal2 - mil2;
+    uint8_t d3 = mal3 - mil3;
+    uint8_t d4 = mal4 - mil4;
 
-    Byte clipped1 = clip(val, mil1, mal1);
-    Byte clipped2 = clip(val, mil2, mal2);
-    Byte clipped3 = clip(val, mil3, mal3);
-    Byte clipped4 = clip(val, mil4, mal4);
+    uint8_t clipped1 = clip(val, mil1, mal1);
+    uint8_t clipped2 = clip(val, mil2, mal2);
+    uint8_t clipped3 = clip(val, mil3, mal3);
+    uint8_t clipped4 = clip(val, mil4, mal4);
 
     int c1 = clip(std::abs(val-clipped1)+(d1<<1), 0, 255);
     int c2 = clip(std::abs(val-clipped2)+(d2<<1), 0, 255);
     int c3 = clip(std::abs(val-clipped3)+(d3<<1), 0, 255);
     int c4 = clip(std::abs(val-clipped4)+(d4<<1), 0, 255);
 
-    Byte mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
+    uint8_t mindiff = std::min(std::min(std::min(c1, c2), c3), c4);
 
     if (mindiff == c4) return clipped4;
     if (mindiff == c2) return clipped2;
@@ -526,7 +526,7 @@ RG_FORCEINLINE Byte repair_mode8_cpp(const Byte* pSrc, Byte val, int srcPitch) {
     return clipped1;
 }
 
-RG_FORCEINLINE uint16_t repair_mode8_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch, int pixel_max) {
+RG_FORCEINLINE uint16_t repair_mode8_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch, int pixel_max) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(std::max(a1, a8), c);
@@ -564,7 +564,7 @@ RG_FORCEINLINE uint16_t repair_mode8_cpp_16(const Byte* pSrc, uint16_t val, int 
   return clipped1;
 }
 
-RG_FORCEINLINE float repair_mode8_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode8_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(std::max(a1, a8), c);
@@ -621,7 +621,7 @@ RG_FORCEINLINE float repair_mode8_cpp_32(const Byte* pSrc, float val, int srcPit
 
 // ------------
 
-RG_FORCEINLINE Byte repair_mode9_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode9_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto mal1 = std::max(std::max(a1, a8), c);
@@ -649,7 +649,7 @@ RG_FORCEINLINE Byte repair_mode9_cpp(const Byte* pSrc, Byte val, int srcPitch) {
     return clip(val, mil1, mal1);
 }
 
-RG_FORCEINLINE uint16_t repair_mode9_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode9_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(std::max(a1, a8), c);
@@ -677,7 +677,7 @@ RG_FORCEINLINE uint16_t repair_mode9_cpp_16(const Byte* pSrc, uint16_t val, int 
   return clip_16(val, mil1, mal1);
 }
 
-RG_FORCEINLINE float repair_mode9_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode9_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(std::max(a1, a8), c);
@@ -707,7 +707,7 @@ RG_FORCEINLINE float repair_mode9_cpp_32(const Byte* pSrc, float val, int srcPit
 
 // ------------
 
-RG_FORCEINLINE Byte repair_mode10_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode10_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto d1 = std::abs(val - a1);
@@ -733,7 +733,7 @@ RG_FORCEINLINE Byte repair_mode10_cpp(const Byte* pSrc, Byte val, int srcPitch) 
     return a4;
 }
 
-RG_FORCEINLINE uint16_t repair_mode10_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode10_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto d1 = std::abs(val - a1);
@@ -759,7 +759,7 @@ RG_FORCEINLINE uint16_t repair_mode10_cpp_16(const Byte* pSrc, uint16_t val, int
   return a4;
 }
 
-RG_FORCEINLINE float repair_mode10_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode10_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto d1 = std::abs(val - a1);
@@ -787,19 +787,19 @@ RG_FORCEINLINE float repair_mode10_cpp_32(const Byte* pSrc, float val, int srcPi
 
 // ------------
 
-RG_FORCEINLINE Byte repair_mode12_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode12_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    std::array<Byte, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
+    std::array<uint8_t, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
 
     std::sort(std::begin(a), std::end(a));
-    Byte mi = std::min(a[1], c);
-    Byte ma = std::max(a[6], c);
+    uint8_t mi = std::min(a[1], c);
+    uint8_t ma = std::max(a[6], c);
 
     return clip(val, mi, ma);
 }
 
-RG_FORCEINLINE uint16_t repair_mode12_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode12_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   std::array<uint16_t, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
@@ -811,7 +811,7 @@ RG_FORCEINLINE uint16_t repair_mode12_cpp_16(const Byte* pSrc, uint16_t val, int
   return clip_16(val, mi, ma);
 }
 
-RG_FORCEINLINE float repair_mode12_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode12_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   std::array<float, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
@@ -825,19 +825,19 @@ RG_FORCEINLINE float repair_mode12_cpp_32(const Byte* pSrc, float val, int srcPi
 
 // ------------
 
-RG_FORCEINLINE Byte repair_mode13_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode13_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    std::array<Byte, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
+    std::array<uint8_t, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
 
     std::sort(std::begin(a), std::end(a));
-    Byte mi = std::min(a[2], c);
-    Byte ma = std::max(a[5], c);
+    uint8_t mi = std::min(a[2], c);
+    uint8_t ma = std::max(a[5], c);
 
     return clip (val, mi, ma);
 }
 
-RG_FORCEINLINE uint16_t repair_mode13_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode13_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   std::array<uint16_t, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
@@ -849,7 +849,7 @@ RG_FORCEINLINE uint16_t repair_mode13_cpp_16(const Byte* pSrc, uint16_t val, int
   return clip_16 (val, mi, ma);
 }
 
-RG_FORCEINLINE float repair_mode13_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode13_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   std::array<float, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
@@ -864,19 +864,19 @@ RG_FORCEINLINE float repair_mode13_cpp_32(const Byte* pSrc, float val, int srcPi
 // ------------
 
 
-RG_FORCEINLINE Byte repair_mode14_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode14_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    std::array<Byte, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
+    std::array<uint8_t, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
 
     std::sort(std::begin(a), std::end(a));
-    Byte mi = std::min(a[3], c);
-    Byte ma = std::max(a[4], c);
+    uint8_t mi = std::min(a[3], c);
+    uint8_t ma = std::max(a[4], c);
 
     return clip (val, mi, ma);
 }
 
-RG_FORCEINLINE uint16_t repair_mode14_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode14_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   std::array<uint16_t, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
@@ -888,7 +888,7 @@ RG_FORCEINLINE uint16_t repair_mode14_cpp_16(const Byte* pSrc, uint16_t val, int
   return clip_16 (val, mi, ma);
 }
 
-RG_FORCEINLINE float repair_mode14_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode14_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   std::array<float, 8> a = { a1, a2, a3, a4, a5, a6, a7, a8 };
@@ -903,7 +903,7 @@ RG_FORCEINLINE float repair_mode14_cpp_32(const Byte* pSrc, float val, int srcPi
 // ------------
 
 
-RG_FORCEINLINE Byte repair_mode15_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode15_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto mal1 = std::max(a1, a8);
@@ -923,15 +923,15 @@ RG_FORCEINLINE Byte repair_mode15_cpp(const Byte* pSrc, Byte val, int srcPitch) 
     auto clipped3 = clip(c, mil3, mal3);
     auto clipped4 = clip(c, mil4, mal4);
 
-    Byte c1 = std::abs (c - clipped1);
-    Byte c2 = std::abs (c - clipped2);
-    Byte c3 = std::abs (c - clipped3);
-    Byte c4 = std::abs (c - clipped4);
+    uint8_t c1 = std::abs (c - clipped1);
+    uint8_t c2 = std::abs (c - clipped2);
+    uint8_t c3 = std::abs (c - clipped3);
+    uint8_t c4 = std::abs (c - clipped4);
 
-    Byte mindiff = std::min (std::min (c1, c2), std::min (c3, c4));
+    uint8_t mindiff = std::min (std::min (c1, c2), std::min (c3, c4));
 
-    Byte mi;
-    Byte ma;
+    uint8_t mi;
+    uint8_t ma;
     if (mindiff == c4)
     {
         mi = mil4;
@@ -959,7 +959,7 @@ RG_FORCEINLINE Byte repair_mode15_cpp(const Byte* pSrc, Byte val, int srcPitch) 
     return clip(val, mi, ma);
 }
 
-RG_FORCEINLINE uint16_t repair_mode15_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode15_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1015,7 +1015,7 @@ RG_FORCEINLINE uint16_t repair_mode15_cpp_16(const Byte* pSrc, uint16_t val, int
   return clip_16(val, mi, ma);
 }
 
-RG_FORCEINLINE float repair_mode15_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode15_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1074,7 +1074,7 @@ RG_FORCEINLINE float repair_mode15_cpp_32(const Byte* pSrc, float val, int srcPi
 // ------------
 
 
-RG_FORCEINLINE Byte repair_mode16_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode16_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto mal1 = std::max(a1, a8);
@@ -1101,8 +1101,8 @@ RG_FORCEINLINE Byte repair_mode16_cpp(const Byte* pSrc, Byte val, int srcPitch) 
 
     auto mindiff = std::min (std::min (c1, c2), std::min (c3, c4));
 
-    Byte mi;
-    Byte ma;
+    uint8_t mi;
+    uint8_t ma;
     if (mindiff == c4)
     {
         mi = mil4;
@@ -1130,7 +1130,7 @@ RG_FORCEINLINE Byte repair_mode16_cpp(const Byte* pSrc, Byte val, int srcPitch) 
     return clip(val, mi, ma);
 }
 
-RG_FORCEINLINE uint16_t repair_mode16_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch, int pixel_max) {
+RG_FORCEINLINE uint16_t repair_mode16_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch, int pixel_max) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1186,7 +1186,7 @@ RG_FORCEINLINE uint16_t repair_mode16_cpp_16(const Byte* pSrc, uint16_t val, int
   return clip_16(val, mi, ma);
 }
 
-RG_FORCEINLINE float repair_mode16_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode16_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1262,7 +1262,7 @@ RG_FORCEINLINE float repair_mode16_cpp_32(const Byte* pSrc, float val, int srcPi
 // ------------
 
 
-RG_FORCEINLINE Byte repair_mode17_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode17_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto mal1 = std::max(a1, a8);
@@ -1277,16 +1277,16 @@ RG_FORCEINLINE Byte repair_mode17_cpp(const Byte* pSrc, Byte val, int srcPitch) 
     auto mal4 = std::max(a4, a5);
     auto mil4 = std::min(a4, a5);
 
-    Byte l = std::max (std::max (mil1, mil2), std::max (mil3, mil4));
-    Byte u = std::min (std::min (mal1, mal2), std::min (mal3, mal4));
+    uint8_t l = std::max (std::max (mil1, mil2), std::max (mil3, mil4));
+    uint8_t u = std::min (std::min (mal1, mal2), std::min (mal3, mal4));
     
-	Byte mi = std::min (std::min (l, u), c);
-	Byte ma = std::max (std::max (l, u), c);
+	uint8_t mi = std::min (std::min (l, u), c);
+	uint8_t ma = std::max (std::max (l, u), c);
 
 	return clip(val, mi, ma);
 }
 
-RG_FORCEINLINE uint16_t repair_mode17_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode17_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1310,7 +1310,7 @@ RG_FORCEINLINE uint16_t repair_mode17_cpp_16(const Byte* pSrc, uint16_t val, int
   return clip_16(val, mi, ma);
 }
 
-RG_FORCEINLINE float repair_mode17_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode17_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1338,7 +1338,7 @@ RG_FORCEINLINE float repair_mode17_cpp_32(const Byte* pSrc, float val, int srcPi
 // ------------
 
 
-RG_FORCEINLINE Byte repair_mode18_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode18_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto d1 = std::max(std::abs(c - a1), std::abs(c - a8));
@@ -1348,8 +1348,8 @@ RG_FORCEINLINE Byte repair_mode18_cpp(const Byte* pSrc, Byte val, int srcPitch) 
 
     auto mindiff = std::min(std::min(std::min(d1, d2), d3), d4);
 
-    Byte mi;
-    Byte ma;
+    uint8_t mi;
+    uint8_t ma;
     if (mindiff == d4)
     {
         mi = std::min (a4, a5);
@@ -1377,7 +1377,7 @@ RG_FORCEINLINE Byte repair_mode18_cpp(const Byte* pSrc, Byte val, int srcPitch) 
     return clip(val, mi, ma);
 }
 
-RG_FORCEINLINE uint16_t repair_mode18_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode18_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto d1 = std::max(std::abs(c - a1), std::abs(c - a8));
@@ -1416,7 +1416,7 @@ RG_FORCEINLINE uint16_t repair_mode18_cpp_16(const Byte* pSrc, uint16_t val, int
   return clip_16(val, mi, ma);
 }
 
-RG_FORCEINLINE float repair_mode18_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode18_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto d1 = std::max(std::abs(c - a1), std::abs(c - a8));
@@ -1457,7 +1457,7 @@ RG_FORCEINLINE float repair_mode18_cpp_32(const Byte* pSrc, float val, int srcPi
 
 // ------------
 
-RG_FORCEINLINE Byte repair_mode19_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode19_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto d1 = std::abs(c - a1);
@@ -1474,7 +1474,7 @@ RG_FORCEINLINE Byte repair_mode19_cpp(const Byte* pSrc, Byte val, int srcPitch) 
     return clip(val, clip(c-mindiff, 0, 255), clip(c+mindiff, 0, 255));
 }
 
-RG_FORCEINLINE uint16_t repair_mode19_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch, int pixel_max) {
+RG_FORCEINLINE uint16_t repair_mode19_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch, int pixel_max) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto d1 = std::abs(c - a1);
@@ -1492,7 +1492,7 @@ RG_FORCEINLINE uint16_t repair_mode19_cpp_16(const Byte* pSrc, uint16_t val, int
 }
 
 template<bool chroma>
-RG_FORCEINLINE float repair_mode19_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode19_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto d1 = std::abs(c - a1);
@@ -1515,20 +1515,20 @@ RG_FORCEINLINE float repair_mode19_cpp_32(const Byte* pSrc, float val, int srcPi
 
 // ------------
 
-RG_FORCEINLINE Byte repair_mode20_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode20_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    Byte d1 = std::abs(c - a1);
-    Byte d2 = std::abs(c - a2);
-    Byte d3 = std::abs(c - a3);
-    Byte d4 = std::abs(c - a4);
-    Byte d5 = std::abs(c - a5);
-    Byte d6 = std::abs(c - a6);
-    Byte d7 = std::abs(c - a7);
-    Byte d8 = std::abs(c - a8);
+    uint8_t d1 = std::abs(c - a1);
+    uint8_t d2 = std::abs(c - a2);
+    uint8_t d3 = std::abs(c - a3);
+    uint8_t d4 = std::abs(c - a4);
+    uint8_t d5 = std::abs(c - a5);
+    uint8_t d6 = std::abs(c - a6);
+    uint8_t d7 = std::abs(c - a7);
+    uint8_t d8 = std::abs(c - a8);
 
-    Byte mindiff = std::min(d1, d2);
-    Byte maxdiff = std::max(d1, d2);
+    uint8_t mindiff = std::min(d1, d2);
+    uint8_t maxdiff = std::max(d1, d2);
 
     maxdiff = clip(maxdiff, mindiff, d3);
     mindiff = std::min(mindiff, d3);
@@ -1550,7 +1550,7 @@ RG_FORCEINLINE Byte repair_mode20_cpp(const Byte* pSrc, Byte val, int srcPitch) 
     return clip(val, clip(c-maxdiff, 0, 255), clip(c+maxdiff, 0, 255));
 }
 
-RG_FORCEINLINE uint16_t repair_mode20_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch, int max_pixel) {
+RG_FORCEINLINE uint16_t repair_mode20_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch, int max_pixel) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   uint16_t d1 = std::abs(c - a1);
@@ -1586,7 +1586,7 @@ RG_FORCEINLINE uint16_t repair_mode20_cpp_16(const Byte* pSrc, uint16_t val, int
 }
 
 template<bool chroma>
-RG_FORCEINLINE float repair_mode20_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode20_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   float d1 = std::abs(c - a1);
@@ -1628,7 +1628,7 @@ RG_FORCEINLINE float repair_mode20_cpp_32(const Byte* pSrc, float val, int srcPi
 
 // ------------
 
-RG_FORCEINLINE Byte repair_mode21_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode21_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto mal1 = std::max(a1, a8);
@@ -1663,7 +1663,7 @@ RG_FORCEINLINE Byte repair_mode21_cpp(const Byte* pSrc, Byte val, int srcPitch) 
     return clip(val, clip(c-u, 0, 255), clip(c+u, 0, 255));
 }
 
-RG_FORCEINLINE uint16_t repair_mode21_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch, int max_pixel) {
+RG_FORCEINLINE uint16_t repair_mode21_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch, int max_pixel) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1699,7 +1699,7 @@ RG_FORCEINLINE uint16_t repair_mode21_cpp_16(const Byte* pSrc, uint16_t val, int
 }
 
 template<bool chroma>
-RG_FORCEINLINE float repair_mode21_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode21_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1740,7 +1740,7 @@ RG_FORCEINLINE float repair_mode21_cpp_32(const Byte* pSrc, float val, int srcPi
 
 // ------------
 
-RG_FORCEINLINE Byte repair_mode22_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode22_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto d1 = std::abs(val - a1);
@@ -1757,7 +1757,7 @@ RG_FORCEINLINE Byte repair_mode22_cpp(const Byte* pSrc, Byte val, int srcPitch) 
     return clip(c, clip(val-mindiff, 0, 255), clip(val+mindiff, 0, 255));
 }
 
-RG_FORCEINLINE uint16_t repair_mode22_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch, int max_pixel) {
+RG_FORCEINLINE uint16_t repair_mode22_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch, int max_pixel) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto d1 = std::abs(val - a1);
@@ -1775,7 +1775,7 @@ RG_FORCEINLINE uint16_t repair_mode22_cpp_16(const Byte* pSrc, uint16_t val, int
 }
 
 template<bool chroma>
-RG_FORCEINLINE float repair_mode22_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode22_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto d1 = std::abs(val - a1);
@@ -1798,20 +1798,20 @@ RG_FORCEINLINE float repair_mode22_cpp_32(const Byte* pSrc, float val, int srcPi
 
 // ------------
 
-RG_FORCEINLINE Byte repair_mode23_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode23_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
-    Byte d1 = std::abs(val - a1);
-    Byte d2 = std::abs(val - a2);
-    Byte d3 = std::abs(val - a3);
-    Byte d4 = std::abs(val - a4);
-    Byte d5 = std::abs(val - a5);
-    Byte d6 = std::abs(val - a6);
-    Byte d7 = std::abs(val - a7);
-    Byte d8 = std::abs(val - a8);
+    uint8_t d1 = std::abs(val - a1);
+    uint8_t d2 = std::abs(val - a2);
+    uint8_t d3 = std::abs(val - a3);
+    uint8_t d4 = std::abs(val - a4);
+    uint8_t d5 = std::abs(val - a5);
+    uint8_t d6 = std::abs(val - a6);
+    uint8_t d7 = std::abs(val - a7);
+    uint8_t d8 = std::abs(val - a8);
 
-    Byte mindiff = std::min(d1, d2);
-    Byte maxdiff = std::max(d1, d2);
+    uint8_t mindiff = std::min(d1, d2);
+    uint8_t maxdiff = std::max(d1, d2);
 
     maxdiff = clip(maxdiff, mindiff, d3);
     mindiff = std::min(mindiff, d3);
@@ -1833,7 +1833,7 @@ RG_FORCEINLINE Byte repair_mode23_cpp(const Byte* pSrc, Byte val, int srcPitch) 
     return clip(c, clip(val-maxdiff, 0, 255), clip(val+maxdiff, 0, 255));
 }
 
-RG_FORCEINLINE uint16_t repair_mode23_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch, int max_pixel) {
+RG_FORCEINLINE uint16_t repair_mode23_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch, int max_pixel) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   uint16_t d1 = std::abs(val - a1);
@@ -1869,7 +1869,7 @@ RG_FORCEINLINE uint16_t repair_mode23_cpp_16(const Byte* pSrc, uint16_t val, int
 }
 
 template<bool chroma>
-RG_FORCEINLINE float repair_mode23_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode23_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   float d1 = std::abs(val - a1);
@@ -1910,7 +1910,7 @@ RG_FORCEINLINE float repair_mode23_cpp_32(const Byte* pSrc, float val, int srcPi
 
 // ------------
 
-RG_FORCEINLINE Byte repair_mode24_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode24_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
     LOAD_SQUARE_CPP(pSrc, srcPitch);
 
     auto mal1 = std::max(a1, a8);
@@ -1945,7 +1945,7 @@ RG_FORCEINLINE Byte repair_mode24_cpp(const Byte* pSrc, Byte val, int srcPitch) 
     return clip(c, clip(val-u, 0, 255), clip(val+u, 0, 255));
 }
 
-RG_FORCEINLINE uint16_t repair_mode24_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch, int max_pixel) {
+RG_FORCEINLINE uint16_t repair_mode24_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch, int max_pixel) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -1985,7 +1985,7 @@ RG_FORCEINLINE uint16_t repair_mode24_cpp_16(const Byte* pSrc, uint16_t val, int
 }
 
 template<bool chroma>
-RG_FORCEINLINE float repair_mode24_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode24_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -2028,7 +2028,7 @@ RG_FORCEINLINE float repair_mode24_cpp_32(const Byte* pSrc, float val, int srcPi
 // mode25: does not exist in repair
 // ------------
 // similar to mode17
-RG_FORCEINLINE Byte repair_mode26_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode26_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
   LOAD_SQUARE_CPP(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a2);
@@ -2077,7 +2077,7 @@ RG_FORCEINLINE Byte repair_mode26_cpp(const Byte* pSrc, Byte val, int srcPitch) 
   return clip(val, mi, ma);
 }
 
-RG_FORCEINLINE uint16_t repair_mode26_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode26_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a2);
@@ -2115,7 +2115,7 @@ RG_FORCEINLINE uint16_t repair_mode26_cpp_16(const Byte* pSrc, uint16_t val, int
   return clip_16(val, mi, ma);
 }
 
-RG_FORCEINLINE float repair_mode26_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode26_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a2);
@@ -2155,7 +2155,7 @@ RG_FORCEINLINE float repair_mode26_cpp_32(const Byte* pSrc, float val, int srcPi
 
 // ------------
 
-RG_FORCEINLINE Byte repair_mode27_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode27_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
   LOAD_SQUARE_CPP(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -2208,7 +2208,7 @@ RG_FORCEINLINE Byte repair_mode27_cpp(const Byte* pSrc, Byte val, int srcPitch) 
   return clip(val, mi, ma);
 }
 
-RG_FORCEINLINE uint16_t repair_mode27_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode27_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -2261,7 +2261,7 @@ RG_FORCEINLINE uint16_t repair_mode27_cpp_16(const Byte* pSrc, uint16_t val, int
   return clip_16(val, mi, ma);
 }
 
-RG_FORCEINLINE float repair_mode27_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode27_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a8);
@@ -2316,7 +2316,7 @@ RG_FORCEINLINE float repair_mode27_cpp_32(const Byte* pSrc, float val, int srcPi
 
 // ------------
 
-RG_FORCEINLINE Byte repair_mode28_cpp(const Byte* pSrc, Byte val, int srcPitch) {
+RG_FORCEINLINE uint8_t repair_mode28_cpp(const uint8_t* pSrc, uint8_t val, int srcPitch) {
   LOAD_SQUARE_CPP(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a2);
@@ -2369,7 +2369,7 @@ RG_FORCEINLINE Byte repair_mode28_cpp(const Byte* pSrc, Byte val, int srcPitch) 
   return clip(val, mi, ma);
 }
 
-RG_FORCEINLINE uint16_t repair_mode28_cpp_16(const Byte* pSrc, uint16_t val, int srcPitch) {
+RG_FORCEINLINE uint16_t repair_mode28_cpp_16(const uint8_t* pSrc, uint16_t val, int srcPitch) {
   LOAD_SQUARE_CPP_16(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a2);
@@ -2422,7 +2422,7 @@ RG_FORCEINLINE uint16_t repair_mode28_cpp_16(const Byte* pSrc, uint16_t val, int
   return clip_16(val, mi, ma);
 }
 
-RG_FORCEINLINE float repair_mode28_cpp_32(const Byte* pSrc, float val, int srcPitch) {
+RG_FORCEINLINE float repair_mode28_cpp_32(const uint8_t* pSrc, float val, int srcPitch) {
   LOAD_SQUARE_CPP_32(pSrc, srcPitch);
 
   auto mal1 = std::max(a1, a2);

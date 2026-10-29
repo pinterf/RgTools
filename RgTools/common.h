@@ -21,7 +21,6 @@
 #define INTEL_INTRINSICS
 #endif
 
-typedef uint8_t Byte;
 
 #if defined(__clang__)
 // Check clang first. clang-cl also defines __MSC_VER
@@ -100,7 +99,7 @@ static RG_FORCEINLINE float avg_32_c(float x, float y) {
 }
 
 template<typename T>
-static RG_FORCEINLINE Byte clip(T val, T minimum, T maximum) {
+static RG_FORCEINLINE uint8_t clip(T val, T minimum, T maximum) {
     return std::max(std::min(val, maximum), minimum);
 }
 
@@ -243,7 +242,7 @@ static RG_FORCEINLINE void neighbourdiff_32_c(float& minus, float& plus, float c
     pixel_t a7 = *(pixel_t *)((ptr) + (pitch)); \
     pixel_t a8 = *(pixel_t *)((ptr) + (pitch) + sizeof(pixel_t));
 
-#define LOAD_SQUARE_CPP(ptr, pitch) LOAD_SQUARE_CPP_0(Byte, ptr, pitch);
+#define LOAD_SQUARE_CPP(ptr, pitch) LOAD_SQUARE_CPP_0(uint8_t, ptr, pitch);
 #define LOAD_SQUARE_CPP_16(ptr, pitch) LOAD_SQUARE_CPP_0(uint16_t, ptr, pitch);
 #define LOAD_SQUARE_CPP_32(ptr, pitch) LOAD_SQUARE_CPP_0(float, ptr, pitch);
 

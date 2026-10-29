@@ -22,7 +22,7 @@ static void process_plane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, BYTE*
     dstPitch /= sizeof(pixel_t);
     const int srcPitchOrig = srcPitch;
     // 10-16 bit kernels that depend on the max pixel value get it as a 3rd parameter
-    constexpr bool with_max = std::is_invocable_v<decltype(processor), const Byte*, int, const __m256i&>;
+    constexpr bool with_max = std::is_invocable_v<decltype(processor), const uint8_t*, int, const __m256i&>;
     const __m256i pixel_max = _mm256_set1_epi16(sizeof(pixel_t) == 2 ? (short)((1u << bits_per_pixel) - 1) : 0);
     srcPitch /= sizeof(pixel_t);
 
@@ -78,7 +78,7 @@ static void process_halfplane_avx2(IScriptEnvironment* env, const BYTE* pSrc8, B
   dstPitch /= sizeof(pixel_t);
   const int srcPitchOrig = srcPitch;
   // 10-16 bit kernels that depend on the max pixel value get it as a 3rd parameter
-  constexpr bool with_max = std::is_invocable_v<decltype(processor), const Byte*, int, const __m256i&>;
+  constexpr bool with_max = std::is_invocable_v<decltype(processor), const uint8_t*, int, const __m256i&>;
   const __m256i pixel_max = _mm256_set1_epi16(sizeof(pixel_t) == 2 ? (short)((1u << bits_per_pixel) - 1) : 0);
   srcPitch /= sizeof(pixel_t);
 

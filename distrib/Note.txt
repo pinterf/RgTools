@@ -1,0 +1,25 @@
+This package contains DLLs built with different compilers.
+
+Win32\ClangCL, x64\ClangCL
+  LLVM clang-cl (Visual Studio 2026).
+  Requires only SSE2.
+
+Win32\MSVC_XP, x64\MSVC_XP
+  Visual C++ v141_xp toolset, runs on Windows XP and Windows 7 as well.
+  Requires only SSE2.
+  Contains the same AVX2 code as the other builds, but Windows XP does not support AVX
+  (it does not save the AVX registers), so on XP Avisynth reports no AVX/AVX2 and the
+  SSE2..SSE4.1 code is used. On Windows 7 SP1 and newer this build uses AVX2 as well.
+
+ARM64\llvm-mingw
+  Windows on ARM64, built with llvm-mingw.
+  The C++ runtime is linked statically, no redistributable is needed.
+
+The CPU specific optimizations (up to AVX2 on x86) are chosen at runtime.
+
+RgTools.dll of the Visual Studio builds requires the Microsoft Visual C++ Redistributable
+https://www.visualstudio.com/downloads/
+
+Which one to choose?
+
+When in doubt, use ClangCL. On Windows XP and Windows 7 use MSVC_XP.

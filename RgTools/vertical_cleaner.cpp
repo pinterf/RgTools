@@ -275,8 +275,9 @@ static void dispatch_median(int mode, Byte* pDst, const Byte *pSrc, int dstPitch
 
 VerticalCleaner::VerticalCleaner(PClip child, int mode, int modeU, int modeV, bool skip_cs_check, IScriptEnvironment* env)
 : GenericVideoFilter(child), mode_(mode), modeU_(modeU), modeV_(modeV) {
-    if (!(vi.IsPlanar() || skip_cs_check)) {
-        env->ThrowError("VerticalCleaner works only with planar colorspaces");
+    // planar=true (skip_cs_check) is a dummy compatibility parameter: YUY2 and packed RGB are not supported
+    if (!vi.IsPlanar()) {
+        env->ThrowError("VerticalCleaner works only with planar colorspaces (YUY2: use ConvertToYV16)");
     }
 
     // modeU/modeV below -1: same as the previous plane (UNDEFINED_MODE, the default)

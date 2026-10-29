@@ -345,8 +345,9 @@ extern PlaneProcessor* rg_avx2_functions_32_chroma[];
 
 RemoveGrain::RemoveGrain(PClip child, int mode, int modeU, int modeV, bool skip_cs_check, int opt, IScriptEnvironment* env)
     : GenericVideoFilter(child), mode_(mode), modeU_(modeU), modeV_(modeV), functions(nullptr), functions_chroma(nullptr) {
-    if (!(vi.IsPlanar() || skip_cs_check)) {
-        env->ThrowError("RemoveGrain works only with planar colorspaces");
+    // planar=true (skip_cs_check) is a dummy compatibility parameter: YUY2 and packed RGB are not supported
+    if (!vi.IsPlanar()) {
+        env->ThrowError("RemoveGrain works only with planar colorspaces (YUY2: use ConvertToYV16)");
     }
 
     if (mode <= UNDEFINED_MODE || mode_ > 28 || modeU_ > 28 || modeV_ > 28) {

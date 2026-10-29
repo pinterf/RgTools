@@ -305,8 +305,9 @@ public:
     processor_t_repair_c(nullptr),
     processor_t_repair_chroma_c(nullptr)
   {
-    if (!planar && !vi.IsPlanar())
-      env->ThrowError("TemporalRepair: only planar color spaces are supported");
+    // planar=true is a dummy compatibility parameter: YUY2 and packed RGB are not supported
+    if (!vi.IsPlanar())
+      env->ThrowError("TemporalRepair works only with planar colorspaces (YUY2: use ConvertToYV16)");
 
     CompareVideoInfo(vi, orig->GetVideoInfo(), "TemporalRepair", env);
 
@@ -1290,8 +1291,9 @@ public:
     processor_st_repair_chroma_c(nullptr),
     grey(grey)
   {
-    if (!planar && !vi.IsPlanar())
-      env->ThrowError("TemporalRepair: only planar color spaces are supported");
+    // planar=true is a dummy compatibility parameter: YUY2 and packed RGB are not supported
+    if (!vi.IsPlanar())
+      env->ThrowError("TemporalRepair works only with planar colorspaces (YUY2: use ConvertToYV16)");
 
     CompareVideoInfo(vi, _oclip->GetVideoInfo(), "TemporalRepair", env);
 

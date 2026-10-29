@@ -283,8 +283,9 @@ Repair::Repair(PClip child, PClip ref, int mode, int modeU, int modeV, bool skip
 
   auto refVi = ref_->GetVideoInfo();
 
-  if (!(vi.IsPlanar() || skip_cs_check)) {
-    env->ThrowError("Repair works only with planar colorspaces");
+  // planar=true (skip_cs_check) is a dummy compatibility parameter: YUY2 and packed RGB are not supported
+  if (!vi.IsPlanar() || !refVi.IsPlanar()) {
+    env->ThrowError("Repair works only with planar colorspaces (YUY2: use ConvertToYV16)");
   }
 
   if (vi.width != refVi.width || vi.height != refVi.height) {

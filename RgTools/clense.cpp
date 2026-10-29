@@ -66,8 +66,9 @@ static void process_plane_c(Byte* pDst, const Byte *pSrc, const Byte* pRef1, con
 
 Clense::Clense(PClip child, PClip previous, PClip next, bool grey, bool reduceflicker, ClenseMode mode, bool skip_cs_check, IScriptEnvironment* env)
     : GenericVideoFilter(child), previous_(previous), next_(next), grey_(grey), mode_(mode), reduceflicker_(reduceflicker) {
-    if(!(vi.IsPlanar() || skip_cs_check)) {
-        env->ThrowError("Clense works only with planar colorspaces");
+    // planar=true (skip_cs_check) is a dummy compatibility parameter: YUY2 and packed RGB are not supported
+    if (!vi.IsPlanar()) {
+        env->ThrowError("Clense works only with planar colorspaces (YUY2: use ConvertToYV16)");
     }
 
     if(grey_ && (vi.IsPlanarRGB() || vi.IsPlanarRGBA()))

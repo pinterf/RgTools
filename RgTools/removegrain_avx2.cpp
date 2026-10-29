@@ -114,6 +114,10 @@ static void process_even_rows_avx2(IScriptEnvironment* env, const BYTE* pSrc, BY
     env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 2); //copy first two lines
 
     process_halfplane_avx2<pixel_t, processor>(env, pSrc+srcPitch, pDst+dstPitch, rowsize, height, srcPitch, dstPitch);
+    if (height & 1) { // odd height: the last row is an even row without a row below it: border, copied
+        _mm256_zeroupper();
+        env->BitBlt(pDst+dstPitch*(height-1), dstPitch, pSrc+srcPitch*(height-1), srcPitch, rowsize, 1);
+    }
 }
 
 template<typename pixel_t, SseModeProcessor processor>
@@ -121,7 +125,8 @@ static void process_odd_rows_avx2(IScriptEnvironment* env, const BYTE* pSrc, BYT
     _mm256_zeroupper();
     env->BitBlt(pDst, dstPitch, pSrc, srcPitch, rowsize, 1); //top border
 
-    process_halfplane_avx2<pixel_t, processor>(env, pSrc, pDst, rowsize, height, srcPitch, dstPitch);
+    // height + 1: with an odd height the last odd row (height-2) has both neighbours and is processed too
+    process_halfplane_avx2<pixel_t, processor>(env, pSrc, pDst, rowsize, height + 1, srcPitch, dstPitch);
 
     _mm256_zeroupper();
     env->BitBlt(pDst+dstPitch*(height-1), dstPitch, pSrc+srcPitch*(height-1), srcPitch, rowsize, 1); //bottom border

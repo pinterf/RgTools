@@ -1,63 +1,47 @@
 #include <windows.h>
 
-#define VER_FILEVERSION             1,2,0,0
-#define VER_PRODUCTVERSION          1,2,0,0
-#define VER_COMPANYNAME_STR         "The Public\0"
-#define VER_FILEDESCRIPTION_STR     "RgTools for Avisynth+ and Avisynth with 2.6 API\0"
-#define VER_FILEVERSION_STR         "1, 2\0"
-#define VER_INTERNALNAME_STR        "RgTools\0"
-#define VER_LEGALCOPYRIGHT_STR      "(C) -2021\0" // ASCII only: llvm-rc rejects non-ASCII bytes without a code page
-#define VER_ORIGINALFILENAME_STR    "RgTools.dll\0"
-#define VER_PRODUCTNAME_STR         "RgTools\0"
-#define VER_PRODUCTVERSION_STR      VER_FILEVERSION_STR
-// #define VER_COMMENTS_STR            "\0"
+// Keep this file ASCII: llvm-rc and windres ignore the code page pragma, so
+// non-ASCII characters are written as wide-string escapes (\x00E9 = e acute).
+// build_release.bat reads the version from the VER_FILEVERSION line.
 
-#ifndef _DEBUG
-#define VER_DEBUG                   0
-#else
-#define VER_DEBUG                   VS_FF_DEBUG
-#endif
+#define VER_FILEVERSION             1,3,0,0
+#define VER_PRODUCTVERSION          1,3,0,0
+#define VER_FILEVERSION_STR         "1.3"
+#define VER_PRODUCTVERSION_STR      VER_FILEVERSION_STR
+
+LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
+#pragma code_page(1252)
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION    	VER_FILEVERSION
-PRODUCTVERSION 	VER_PRODUCTVERSION
-FILEFLAGSMASK  	VS_FFI_FILEFLAGSMASK
-FILEFLAGS      	(VER_DEBUG)
-FILEOS         	VOS__WINDOWS32
-FILETYPE       	VFT_DLL
-FILESUBTYPE    	VFT2_UNKNOWN
+ FILEVERSION    VER_FILEVERSION
+ PRODUCTVERSION VER_PRODUCTVERSION
+ FILEFLAGSMASK  VS_FFI_FILEFLAGSMASK
+#ifdef _DEBUG
+ FILEFLAGS      VS_FF_DEBUG
+#else
+ FILEFLAGS      0x0L
+#endif
+ FILEOS         VOS__WINDOWS32
+ FILETYPE       VFT_DLL
+ FILESUBTYPE    VFT2_UNKNOWN
 BEGIN
     BLOCK "StringFileInfo"
     BEGIN
-        BLOCK "040904E4"
+        BLOCK "040004b0"
         BEGIN
-            VALUE "CompanyName",      VER_COMPANYNAME_STR
-            VALUE "FileDescription",  VER_FILEDESCRIPTION_STR
-            VALUE "FileVersion",      VER_FILEVERSION_STR
-            VALUE "InternalName",     VER_INTERNALNAME_STR
-            VALUE "LegalCopyright",   VER_LEGALCOPYRIGHT_STR
-//            VALUE "LegalTrademarks1", VER_LEGALTRADEMARKS1_STR
-//            VALUE "LegalTrademarks2", VER_LEGALTRADEMARKS2_STR
-            VALUE "OriginalFilename", VER_ORIGINALFILENAME_STR
-            VALUE "ProductName",      VER_PRODUCTNAME_STR
-            VALUE "ProductVersion",   VER_PRODUCTVERSION_STR
-//            VALUE "Comments",         VER_COMMENTS_STR
+            VALUE "Comments", "RemoveGrain, Repair, Clense, ForwardClense, BackwardClense, VerticalCleaner, TemporalRepair"
+            VALUE "CompanyName", "Kassandro, tp7, pinterf"
+            VALUE "FileDescription", "RgTools spatial and temporal denoisers for Avisynth"
+            VALUE "FileVersion", VER_FILEVERSION_STR
+            VALUE "InternalName", "RgTools"
+            VALUE "LegalCopyright", L"Copyright (C) 2013 Victor Efimov (tp7), 2016-2026 Ferenc Pint\x00E9r et al., MIT license; based on RemoveGrain by Kassandro"
+            VALUE "OriginalFilename", "RgTools.dll"
+            VALUE "ProductName", "RgTools"
+            VALUE "ProductVersion", VER_PRODUCTVERSION_STR
         END
     END
-
     BLOCK "VarFileInfo"
     BEGIN
-        /* The following line should only be modified for localized versions.     */
-        /* It consists of any number of WORD,WORD pairs, with each pair           */
-        /* describing a language,codepage combination supported by the file.      */
-        /*                                                                        */
-        /* For example, a file might have values "0x409,1252" indicating that it  */
-        /* supports English language (0x409) in the Windows ANSI codepage (1252). */
-
-        VALUE "Translation", 0x409, 1252
-
+        VALUE "Translation", 0x400, 1200
     END
 END
-
-
-LANGUAGE LANG_NEUTRAL, SUBLANG_SYS_DEFAULT

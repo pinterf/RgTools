@@ -15,7 +15,7 @@ ARM64\llvm-mingw
   Windows on ARM64, built with llvm-mingw.
   The C++ runtime is linked statically, no redistributable is needed.
 
-The CPU specific optimizations (up to AVX2 on x86) are chosen at runtime.
+The CPU specific optimizations are chosen at runtime: up to AVX2 on x86, NEON on ARM64.
 
 RgTools.dll of the Visual Studio builds requires the Microsoft Visual C++ Redistributable
 https://www.visualstudio.com/downloads/
